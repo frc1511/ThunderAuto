@@ -1,0 +1,82 @@
+cmake_minimum_required(VERSION 3.1)
+
+project(ThunderPath)
+
+set(THUNDER_AUTO_YEAR 2022)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED YES)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+add_compile_options(-Wdeprecated-declarations)
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release")
+endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+  set(THUNDER_AUTO_DEBUG ON)
+  list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_DEBUG")
+endif()
+
+set(THUNDER_AUTO_SRC_DIR        "${CMAKE_CURRENT_SOURCE_DIR}/src")
+set(THUNDER_AUTO_INC_DIR        "${CMAKE_CURRENT_SOURCE_DIR}/src")
+set(THUNDER_AUTO_THIRDPARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
+
+file(GLOB_RECURSE THUNDER_AUTO_RESOURCES "${CMAKE_CURRENT_SOURCE_DIR}/res/*")
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  set(THUNDER_AUTO_WINDOWS ON)
+  list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_WINDOWS")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+  set(THUNDER_AUTO_MACOS ON)
+  list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_MACOS")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  set(THUNDER_AUTO_LINUX ON)
+  list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_LINUX")
+else()
+  message(FATAL_ERROR "Target operating system '${CMAKE_SYSTEM_NAME}' not supported")
+endif()
+
+function(add_thunder_auto_sources)
+  set(THUNDER_AUTO_SRC ${THUNDER_AUTO_SRC} ${ARGV} PARENT_SCOPE)
+endfunction()
+
+include("${THUNDER_AUTO_SRC_DIR}/CMakeLists.txt")
+
+option(GLFW_BUILD_EXAMPLES OFF)
+option(GLFW_BUILD_TESTS OFF)
+option(GLFW_BUILD_DOCS OFF)
+option(GLFW_INSTALL OFF)
+add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/glfw")
+
+add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/imgui")
+
+if(THUNDER_AUTO_WINDOWS)
+  add_executable(${PROJECT_NAME} WIN32 ${THUNDER_AUTO_SRC})
+elseif(THUNDER_AUTO_MACOS)
+  add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${THUNDER_AUTO_SRC} ${THUNDER_AUTO_RESOURCES})
+  set_target_properties(${PROJECT_NAME} PROPERTIES
+    MACOSX_BUNDLE_GUI_IDENTIFIER       "com.penfieldrobotics.thunderauto"
+    MACOSX_BUNDLE_BUNDLE_NAME          "ThunderDashboard"
+    MACOSX_BUNDLE_BUNDLE_VERSION       "${THUNDER_AUTO_YEAR}"
+    MACOSX_BUNDLE_LONG_VERSION_STRING  "${THUNDER_AUTO_YEAR}"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "${THUNDER_AUTO_YEAR}"
+    MACOSX_BUNDLE_COPYRIGHT            "Copyright © ${THUNDER_AUTO_YEAR} Peter Lilley"
+    # MACOSX_BUNDLE_ICON_FILE
+  )
+elseif(THUNDER_AUTO_LINUX)
+  add_executable(${PROJECT_NAME} ${THUNDER_AUTO_SRC})
+endif()
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+  RESOURCE                             "${THUNDER_AUTO_RESOURCES}"
+)
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${THUNDER_AUTO_INC_DIR})
+
+target_link_libraries(${PROJECT_NAME} glfw)
+target_link_libraries(${PROJECT_NAME} imgui)
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE ${THUNDER_AUTO_DEF_LIST})

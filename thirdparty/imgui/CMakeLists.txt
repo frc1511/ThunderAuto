@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(imgui_docking)
+project(imgui)
 
 set(IMGUI_SRC
   "${CMAKE_CURRENT_SOURCE_DIR}/imgui/imconfig.h"
