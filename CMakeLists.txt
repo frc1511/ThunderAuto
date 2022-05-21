@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
 
-project(ThunderPath)
+project(ThunderAuto LANGUAGES C CXX)
 
 set(THUNDER_AUTO_YEAR 2022)
 
@@ -37,6 +37,18 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_LINUX")
 else()
   message(FATAL_ERROR "Target operating system '${CMAKE_SYSTEM_NAME}' not supported")
+endif()
+
+if(THUNDER_AUTO_MACOS)
+  enable_language(OBJC)
+  set(CMAKE_OBJC_STANDARD 11)
+  set(CMAKE_OBJC_STANDARD_REQUIRED YES)
+  set(CMAKE_OBJC_EXTENSIONS OFF)
+  
+  enable_language(OBJCXX)
+  set(CMAKE_OBJCXX_STANDARD 11)
+  set(CMAKE_OBJCXX_STANDARD_REQUIRED YES)
+  set(CMAKE_OBJCXX_EXTENSIONS OFF)
 endif()
 
 function(add_thunder_auto_sources)
@@ -78,5 +90,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${THUNDER_AUTO_INC_DIR})
 
 target_link_libraries(${PROJECT_NAME} glfw)
 target_link_libraries(${PROJECT_NAME} imgui)
+
+if(THUNDER_AUTO_MACOS)
+  target_link_libraries(${PROJECT_NAME} "-framework Foundation -framework AppKit")
+endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE ${THUNDER_AUTO_DEF_LIST})

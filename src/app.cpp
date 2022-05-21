@@ -3,6 +3,26 @@
 
 #include <iostream>
 
+#ifdef THUNDER_AUTO_MACOS
+# include <platform/macos/macos.h>
+#elif THUNDER_AUTO_WINDOWS
+# include <platform/windows/windows.h>
+#elif THUNDER_AUTO_LINUX
+# include <platform/linux/linux.h>
+#endif
+
+App::App() {
+#ifdef THUNDER_AUTO_MACOS
+  platform = PlatformMacOS::get();
+#elif THUNDER_AUTO_WINDOWS
+  platform = PlatformWindows::get();
+#elif THUNDER_AUTO_LINUX
+  platform = PlatformLinux::get();
+#endif
+}
+
+App::~App() { }
+
 void App::present() {
   if (close_priority == ClosePriority::CLOSE_EVERYTHING) {
     running = false;
@@ -18,7 +38,11 @@ void App::present() {
        item_save_as = false,
        item_close = false,
        item_undo = false,
-       item_redo = false;
+       item_redo = false,
+       item_cut = false,
+       item_copy = false,
+       item_paste = false,
+       item_select_all = false;
   
   static bool show_path_editor = false,
               show_properties = false;
@@ -43,8 +67,13 @@ void App::present() {
     }
     
     if (ImGui::BeginMenu("Edit")) {
-      ImGui::MenuItem("Undo", CTRL_STR "Z",       &item_undo);
-      ImGui::MenuItem("Redo", CTRL_SHIFT_STR "Z", &item_redo);
+      ImGui::MenuItem("Undo",       CTRL_STR "Z",       &item_undo);
+      ImGui::MenuItem("Redo",       CTRL_SHIFT_STR "Z", &item_redo);
+      ImGui::Separator();
+      ImGui::MenuItem("Cut",        CTRL_STR "X", &item_cut);
+      ImGui::MenuItem("Copy",       CTRL_STR "C", &item_copy);
+      ImGui::MenuItem("Paste",      CTRL_STR "V", &item_paste);
+      ImGui::MenuItem("Select All", CTRL_STR "A", &item_select_all);
       
       ImGui::EndMenu();
     }
@@ -80,6 +109,18 @@ void App::present() {
   if (item_redo) {
     menu_redo();
   }
+  if (item_cut) {
+    menu_cut();
+  }
+  if (item_copy) {
+    menu_copy();
+  }
+  if (item_paste) {
+    menu_paste();
+  }
+  if (item_select_all) {
+    menu_select_all();
+  }
 }
 
 void App::menu_new() {
@@ -88,6 +129,7 @@ void App::menu_new() {
 
 void App::menu_open() {
   std::cout << "open\n";
+  std::cout << platform->open_file_dialog() << '\n';
 }
 
 void App::menu_save() {
@@ -111,38 +153,69 @@ void App::menu_redo() {
   std::cout << "redo\n";
 }
 
+void App::menu_cut() {
+  std::cout << "cut\n";
+}
+
+void App::menu_copy() {
+  std::cout << "copy\n";
+}
+
+void App::menu_paste() {
+  std::cout << "paste\n";
+}
+
+void App::menu_select_all() {
+  std::cout << "select all\n";
+}
+
 void App::close() {
   std::cout << "closing everything\n";
   close_priority = ClosePriority::CLOSE_EVERYTHING;
 }
 
 void App::handle_keyboard(int key, int scancode, int action, int mods) {
-#ifdef THUNDER_PATH_MACOS
+#ifdef THUNDER_AUTO_MACOS
   int ctrl_key = GLFW_MOD_SUPER;
 #else
   int ctrl_key = GLFW_MOD_CONTROL;
 #endif
   
-  if (key == GLFW_KEY_N && mods & ctrl_key && action == GLFW_PRESS) {
+#define GET_CTRL_KEY(k)       ((key == k) && (mods == ctrl_key) && (action == GLFW_PRESS))
+#define GET_CTRL_SHIFT_KEY(k) ((key == k) && (mods == (ctrl_key | GLFW_MOD_SHIFT)) && (action == GLFW_PRESS))
+  
+  if (GET_CTRL_KEY(GLFW_KEY_N)) {
     menu_new();
   }
-  else if (key == GLFW_KEY_O && mods & ctrl_key && action == GLFW_PRESS) {
+  else if (GET_CTRL_KEY(GLFW_KEY_O)) {
     menu_open();
   }
-  else if (key == GLFW_KEY_S && mods & ctrl_key && mods & GLFW_MOD_SHIFT && action == GLFW_PRESS) {
-    menu_save_as();
-  }
-  else if (key == GLFW_KEY_S && mods & ctrl_key && action == GLFW_PRESS) {
+  else if (GET_CTRL_KEY(GLFW_KEY_S)) {
     menu_save();
   }
-  else if (key == GLFW_KEY_W && mods & ctrl_key && action == GLFW_PRESS) {
+  else if (GET_CTRL_SHIFT_KEY(GLFW_KEY_S)) {
+    menu_save_as();
+  }
+  else if (GET_CTRL_KEY(GLFW_KEY_W)) {
     menu_close();
   }
-  else if (((key == GLFW_KEY_Z && mods & GLFW_MOD_SHIFT) || key == GLFW_KEY_Y) && mods & ctrl_key  && action == GLFW_PRESS) {
+  else if (GET_CTRL_KEY(GLFW_KEY_Z)) {
+    menu_undo();
+  }
+  else if (GET_CTRL_SHIFT_KEY(GLFW_KEY_Z) || GET_CTRL_KEY(GLFW_KEY_Y)) {
     menu_redo();
   }
-  else if (key == GLFW_KEY_Z && mods & ctrl_key && action == GLFW_PRESS) {
-    menu_undo();
+  else if (GET_CTRL_KEY(GLFW_KEY_X)) {
+    menu_cut();
+  }
+  else if (GET_CTRL_KEY(GLFW_KEY_C)) {
+    menu_copy();
+  }
+  else if (GET_CTRL_KEY(GLFW_KEY_V)) {
+    menu_paste();
+  }
+  else if (GET_CTRL_KEY(GLFW_KEY_A)) {
+    menu_select_all();
   }
 }
 

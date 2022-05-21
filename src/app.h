@@ -2,6 +2,7 @@
 
 #define GL_SILENCE_DEPRECATION
 #include <GLFW/glfw3.h>
+#include <platform/platform.h>
 
 class App {
 public:
@@ -21,6 +22,10 @@ public:
   void menu_close();
   void menu_undo();
   void menu_redo();
+  void menu_cut();
+  void menu_copy();
+  void menu_paste();
+  void menu_select_all();
   
   void close();
   
@@ -29,8 +34,8 @@ public:
   constexpr bool is_running() const { return running; }
   
 private:
-  App() = default;
-  ~App() = default;
+  App();
+  ~App();
   
   enum class ClosePriority {
     DONT_CLOSE = 0,
@@ -41,6 +46,8 @@ private:
   ClosePriority close_priority = ClosePriority::DONT_CLOSE;
   
   bool running = true;
+  
+  Platform* platform = nullptr;
   
   static App instance;
 };
