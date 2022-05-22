@@ -11,6 +11,9 @@
 # include <platform/linux/linux.h>
 #endif
 
+#include <pages/path_editor.h>
+#include <pages/properties.h>
+
 App::App() {
 #ifdef THUNDER_AUTO_MACOS
   platform = PlatformMacOS::get();
@@ -44,8 +47,8 @@ void App::present() {
        item_paste = false,
        item_select_all = false;
   
-  static bool show_path_editor = false,
-              show_properties = false;
+  static bool show_path_editor = true,
+              show_properties = true;
   
 #ifdef THUNDER_PATH_MACOS
 # define CTRL_STR "Cmd+"
@@ -120,6 +123,13 @@ void App::present() {
   }
   if (item_select_all) {
     menu_select_all();
+  }
+  
+  if (show_path_editor) {
+    PathEditorPage::get()->present(&show_path_editor);
+  }
+  if (show_properties) {
+    PropertiesPage::get()->present(&show_properties);
   }
 }
 
