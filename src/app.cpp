@@ -138,6 +138,7 @@ void App::menu_save() {
 
 void App::menu_save_as() {
   std::cout << "save as\n";
+  std::cout << platform->save_file_dialog() << '\n';
 }
 
 void App::menu_close() {

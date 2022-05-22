@@ -92,7 +92,7 @@ target_link_libraries(${PROJECT_NAME} glfw)
 target_link_libraries(${PROJECT_NAME} imgui)
 
 if(THUNDER_AUTO_MACOS)
-  target_link_libraries(${PROJECT_NAME} "-framework Foundation -framework AppKit")
+  target_link_libraries(${PROJECT_NAME} "-framework Foundation -framework AppKit -framework UniformTypeIdentifiers")
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE ${THUNDER_AUTO_DEF_LIST})

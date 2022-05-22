@@ -10,9 +10,10 @@ public:
   
   PlatformMacOS(PlatformMacOS const&) = delete;
   PlatformMacOS& operator=(PlatformMacOS const&) = delete;
-
+  
   std::string open_file_dialog();
-
+  std::string save_file_dialog();
+  
 private:
   PlatformMacOS();
   ~PlatformMacOS();

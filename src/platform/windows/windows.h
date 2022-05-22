@@ -10,9 +10,10 @@ public:
   
   PlatformWindows(PlatformWindows const&) = delete;
   PlatformWindows& operator=(PlatformWindows const&) = delete;
-
+  
   std::string open_file_dialog();
-
+  std::string save_file_dialog();
+  
 private:
   PlatformWindows();
   ~PlatformWindows();
