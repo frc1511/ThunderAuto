@@ -25,6 +25,7 @@ void NewProjectPopup::present(bool* running) {
   if (!ImGui::BeginPopupModal(name.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
     return;
   }
+  
   static char path_buf[256] = "";
   
   ImGui::InputText("File Path", path_buf, 256, ImGuiInputTextFlags_None);
@@ -89,6 +90,7 @@ void NewProjectPopup::present(bool* running) {
   }
   
   if (ImGui::Button("Cancel")) {
+    has_project = false;
     goto close;
   }
   

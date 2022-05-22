@@ -1,5 +1,6 @@
 #include <app.h>
 #include <imgui.h>
+#include <imgui_internal.h>
 
 #include <iostream>
 
@@ -54,17 +55,12 @@ void App::present() {
     close_priority = ClosePriority::DONT_CLOSE;
   }
   
-  if (close_priority != ClosePriority::DONT_CLOSE) {
-    if (show_path_editor && PathEditorPage::get()->is_unsaved()) {
-      show_unsaved_popup = true;
+  if (close_priority != ClosePriority::DONT_CLOSE && !show_unsaved_popup) {
+    if (close_priority == ClosePriority::CLOSE_EVERYTHING) {
+      running = false;
     }
     else {
-      if (close_priority == ClosePriority::CLOSE_EVERYTHING) {
-        running = false;
-      }
-      else {
-        project_settings = {};
-      }
+      project_settings = {};
     }
   }
   
@@ -80,9 +76,20 @@ void App::present() {
     if (ImGui::BeginMenu("File")) {
       ImGui::MenuItem("New",     CTRL_STR "N",       &item_new);
       ImGui::MenuItem("Open",    CTRL_STR "O",       &item_open);
+      
+      if (!project_settings) {
+        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+      }
+      
       ImGui::MenuItem("Save",    CTRL_STR "S",       &item_save);
       ImGui::MenuItem("Save As", CTRL_SHIFT_STR "S", &item_save_as);
       ImGui::MenuItem("Close",   CTRL_STR "W",       &item_close);
+      
+      if (!project_settings) {
+        ImGui::PopItemFlag();
+        ImGui::PopStyleVar();
+      }
       
       ImGui::EndMenu();
     }
@@ -117,7 +124,6 @@ void App::present() {
     show_path_editor = false;
     show_path_selector = false;
     show_properties = false;
-    show_unsaved_popup = false;
   }
   
   if (item_new) {
@@ -210,6 +216,9 @@ void App::menu_new() {
   std::cout << "new\n";
   close_priority = ClosePriority::CLOSE_PROJECT;
   show_new_project_popup = true;
+  if (project_settings && PathEditorPage::get()->is_unsaved()) {
+    show_unsaved_popup = true;
+  }
 }
 
 void App::menu_open() {
@@ -261,6 +270,9 @@ void App::close() {
     std::cout << "closing everything\n";
     close_priority = ClosePriority::CLOSE_EVERYTHING;
     closing = true;
+    if (project_settings && PathEditorPage::get()->is_unsaved()) {
+      show_unsaved_popup = true;
+    }
   }
 }
 
@@ -280,32 +292,34 @@ void App::handle_keyboard(int key, int scancode, int action, int mods) {
   else if (GET_CTRL_KEY(GLFW_KEY_O)) {
     menu_open();
   }
-  else if (GET_CTRL_KEY(GLFW_KEY_S)) {
-    menu_save();
-  }
-  else if (GET_CTRL_SHIFT_KEY(GLFW_KEY_S)) {
-    menu_save_as();
-  }
-  else if (GET_CTRL_KEY(GLFW_KEY_W)) {
-    menu_close();
-  }
-  else if (GET_CTRL_KEY(GLFW_KEY_Z)) {
-    menu_undo();
-  }
-  else if (GET_CTRL_SHIFT_KEY(GLFW_KEY_Z) || GET_CTRL_KEY(GLFW_KEY_Y)) {
-    menu_redo();
-  }
-  else if (GET_CTRL_KEY(GLFW_KEY_X)) {
-    menu_cut();
-  }
-  else if (GET_CTRL_KEY(GLFW_KEY_C)) {
-    menu_copy();
-  }
-  else if (GET_CTRL_KEY(GLFW_KEY_V)) {
-    menu_paste();
-  }
-  else if (GET_CTRL_KEY(GLFW_KEY_A)) {
-    menu_select_all();
+  else if (project_settings) {
+    if (GET_CTRL_KEY(GLFW_KEY_S)) {
+      menu_save();
+    }
+    else if (GET_CTRL_SHIFT_KEY(GLFW_KEY_S)) {
+      menu_save_as();
+    }
+    else if (GET_CTRL_KEY(GLFW_KEY_W)) {
+      menu_close();
+    }
+    else if (GET_CTRL_KEY(GLFW_KEY_Z)) {
+      menu_undo();
+    }
+    else if (GET_CTRL_SHIFT_KEY(GLFW_KEY_Z) || GET_CTRL_KEY(GLFW_KEY_Y)) {
+      menu_redo();
+    }
+    else if (GET_CTRL_KEY(GLFW_KEY_X)) {
+      menu_cut();
+    }
+    else if (GET_CTRL_KEY(GLFW_KEY_C)) {
+      menu_copy();
+    }
+    else if (GET_CTRL_KEY(GLFW_KEY_V)) {
+      menu_paste();
+    }
+    else if (GET_CTRL_KEY(GLFW_KEY_A)) {
+      menu_select_all();
+    }
   }
 }
 
