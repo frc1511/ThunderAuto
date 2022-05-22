@@ -13,6 +13,8 @@
 
 #include <pages/path_editor.h>
 #include <pages/properties.h>
+#include <popups/new_project.h>
+#include <popups/unsaved.h>
 
 App::App() {
 #ifdef THUNDER_AUTO_MACOS
@@ -27,10 +29,6 @@ App::App() {
 App::~App() { }
 
 void App::present() {
-  if (close_priority == ClosePriority::CLOSE_EVERYTHING) {
-    running = false;
-  }
-  
   static bool demo_window = true;
   if (demo_window)
     ImGui::ShowDemoWindow(&demo_window);
@@ -49,6 +47,26 @@ void App::present() {
   
   static bool show_path_editor = true,
               show_properties = true;
+  
+  if (close_priority == ClosePriority::CLOSE_PROJECT && !show_path_editor) {
+    close_priority = ClosePriority::DONT_CLOSE;
+  }
+  
+  if (close_priority != ClosePriority::DONT_CLOSE) {
+    if (show_path_editor && PathEditorPage::get()->is_unsaved()) {
+      show_unsaved_popup = true;
+    }
+    else {
+      if (close_priority == ClosePriority::CLOSE_EVERYTHING) {
+        running = false;
+      }
+      else {
+        show_path_editor = false;
+      }
+    }
+  }
+  
+  bool was_showing_path_editor = show_path_editor;
   
 #ifdef THUNDER_PATH_MACOS
 # define CTRL_STR "Cmd+"
@@ -91,6 +109,12 @@ void App::present() {
     ImGui::EndMenuBar();
   }
   
+  // Unclicked the menu button.
+  if (was_showing_path_editor && !show_path_editor) {
+    close_priority = ClosePriority::CLOSE_PROJECT;
+    show_path_editor = true;
+  }
+  
   if (item_new) {
     menu_new();
   }
@@ -127,14 +151,56 @@ void App::present() {
   
   if (show_path_editor) {
     PathEditorPage::get()->present(&show_path_editor);
+    PathEditorPage::get()->set_unsaved(true);
+    
+    // Clicked the X button.
+    if (!show_path_editor && PathEditorPage::get()->is_unsaved()) {
+      close_priority = ClosePriority::CLOSE_PROJECT;
+      show_path_editor = true;
+    }
   }
   if (show_properties) {
     PropertiesPage::get()->present(&show_properties);
+  }
+  
+  bool was_showing_unsaved_popup = show_unsaved_popup,
+       was_shoing_new_project_popup = show_new_project_popup;
+  
+  if (show_unsaved_popup) {
+    ImGui::OpenPopup(UnsavedPopup::get()->get_name().c_str());
+  }
+  else if (show_new_project_popup) {
+    ImGui::OpenPopup(NewProjectPopup::get()->get_name().c_str());
+  }
+  
+  UnsavedPopup::get()->present(&show_unsaved_popup);
+  NewProjectPopup::get()->present(&show_new_project_popup);
+  
+  if (show_unsaved_popup != was_showing_unsaved_popup) {
+    switch (UnsavedPopup::get()->get_result()) {
+      case UnsavedPopup::CANCEL:
+        close_priority = ClosePriority::DONT_CLOSE;
+        show_new_project_popup = false;
+        break;
+      case UnsavedPopup::SAVE:
+        // TODO Save document.
+        show_path_editor = false;
+        break;
+      case UnsavedPopup::DONT_SAVE:
+        show_path_editor = false;
+        break;
+    }
+  }
+  
+  if (show_new_project_popup != was_shoing_new_project_popup) {
+    // TODO Create the new document.
   }
 }
 
 void App::menu_new() {
   std::cout << "new\n";
+  close_priority = ClosePriority::CLOSE_PROJECT;
+  show_new_project_popup = true;
 }
 
 void App::menu_open() {
@@ -181,8 +247,12 @@ void App::menu_select_all() {
 }
 
 void App::close() {
-  std::cout << "closing everything\n";
-  close_priority = ClosePriority::CLOSE_EVERYTHING;
+  static bool closing = false;
+  if (!closing) {
+    std::cout << "closing everything\n";
+    close_priority = ClosePriority::CLOSE_EVERYTHING;
+    closing = true;
+  }
 }
 
 void App::handle_keyboard(int key, int scancode, int action, int mods) {

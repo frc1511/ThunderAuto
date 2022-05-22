@@ -6,7 +6,9 @@ PathEditorPage::~PathEditorPage() { }
 
 void PathEditorPage::present(bool* running) {
   ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
-  if (!ImGui::Begin("Path Editor", running, ImGuiWindowFlags_NoCollapse)) {
+  if (!ImGui::Begin("Path Editor", running,
+                ImGuiWindowFlags_NoCollapse
+              | ImGuiWindowFlags_UnsavedDocument * unsaved)) {
     ImGui::End();
     return;
   }

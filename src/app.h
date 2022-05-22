@@ -47,6 +47,9 @@ private:
   
   bool running = true;
   
+  bool show_new_project_popup = false;
+  bool show_unsaved_popup = false;
+  
   Platform* platform = nullptr;
   
   static App instance;
