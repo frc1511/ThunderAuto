@@ -3,6 +3,8 @@
 #define GL_SILENCE_DEPRECATION
 #include <GLFW/glfw3.h>
 #include <platform/platform.h>
+#include <project.h>
+#include <optional>
 
 class App {
 public:
@@ -44,6 +46,8 @@ private:
   };
   
   ClosePriority close_priority = ClosePriority::DONT_CLOSE;
+  
+  std::optional<ProjectSettings> project_settings;
   
   bool running = true;
   

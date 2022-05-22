@@ -17,7 +17,7 @@ std::string PlatformMacOS::open_file_dialog() {
   // Only one file.
   [open_dialog setAllowsMultipleSelection:NO];
   // Only with extension '.thunderpath'.
-  NSArray* types = [NSArray arrayWithObjects:@"thunderpath",nil];
+  NSArray* types = [NSArray arrayWithObjects:@"thunderauto",nil];
   [open_dialog setAllowedFileTypes:types];
   
   // Show the dialog box.
@@ -37,7 +37,7 @@ std::string PlatformMacOS::save_file_dialog() {
   NSSavePanel* save_dialog = [NSSavePanel savePanel];
   
   // Save with extension '.thunderpath'.
-  NSArray* types = [NSArray arrayWithObjects:@"thunderpath",nil];
+  NSArray* types = [NSArray arrayWithObjects:@"thunderauto",nil];
   [save_dialog setAllowedFileTypes:types];
   
   // Show the dialog box.

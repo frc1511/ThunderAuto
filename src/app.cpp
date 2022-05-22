@@ -61,7 +61,7 @@ void App::present() {
         running = false;
       }
       else {
-        show_path_editor = false;
+        project_settings = {};
       }
     }
   }
@@ -87,26 +87,36 @@ void App::present() {
       ImGui::EndMenu();
     }
     
-    if (ImGui::BeginMenu("Edit")) {
-      ImGui::MenuItem("Undo",       CTRL_STR "Z",       &item_undo);
-      ImGui::MenuItem("Redo",       CTRL_SHIFT_STR "Z", &item_redo);
-      ImGui::Separator();
-      ImGui::MenuItem("Cut",        CTRL_STR "X", &item_cut);
-      ImGui::MenuItem("Copy",       CTRL_STR "C", &item_copy);
-      ImGui::MenuItem("Paste",      CTRL_STR "V", &item_paste);
-      ImGui::MenuItem("Select All", CTRL_STR "A", &item_select_all);
-      
-      ImGui::EndMenu();
-    }
+    if (project_settings) {
+      if (ImGui::BeginMenu("Edit")) {
+        ImGui::MenuItem("Undo",       CTRL_STR "Z",       &item_undo);
+        ImGui::MenuItem("Redo",       CTRL_SHIFT_STR "Z", &item_redo);
+        ImGui::Separator();
+        ImGui::MenuItem("Cut",        CTRL_STR "X", &item_cut);
+        ImGui::MenuItem("Copy",       CTRL_STR "C", &item_copy);
+        ImGui::MenuItem("Paste",      CTRL_STR "V", &item_paste);
+        ImGui::MenuItem("Select All", CTRL_STR "A", &item_select_all);
+        
+        ImGui::EndMenu();
+      }
 
-    if (ImGui::BeginMenu("Tools")) {
-      ImGui::MenuItem("Path Editor", nullptr, &show_path_editor);
-      ImGui::MenuItem("Properties", nullptr, &show_properties);
+      if (ImGui::BeginMenu("Tools")) {
+        ImGui::MenuItem("Path Editor", nullptr, &show_path_editor);
+        ImGui::MenuItem("Properties", nullptr, &show_properties);
+        
+        ImGui::EndMenu();
+      }
       
-      ImGui::EndMenu();
     }
     
     ImGui::EndMenuBar();
+  }
+  
+  if (!project_settings) {
+    show_path_editor = false;
+    was_showing_path_editor = false;
+    show_properties = false;
+    show_unsaved_popup = false;
   }
   
   // Unclicked the menu button.
@@ -184,16 +194,22 @@ void App::present() {
         break;
       case UnsavedPopup::SAVE:
         // TODO Save document.
-        show_path_editor = false;
+        project_settings = {};
         break;
       case UnsavedPopup::DONT_SAVE:
-        show_path_editor = false;
+        project_settings = {};
         break;
     }
   }
   
   if (show_new_project_popup != was_shoing_new_project_popup) {
-    // TODO Create the new document.
+    project_settings = NewProjectPopup::get()->get_project_settings();
+    if (project_settings) {
+      // TODO Create the new document.
+      
+      show_path_editor = true;
+      show_properties = true;
+    }
   }
 }
 
