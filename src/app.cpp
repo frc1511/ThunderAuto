@@ -12,6 +12,7 @@
 #endif
 
 #include <pages/path_editor.h>
+#include <pages/path_selector.h>
 #include <pages/properties.h>
 #include <popups/new_project.h>
 #include <popups/unsaved.h>
@@ -46,6 +47,7 @@ void App::present() {
        item_select_all = false;
   
   static bool show_path_editor = true,
+              show_path_selector = true,
               show_properties = true;
   
   if (close_priority == ClosePriority::CLOSE_PROJECT && !show_path_editor) {
@@ -65,8 +67,6 @@ void App::present() {
       }
     }
   }
-  
-  bool was_showing_path_editor = show_path_editor;
   
 #ifdef THUNDER_PATH_MACOS
 # define CTRL_STR "Cmd+"
@@ -101,7 +101,8 @@ void App::present() {
       }
 
       if (ImGui::BeginMenu("Tools")) {
-        ImGui::MenuItem("Path Editor", nullptr, &show_path_editor);
+        ImGui::MenuItem("Editor", nullptr, &show_path_editor);
+        ImGui::MenuItem("Paths", nullptr, &show_path_selector);
         ImGui::MenuItem("Properties", nullptr, &show_properties);
         
         ImGui::EndMenu();
@@ -114,15 +115,9 @@ void App::present() {
   
   if (!project_settings) {
     show_path_editor = false;
-    was_showing_path_editor = false;
+    show_path_selector = false;
     show_properties = false;
     show_unsaved_popup = false;
-  }
-  
-  // Unclicked the menu button.
-  if (was_showing_path_editor && !show_path_editor) {
-    close_priority = ClosePriority::CLOSE_PROJECT;
-    show_path_editor = true;
   }
   
   if (item_new) {
@@ -162,12 +157,9 @@ void App::present() {
   if (show_path_editor) {
     PathEditorPage::get()->present(&show_path_editor);
     PathEditorPage::get()->set_unsaved(true);
-    
-    // Clicked the X button.
-    if (!show_path_editor && PathEditorPage::get()->is_unsaved()) {
-      close_priority = ClosePriority::CLOSE_PROJECT;
-      show_path_editor = true;
-    }
+  }
+  if (show_path_selector) {
+    PathSelectorPage::get()->present(&show_path_selector);
   }
   if (show_properties) {
     PropertiesPage::get()->present(&show_properties);
@@ -208,6 +200,7 @@ void App::present() {
       // TODO Create the new document.
       
       show_path_editor = true;
+      show_path_selector = true;
       show_properties = true;
     }
   }

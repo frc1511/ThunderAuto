@@ -24,7 +24,7 @@ private:
   NewProjectPopup();
   ~NewProjectPopup();
   
-  std::string name = "New Path";
+  std::string name = "New Project";
   
   Platform* platform = nullptr;
   
