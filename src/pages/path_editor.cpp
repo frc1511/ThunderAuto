@@ -68,10 +68,10 @@ void PathEditorPage::present_spline_editor() {
   bool pt_selected = false;
 
   auto move_point = [&](float& x, float& y) {
-    ImVec2 pos = ImVec2(x, 1- y) * (bb.Max - bb.Min) + bb.Min;
+    ImVec2 pos = ImVec2(x, 1 - y) * (bb.Max - bb.Min) + bb.Min;
     ImVec2 mouse = io.MousePos;
     float dist = std::sqrt(std::powf(pos.x - mouse.x, 2) + std::powf(pos.y - mouse.y, 2));
-    if (dist < POINT_RADIUS * 2) {
+    if (dist < POINT_RADIUS * 4) {
       ImGui::SetTooltip("(%.2f, %.2f)", x, y);
 
       if (!pt_selected && (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0))) {
@@ -86,27 +86,28 @@ void PathEditorPage::present_spline_editor() {
   };
 
   ImVec2 mouse = io.MousePos;
-  for (auto& [x, y, mx, my] : points) {
+  for (auto& [x, y, cx, cy] : points) {
     float prev_x = x, prev_y = y;
       move_point(x, y);
-      // Move the tangent point along with the point.
+      // Move the tangent line point with the point.
       if (x != prev_x || y != prev_y) {
-        mx += x - prev_x;
-        my += y - prev_y;
+        cx += x - prev_x;
+        cy += y - prev_y;
       }
       else {
-        move_point(mx, my);
+        move_point(cx, cy);
       }
+        if (std::fabs(cx - x) < 0.01f) cx += 0.01f;
   }
 
-  // Draw points and tangents.
-  for (auto& [x, y, mx, my] : points) {
+  // Draw the spline endpoints and tangent line points.
+  for (auto& [x, y, cx, cy] : points) {
     ImVec2 p = ImVec2(x, 1 - y) * (bb.Max - bb.Min) + bb.Min;
-    ImVec2 m = ImVec2(mx, 1- my) * (bb.Max - bb.Min) + bb.Min;
+    ImVec2 c = ImVec2(cx, 1- cy) * (bb.Max - bb.Min) + bb.Min;
 
-    draw_list->AddLine(p, m, ImColor(235, 64, 52, 255), TANGENT_THICKNESS);
+    draw_list->AddLine(p, c, ImColor(235, 64, 52, 255), TANGENT_THICKNESS);
     draw_list->AddCircleFilled(p, POINT_RADIUS, ImColor(style.Colors[ImGuiCol_Text]));
-    draw_list->AddCircleFilled(m, POINT_RADIUS, ImColor(252, 186, 3, 255));
+    draw_list->AddCircleFilled(c, POINT_RADIUS, ImColor(252, 186, 3, 255));
   }
 
   // Calculate points of the spline.
@@ -130,21 +131,22 @@ std::vector<ImVec2> PathEditorPage::calc_cubic_hermite_spline_point() const {
 
     std::vector<SplinePointTable::const_iterator> pt_iters;
     for (SplinePointTable::const_iterator it = points.cbegin(); it != points.cend(); ++it) {
-      if (it->x >= x && (it == points.begin() || (it - 1)->x < x)) {
-        pt_iters.push_back(it - 1);
+      if (it + 1 == points.cend()) break;
+      if ((it->x <= x && (it + 1)->x > x) || (it->x > x && (it + 1)->x <= x)) {
+        pt_iters.push_back(it);
       }
     }
 
     if (pt_iters.empty()) continue;
 
     for (SplinePointTable::const_iterator it : pt_iters) {
-      // The points and the tangents.
+      // The points and the slopes of the tangents.
       float px0 = it->x,
             py0 = it->y,
-            m0 = it->my * 10,
+            m0 = (it->cy - py0) / (it->cx - px0),
             px1 = (it + 1)->x,
             py1 = (it + 1)->y,
-            m1 = (it + 1)->my * 10;
+            m1 = ((it + 1)->cy - py1) / ((it + 1)->cx - px1);
 
       float t = (x - px0) / (px1 - px0);
 
@@ -167,13 +169,26 @@ std::vector<ImVec2> PathEditorPage::calc_cubic_hermite_spline_point() const {
         return std::powf(t, 3) - std::powf(t, 2);
       };
 
+      bool bezier_or_hermite = false;
+
       // The interpolated point on the spline.
 
-      // p(t) = h00(t)pk + h10(t)(xk+1 - xk)mk + h01(t)pk+1 + h11(t)(xk+1 - xk)mk+1
-      float y = (py0 * h00(t)) + (py1 * h01(t)) + (m0 * h10(t) * (px1 - px0)) + (m1 * h11(t) * (px1 - px0));
+      if (!bezier_or_hermite) {
+        // p(t) = h00(t)pk + h10(t)(xk+1 - xk)mk + h01(t)pk+1 + h11(t)(xk+1 - xk)mk+1
+        float y = (py0 * h00(t)) + (py1 * h01(t)) + (m0 * h10(t) * (px1 - px0)) + (m1 * h11(t) * (px1 - px0));
 
-      if (y > 0.01f) {
-        res.push_back(ImVec2(x, y));
+        if (y > 0.01f && y < 0.99f) {
+          res.push_back(ImVec2(x, y));
+        }
+      } else {
+        float cx0 = it->cx,
+              cy0 = it->cy,
+              cx1 = (it + 1)->cx,
+              cy1 = (it + 1)->cy;
+
+        float y = std::powf(1-t, 3) * py0 + 3 * std::powf(1-t, 2) * t * cy0 + 3 * (1-t) * std::powf(t, 2) * cy1 + std::powf(t, 3) * py1;
+        float new_x = std::powf(1-t, 3) * px0 + 3 * std::powf(1-t, 2) * t * cx0 + 3 * (1-t) * std::powf(t, 2) * cx1 + std::powf(t, 3) * px1;
+        res.push_back(ImVec2(new_x, y));
       }
     }
   }
