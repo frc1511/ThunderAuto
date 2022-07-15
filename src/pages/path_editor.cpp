@@ -5,7 +5,7 @@
 #include <vector>
 #include <iostream>
 
-#define CURVE_SAMPLES 64.0f
+#define CURVE_RESOLUTION_FACTOR 128.0f
 #define CURVE_THICKNESS 2
 #define TANGENT_THICKNESS 1
 #define POINT_RADIUS 5
@@ -33,7 +33,12 @@ void PathEditorPage::present(bool* running) {
 
   present_curve_editor();
 
-  ImGui::Text("Path length: %.3f", cached_curve_length);
+  float len = 0.0f;
+  for (float& l : cached_curve_lengths) {
+    len += l;
+  }
+
+  ImGui::Text("Path length: %.3f", len);
   
   ImGui::End();
 }
@@ -133,7 +138,7 @@ void PathEditorPage::present_curve_editor() {
   }
 
   if (updated) {
-    cached_curve_length = calc_curve_length();
+    cached_curve_lengths = calc_curve_lengths();
     cached_curve_points = calc_curve_points();
   }
 
@@ -162,22 +167,15 @@ void PathEditorPage::present_curve_editor() {
 
 std::vector<ImVec2> PathEditorPage::calc_curve_points() const {
   std::vector<ImVec2> res;
-  for (std::size_t i = 0; i < CURVE_SAMPLES; ++i) {
-    // 0-1 x value.
-    float x = i / CURVE_SAMPLES;
 
-    std::vector<CurvePointTable::const_iterator> pt_iters;
-    for (CurvePointTable::const_iterator it = points.cbegin(); it != points.cend(); ++it) {
-      if (it + 1 == points.cend()) break;
-      if ((it->px <= x && (it + 1)->px > x) || (it->px > x && (it + 1)->px <= x)) {
-        pt_iters.push_back(it);
-      }
-    }
+  for (CurvePointTable::const_iterator it = points.cbegin(); it + 1 != points.cend(); ++it) {
+    std::size_t i = it - points.cbegin();
+    float len = cached_curve_lengths.at(i);
 
-    if (pt_iters.empty()) continue;
+    std::size_t samples = len * CURVE_RESOLUTION_FACTOR;
 
-    for (CurvePointTable::const_iterator it : pt_iters) {
-      float t = (x - it->px) / ((it + 1)->px - it->px);
+    for (std::size_t j = 0; j < samples; ++j) {
+      float t = j / static_cast<float>(samples);
       res.push_back(calc_curve_point(it, t));
     }
   }
@@ -260,13 +258,14 @@ ImVec2 PathEditorPage::calc_curve_point(CurvePointTable::const_iterator it, floa
   return ImVec2(0, 0);
 }
 
-float PathEditorPage::calc_curve_length() const {
-  float len = 0.0f;
+std::vector<float> PathEditorPage::calc_curve_lengths() const {
+  std::vector<float> lengths;
+
   for (CurvePointTable::const_iterator it = points.cbegin(); it + 1 != points.cend(); ++it) {
-    len += calc_curve_part_length(it);
+    lengths.push_back(calc_curve_part_length(it));
   }
 
-  return len;
+  return lengths;
 }
 
 #define INTEGRAL_PRECISION 0.0001f

@@ -45,10 +45,10 @@ private:
 
   ImVec2 calc_curve_point(CurvePointTable::const_iterator pt_it, float t) const;
 
-  float calc_curve_length() const;
+  std::vector<float> calc_curve_lengths() const;
   float calc_curve_part_length(CurvePointTable::const_iterator pt_it) const;
 
-  float cached_curve_length = 0.0f;
+  std::vector<float> cached_curve_lengths;
   std::vector<ImVec2> cached_curve_points;
 
   enum class CurveKind {
