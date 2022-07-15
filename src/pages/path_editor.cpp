@@ -64,78 +64,118 @@ void PathEditorPage::present_curve_editor() {
 
   ImGui::RenderFrame(bb.Min, bb.Max, ImGui::GetColorU32(ImGuiCol_FrameBg, 1), true, style.FrameRounding);
 
-  // Draw the background grid.
-  for (int i = 0; i <= canvas.x; i += (canvas.x / 16)) {
+  // --- Background Grid ---
+
+  for (int i = 0; i <= canvas.x; i += (canvas.x / 20)) {
     draw_list->AddLine(
       ImVec2(bb.Min.x + i, bb.Min.y),
       ImVec2(bb.Min.x + i, bb.Max.y),
       ImGui::GetColorU32(ImGuiCol_TextDisabled));
   }
-  for (int i = 0; i <= canvas.y; i += (canvas.y / 16)) {
+  for (int i = 0; i <= canvas.y; i += (canvas.y / 20)) {
     draw_list->AddLine(
       ImVec2(bb.Min.x, bb.Min.y + i),
       ImVec2(bb.Max.x, bb.Min.y + i),
       ImGui::GetColorU32(ImGuiCol_TextDisabled));
   }
 
-  bool pt_selected = false;
+  // --- Point movement ---
 
+  ImVec2 mouse = io.MousePos;
   auto move_point = [&](float& x, float& y) {
-    ImVec2 pos = ImVec2(x, 1 - y) * (bb.Max - bb.Min) + bb.Min;
-    ImVec2 mouse = io.MousePos;
-    float dist = std::sqrt(std::powf(pos.x - mouse.x, 2) + std::powf(pos.y - mouse.y, 2));
-    if (dist < POINT_RADIUS * 4) {
-      ImGui::SetTooltip("(%.2f, %.2f)", x, y);
+    x = mouse.x;
+    y = mouse.y;
 
-      if (!pt_selected && (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0))) {
-        pt_selected = true;
-        pos.x = mouse.x;
-        pos.y = mouse.y;
+    x = (x - bb.Min.x) / (bb.Max.x - bb.Min.x);
+    y = 1 - (y - bb.Min.y) / (bb.Max.y - bb.Min.y);
+    updated = true;
+  };
 
-        x = (pos.x - bb.Min.x) / (bb.Max.x - bb.Min.x);
-        y = 1 - (pos.y - bb.Min.y) / (bb.Max.y - bb.Min.y);
-        updated = true;
-      }
+  auto move_curve_point = [&](CurvePointTable::iterator it) {
+    auto& [x, y, c0x, c0y, c1x, c1y] = *it;
+
+    float prev_x = x, prev_y = y;
+
+    move_point(x, y);
+
+    if (x != prev_x || y != prev_y) {
+      float dx = x - prev_x,
+            dy = y - prev_y;
+      // Translate the tangent points with the point.
+      c0x += dx;
+      c0y += dy;
+      c1x += dx;
+      c1y += dy;
     }
   };
 
-  ImVec2 mouse = io.MousePos;
-  for (auto& [x, y, c0x, c0y, c1x, c1y] : points) {
-    float prev_x = x, prev_y = y;
-    move_point(x, y);
-    // Move the tangent line point with the point.
-    if (x != prev_x || y != prev_y) {
-      float x_diff = x - prev_x,
-            y_diff = y - prev_y;
-      c0x += x_diff;
-      c0y += y_diff;
-      c1x += x_diff;
-      c1y += y_diff;
+  auto move_tangent_point = [&](CurvePointTable::iterator it, bool first) {
+    auto& [_x, _y, c0x, c0y, c1x, c1y] = *it;
+
+    float& x0 = first ? c0x : c1x,
+         & y0 = first ? c0y : c1y,
+         & x1 = first ? c1x : c0x,
+         & y1 = first ? c1y : c0y;
+
+    float prev_x = x0, prev_y = y0;
+    move_point(x0, y0);
+
+    if (x0 != prev_x || y0 != prev_y) {
+      // The angle of the moved tangent point.
+      float angle = -std::atan2(x0 - _x, y0 - _y) - 3.14159265358979323846f / 2;
+      
+      // The distance of the other tangent point from the point on the curve.
+      float prev_dist = std::sqrt(std::powf(x1 - _x, 2) + std::powf(y1 - _y, 2));
+      
+      // The new position of the other tangent point (180 degrees rotated from
+      // the moved tangent point with its distance to the curve preserved).
+      x1 = _x + std::cos(angle) * prev_dist;
+      y1 = _y + std::sin(angle) * prev_dist;
+    }
+  };
+
+  static CurvePointTable::iterator selected = points.end();
+  enum { SELECT_NONE = 0, SELECT_PT = 1 << 0, SELECT_TAN_0 = 1 << 1, SELECT_TAN_1 = 1 << 2 };
+  static std::size_t select_mode = SELECT_NONE;
+
+  if (selected != points.end() && select_mode != SELECT_NONE && (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0))) {
+    if (select_mode & SELECT_PT) {
+      move_curve_point(selected);
     }
     else {
-      prev_x = c0x;
-      prev_y = c0y;
-      move_point(c0x, c0y);
+      move_tangent_point(selected, select_mode & SELECT_TAN_0);
+    }
+  }
+  else {
+    // Reset the selection.
+    selected = points.end();
+    select_mode = SELECT_NONE;
 
-      if (c0x != prev_x || c0y != prev_y) {
-        float prev_dist = std::sqrt(std::powf(c1x - x, 2) + std::powf(c1y - y, 2));
-        float angle = -std::atan2(c0x - x, c0y - y) - 3.14159265358979323846f / 2;
-        c1x = x + std::cos(angle) * prev_dist;
-        c1y = y + std::sin(angle) * prev_dist;
-      }
-      else {
-        prev_x = c1x;
-        prev_y = c1y;
-        move_point(c1x, c1y);
-        if (c1x != prev_x || c1y != prev_y) {
-          float prev_dist = std::sqrt(std::powf(c0x - x, 2) + std::powf(c0y - y, 2));
-          float angle = -std::atan2(c1x - x, c1y - y) - 3.14159265358979323846f / 2;
-          c0x = x + std::cos(angle) * prev_dist;
-          c0y = y + std::sin(angle) * prev_dist;
+    if (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0)) {
+      for (CurvePointTable::iterator it = points.begin(); it != points.end(); ++it) {
+        auto& [x, y, c0x, c0y, c1x, c1y] = *it;
+
+        // Checks the from the mouse to a point.
+        auto check_dist = [&](float px, float py, ImVec2 mouse) -> bool {
+          ImVec2 pos = ImVec2(px, 1 - py) * (bb.Max - bb.Min) + bb.Min;
+          float dist = std::sqrt(std::powf(pos.x - mouse.x, 2) + std::powf(pos.y - mouse.y, 2));
+          return dist < POINT_RADIUS * 4;
+        };
+
+        select_mode |= check_dist(x, y, mouse) * SELECT_PT;
+        select_mode |= check_dist(c0x, c0y, mouse) * SELECT_TAN_0;
+        select_mode |= check_dist(c1x, c1y, mouse) * SELECT_TAN_1;
+
+        // A point is selected.
+        if (select_mode != SELECT_NONE) {
+          selected = it;
+          break;
         }
       }
     }
   }
+
+  // --- Drawing ---
 
   if (updated) {
     cached_curve_lengths = calc_curve_lengths();
@@ -152,7 +192,7 @@ void PathEditorPage::present_curve_editor() {
   }
 
   // Draw the curve waypoints and tangent lines.
-  for (auto& [x, y, c0x, c0y, c1x, c1y] : points) {
+  for (const auto& [x, y, c0x, c0y, c1x, c1y] : points) {
     ImVec2 p = ImVec2(x, 1 - y) * (bb.Max - bb.Min) + bb.Min;
     ImVec2 c0 = ImVec2(c0x, 1- c0y) * (bb.Max - bb.Min) + bb.Min;
     ImVec2 c1 = ImVec2(c1x, 1- c1y) * (bb.Max - bb.Min) + bb.Min;
