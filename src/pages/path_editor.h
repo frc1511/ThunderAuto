@@ -2,6 +2,7 @@
 
 #include <pages/page.h>
 #include <vector>
+#include <optional>
 
 class PathEditorPage: public Page {
 public:
@@ -41,6 +42,14 @@ private:
 
   void present_curve_editor();
   std::vector<ImVec2> calc_curve_points() const;
+
+  ImVec2 calc_curve_point(CurvePointTable::const_iterator pt_it, float t) const;
+
+  float calc_curve_length() const;
+  float calc_curve_part_length(CurvePointTable::const_iterator pt_it) const;
+
+  float cached_curve_length = 0.0f;
+  std::vector<ImVec2> cached_curve_points;
 
   enum class CurveKind {
     CUBIC_BEZIER = 0,

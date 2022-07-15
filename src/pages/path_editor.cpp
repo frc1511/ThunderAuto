@@ -32,11 +32,15 @@ void PathEditorPage::present(bool* running) {
   }
 
   present_curve_editor();
+
+  ImGui::Text("Path length: %.3f", cached_curve_length);
   
   ImGui::End();
 }
 
 void PathEditorPage::present_curve_editor() {
+  bool updated = false;
+  
   const ImGuiStyle& style = ImGui::GetStyle();
   const ImGuiIO& io = ImGui::GetIO();
   ImDrawList* draw_list = ImGui::GetWindowDrawList();
@@ -85,6 +89,7 @@ void PathEditorPage::present_curve_editor() {
 
         x = (pos.x - bb.Min.x) / (bb.Max.x - bb.Min.x);
         y = 1 - (pos.y - bb.Min.y) / (bb.Max.y - bb.Min.y);
+        updated = true;
       }
     }
   };
@@ -127,12 +132,14 @@ void PathEditorPage::present_curve_editor() {
     }
   }
 
-  // Calculate points of the spline.
-  std::vector<ImVec2> line_points = calc_curve_points();
+  if (updated) {
+    cached_curve_length = calc_curve_length();
+    cached_curve_points = calc_curve_points();
+  }
 
   // Draw lines connecting the points of the spline.
-  for (std::vector<ImVec2>::const_iterator it = line_points.cbegin(); it != line_points.cend(); ++it) {
-    if (it + 1 == line_points.cend()) break;
+  for (std::vector<ImVec2>::const_iterator it = cached_curve_points.cbegin(); it != cached_curve_points.cend(); ++it) {
+    if (it + 1 == cached_curve_points.cend()) break;
 
     ImVec2 p0 = *it, p1 = *(it + 1);
 
@@ -148,8 +155,8 @@ void PathEditorPage::present_curve_editor() {
     draw_list->AddLine(p, c0, ImColor(235, 64, 52, 255), TANGENT_THICKNESS);
     draw_list->AddLine(p, c1, ImColor(235, 64, 52, 255), TANGENT_THICKNESS);
     draw_list->AddCircleFilled(p, POINT_RADIUS, ImColor(style.Colors[ImGuiCol_Text]));
-    draw_list->AddCircleFilled(c0, POINT_RADIUS, ImColor(252, 186, 3, 255));
-    draw_list->AddCircleFilled(c1, POINT_RADIUS, ImColor(252, 186, 3, 255));
+    draw_list->AddCircle(c0, POINT_RADIUS, ImColor(252, 186, 3, 255), 0, POINT_BORDER_THICKNESS);
+    draw_list->AddCircle(c1, POINT_RADIUS, ImColor(252, 186, 3, 255), 0, POINT_BORDER_THICKNESS);
   }
 }
 
@@ -170,79 +177,116 @@ std::vector<ImVec2> PathEditorPage::calc_curve_points() const {
     if (pt_iters.empty()) continue;
 
     for (CurvePointTable::const_iterator it : pt_iters) {
-      // The points and the slopes of the tangents.
-      float px0 = it->px,
-            py0 = it->py,
-            px1 = (it + 1)->px,
-            py1 = (it + 1)->py;
-
-      float t = (x - px0) / (px1 - px0);
-
-      // The interpolated point on the spline.
-
-      // Cubic hermite spline.
-      if (curve_kind == CurveKind::CUBIC_HERMITE) {
-        float m0 = (it->c0y - py0) / (it->c0x - px0),
-              m1 = ((it + 1)->c0y - py1) / ((it + 1)->c0x - px1);
-
-        // The hermite base functions.
-
-        // h00(t) = 2t^3 - 3t^2 + 1
-        auto h00 = [](float t) -> float {
-          return 2.0f * std::powf(t, 3) - 3.0f * std::powf(t, 2) + 1.0f;
-        };
-        // h10(t) = t^3 - 2t^2 + t
-        auto h10 = [](float t) -> float {
-          return std::powf(t, 3) - 2.0f * (std::powf(t, 2)) + t;
-        };
-        // h01(t) = -2t^3 + 3t^2
-        auto h01 = [](float t) -> float {
-          return -2.0f * std::powf(t, 3) + 3.0f * std::powf(t, 2);
-        };
-        // h11(t) = t^3 - t^2
-        auto h11 = [](float t) -> float {
-          return std::powf(t, 3) - std::powf(t, 2);
-        };
-
-        // p(t) = h00(t)pk + h10(t)(xk+1 - xk)mk + h01(t)pk+1 + h11(t)(xk+1 - xk)mk+1
-        float pt_y = (py0 * h00(t)) + (py1 * h01(t)) + (m0 * h10(t) * (px1 - px0)) + (m1 * h11(t) * (px1 - px0));
-        float pt_x = x;
-
-        if (pt_y > 0.01f && pt_y < 0.99f) {
-          res.push_back(ImVec2(pt_x, pt_y));
-        }
-      // Cubic bezier curve.
-      } else {
-        float c0x = it->c0x,
-              c0y = it->c0y,
-              c1x = (it + 1)->c1x,
-              c1y = (it + 1)->c1y;
-
-        auto b0 = [](float t) -> float {
-          return std::powf(1 - t, 3);
-        };
-
-        auto b1 = [](float t) -> float {
-          return 3 * std::powf(1 - t, 2) * t;
-        };
-
-        auto b2 = [](float t) -> float {
-          return 3 * (1 - t) * std::powf(t, 2);
-        };
-
-        auto b3 = [](float t) -> float {
-          return std::powf(t, 3);
-        };
-
-        float pt_y = (py0 * b0(t)) + (c0y * b1(t)) + (c1y * b2(t)) + (py1 * b3(t));
-        float pt_x = (px0 * b0(t)) + (c0x * b1(t)) + (c1x * b2(t)) + (px1 * b3(t));
-        
-        res.push_back(ImVec2(pt_x, pt_y));
-      }
+      float t = (x - it->px) / ((it + 1)->px - it->px);
+      res.push_back(calc_curve_point(it, t));
     }
   }
 
   return res;
+}
+
+ImVec2 PathEditorPage::calc_curve_point(CurvePointTable::const_iterator it, float t) const {
+  // The points and the slopes of the tangents.
+  float px0 = it->px,
+        py0 = it->py,
+        px1 = (it + 1)->px,
+        py1 = (it + 1)->py;
+
+  // The interpolated point on the spline.
+
+  // Cubic hermite spline.
+  if (curve_kind == CurveKind::CUBIC_HERMITE) {
+    float m0 = (it->c0y - py0) / (it->c0x - px0),
+          m1 = ((it + 1)->c0y - py1) / ((it + 1)->c0x - px1);
+
+    // The hermite base functions.
+
+    // h00(t) = 2t^3 - 3t^2 + 1
+    auto h00 = [](float t) -> float {
+      return 2.0f * std::powf(t, 3) - 3.0f * std::powf(t, 2) + 1.0f;
+    };
+    // h10(t) = t^3 - 2t^2 + t
+    auto h10 = [](float t) -> float {
+      return std::powf(t, 3) - 2.0f * (std::powf(t, 2)) + t;
+    };
+    // h01(t) = -2t^3 + 3t^2
+    auto h01 = [](float t) -> float {
+      return -2.0f * std::powf(t, 3) + 3.0f * std::powf(t, 2);
+    };
+    // h11(t) = t^3 - t^2
+    auto h11 = [](float t) -> float {
+      return std::powf(t, 3) - std::powf(t, 2);
+    };
+
+    // p(t) = h00(t)pk + h10(t)(xk+1 - xk)mk + h01(t)pk+1 + h11(t)(xk+1 - xk)mk+1
+    float pt_y = (py0 * h00(t)) + (py1 * h01(t)) + (m0 * h10(t) * (px1 - px0)) + (m1 * h11(t) * (px1 - px0));
+    float pt_x = (t * (px1 - px0)) + px0;
+
+    if (pt_y > 0.01f && pt_y < 0.99f) {
+      return ImVec2(pt_x, pt_y);
+    }
+  // Cubic bezier curve.
+  } else {
+    float c0x = it->c0x,
+          c0y = it->c0y,
+          c1x = (it + 1)->c1x,
+          c1y = (it + 1)->c1y;
+
+    // (1 - t)^3
+    auto b0 = [](float t) -> float {
+      return std::powf(1 - t, 3);
+    };
+
+    // 3(1 - t)^2t
+    auto b1 = [](float t) -> float {
+      return 3 * std::powf(1 - t, 2) * t;
+    };
+
+    // 3(1 - t)t^2
+    auto b2 = [](float t) -> float {
+      return 3 * (1 - t) * std::powf(t, 2);
+    };
+
+    // t^3
+    auto b3 = [](float t) -> float {
+      return std::powf(t, 3);
+    };
+
+    float pt_y = (py0 * b0(t)) + (c0y * b1(t)) + (c1y * b2(t)) + (py1 * b3(t));
+    float pt_x = (px0 * b0(t)) + (c0x * b1(t)) + (c1x * b2(t)) + (px1 * b3(t));
+
+    return ImVec2(pt_x, pt_y);
+  }
+  return ImVec2(0, 0);
+}
+
+float PathEditorPage::calc_curve_length() const {
+  float len = 0.0f;
+  for (CurvePointTable::const_iterator it = points.cbegin(); it + 1 != points.cend(); ++it) {
+    len += calc_curve_part_length(it);
+  }
+
+  return len;
+}
+
+#define INTEGRAL_PRECISION 0.0001f
+
+float PathEditorPage::calc_curve_part_length(CurvePointTable::const_iterator it) const {
+
+  float len = 0.0f;
+  
+  for (float t = 0.0f; t < 1.0f - INTEGRAL_PRECISION; t += INTEGRAL_PRECISION) {
+    ImVec2 p0 = calc_curve_point(it, t),
+           p1 = calc_curve_point(it, t + INTEGRAL_PRECISION);
+
+    float dy = p1.y - p0.y,
+          dx = p1.x - p0.x;
+
+    // My friend pythagoras.
+    len += std::sqrtf(dy * dy + dx * dx);
+  }
+
+  return len;
 }
 
 PathEditorPage PathEditorPage::instance {};
