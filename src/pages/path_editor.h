@@ -47,9 +47,13 @@ private:
 
   std::vector<float> calc_curve_lengths() const;
   float calc_curve_part_length(CurvePointTable::const_iterator pt_it) const;
+  std::vector<float> calc_curvature() const;
+
+  std::pair<CurvePointTable::const_iterator, float> find_curve_point(float x, float y) const;
 
   std::vector<float> cached_curve_lengths;
   std::vector<ImVec2> cached_curve_points;
+  std::vector<float> cached_curvatures;
 
   enum class CurveKind {
     CUBIC_BEZIER = 0,
@@ -58,8 +62,12 @@ private:
 
   CurveKind curve_kind = CurveKind::CUBIC_BEZIER;
 
+  bool updated = true;
+
   bool focused = false;
   bool unsaved = false;
+
+  bool show_handles = true;
   
   static PathEditorPage instance;
 };
