@@ -30,14 +30,16 @@ private:
     float c0y;
     float c1x;
     float c1y;
+    float ax;
+    float ay;
   };
 
   using CurvePointTable = std::vector<CurvePoint>;
 
   CurvePointTable points {
-    { 0.2f, 0.4f, 0.2f, 0.7f, 0.2f, 0.2f },
-    { 0.5f, 0.3f, 0.5f, 0.6f, 0.5f, 0.2f },
-    { 0.8f, 0.5f, 0.8f, 0.6f, 0.8f, 0.2f },
+    { 0.2f, 0.4f, 0.2f, 0.7f, 0.2f, 0.2f, 0.2f, 0.35f },
+    { 0.5f, 0.3f, 0.5f, 0.6f, 0.5f, 0.2f, 0.55f, 0.3f },
+    { 0.8f, 0.5f, 0.8f, 0.6f, 0.8f, 0.2f, 0.8f, 0.55f },
   };
 
   void present_curve_editor();

@@ -13,6 +13,9 @@
 #define POINT_BORDER_THICKNESS 2
 #define INTEGRAL_PRECISION 0.0001f
 
+#define ROT_POINT_RADIUS 0.05f
+#define ROBOT_WIDTH 0.04f
+
 PathEditorPage::PathEditorPage() { }
 
 PathEditorPage::~PathEditorPage() { }
@@ -27,25 +30,8 @@ void PathEditorPage::present(bool* running) {
   }
 
   focused = ImGui::IsWindowFocused();
-  ImGui::Text("%d\n", focused);
-
-  if (ImGui::Button("Switch curve kind")) {
-    curve_kind = static_cast<CurveKind>(!static_cast<bool>(curve_kind));
-  }
-
-  ImGui::SameLine();
-  if (ImGui::Button("Show handles")) {
-    show_handles = !show_handles;
-  }
 
   present_curve_editor();
-
-  float len = 0.0f;
-  for (float& l : cached_curve_lengths) {
-    len += l;
-  }
-
-  ImGui::Text("Path length: %.3f", len);
   
   ImGui::End();
 }
@@ -58,8 +44,20 @@ void PathEditorPage::present_curve_editor() {
   if (win->SkipItems) return;
 
   // Setup the canvas.
-  const float dim = 500;
-  ImVec2 canvas(dim, dim);
+
+  // Fit the canvas to the window.
+  ImVec2 win_size = ImGui::GetWindowSize();
+
+  float dim_x = win_size.x * 0.98f;
+  float dim_y = win_size.y * 0.9f;
+
+  if (dim_x < dim_y) {
+    dim_y = dim_x;
+  } else {
+    dim_x = dim_y;
+  }
+
+  ImVec2 canvas(dim_x, dim_y);
 
   ImRect bb(win->DC.CursorPos, win->DC.CursorPos + canvas);
   ImGui::ItemSize(bb);
@@ -68,21 +66,6 @@ void PathEditorPage::present_curve_editor() {
   const ImGuiID id = win->GetID("Path Editor");
 
   ImGui::RenderFrame(bb.Min, bb.Max, ImGui::GetColorU32(ImGuiCol_FrameBg, 1), true, style.FrameRounding);
-
-  // --- Background Grid ---
-
-  for (int i = 0; i <= canvas.x; i += (canvas.x / 20)) {
-    draw_list->AddLine(
-      ImVec2(bb.Min.x + i, bb.Min.y),
-      ImVec2(bb.Min.x + i, bb.Max.y),
-      ImGui::GetColorU32(ImGuiCol_TextDisabled));
-  }
-  for (int i = 0; i <= canvas.y; i += (canvas.y / 20)) {
-    draw_list->AddLine(
-      ImVec2(bb.Min.x, bb.Min.y + i),
-      ImVec2(bb.Max.x, bb.Min.y + i),
-      ImGui::GetColorU32(ImGuiCol_TextDisabled));
-  }
 
   // --- Point movement ---
 
@@ -97,7 +80,7 @@ void PathEditorPage::present_curve_editor() {
   };
 
   auto move_curve_point = [&](CurvePointTable::iterator it) {
-    auto& [x, y, c0x, c0y, c1x, c1y] = *it;
+    auto& [x, y, c0x, c0y, c1x, c1y, ax, ay] = *it;
 
     float prev_x = x, prev_y = y;
 
@@ -111,11 +94,30 @@ void PathEditorPage::present_curve_editor() {
       c0y += dy;
       c1x += dx;
       c1y += dy;
+      ax += dx;
+      ay += dy;
     }
+
+    ImGui::SetTooltip("%.2f, %.2f", x, y);
+  };
+
+  auto move_rot_point = [&](CurvePointTable::iterator it) {
+    auto& [x, y, c0x, c0y, c1x, c1y, ax, ay] = *it;
+
+    float prev_x = ax, prev_y = ay;
+
+    move_point(ax, ay);
+    if (ax != prev_x || ay != prev_y) {
+      float ang = std::atan2(y - ay, x - ax);
+      ax = x + std::cos(ang) * -ROT_POINT_RADIUS;
+      ay = y + std::sin(ang) * -ROT_POINT_RADIUS;
+    }
+
+    ImGui::SetTooltip("%.2f, %.2f", ax, ay);
   };
 
   auto move_tangent_point = [&](CurvePointTable::iterator it, bool first) {
-    auto& [_x, _y, c0x, c0y, c1x, c1y] = *it;
+    auto& [_x, _y, c0x, c0y, c1x, c1y, ax, ay] = *it;
 
     float& x0 = first ? c0x : c1x,
          & y0 = first ? c0y : c1y,
@@ -127,7 +129,7 @@ void PathEditorPage::present_curve_editor() {
 
     if (x0 != prev_x || y0 != prev_y) {
       // The angle of the moved tangent point.
-      float angle = -std::atan2(x0 - _x, y0 - _y) - 3.14159265358979323846f / 2;
+      float angle = std::atan2(y0 - _y, x0 - _x) + 3.14159265358979323846f;
       
       // The distance of the other tangent point from the point on the curve.
       float prev_dist = std::sqrt(std::powf(x1 - _x, 2) + std::powf(y1 - _y, 2));
@@ -137,15 +139,20 @@ void PathEditorPage::present_curve_editor() {
       x1 = _x + std::cos(angle) * prev_dist;
       y1 = _y + std::sin(angle) * prev_dist;
     }
+
+    ImGui::SetTooltip("%.2f, %.2f", x0, y0);
   };
 
   static CurvePointTable::iterator selected = points.end();
-  enum { SELECT_NONE = 0, SELECT_PT = 1 << 0, SELECT_TAN_0 = 1 << 1, SELECT_TAN_1 = 1 << 2 };
+  enum { SELECT_NONE = 0, SELECT_PT = 1 << 0, SELECT_TAN_0 = 1 << 1, SELECT_TAN_1 = 1 << 2, SELECT_ANG = 1 << 3 };
   static std::size_t select_mode = SELECT_NONE;
 
   if (selected != points.end() && select_mode != SELECT_NONE && (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0))) {
     if (select_mode & SELECT_PT) {
       move_curve_point(selected);
+    }
+    else if (select_mode & SELECT_ANG) {
+      move_rot_point(selected);
     }
     else {
       move_tangent_point(selected, select_mode & SELECT_TAN_0);
@@ -158,7 +165,7 @@ void PathEditorPage::present_curve_editor() {
 
     if (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0)) {
       for (CurvePointTable::iterator it = points.begin(); it != points.end(); ++it) {
-        auto& [x, y, c0x, c0y, c1x, c1y] = *it;
+        auto& [x, y, c0x, c0y, c1x, c1y, ax, ay] = *it;
 
         // Checks the from the mouse to a point.
         auto check_dist = [&](float px, float py) -> bool {
@@ -170,6 +177,7 @@ void PathEditorPage::present_curve_editor() {
         select_mode |= check_dist(x, y) * SELECT_PT;
         select_mode |= check_dist(c0x, c0y) * SELECT_TAN_0;
         select_mode |= check_dist(c1x, c1y) * SELECT_TAN_1;
+        select_mode |= check_dist(ax, ay) * SELECT_ANG;
 
         // A point is selected.
         if (select_mode != SELECT_NONE) {
@@ -191,7 +199,7 @@ void PathEditorPage::present_curve_editor() {
 
     // Find the closest point to the mouse.
     for (CurvePointTable::const_iterator it = points.cbegin(); it != points.cend(); ++it) {
-      const auto [x, y, c0x, c0y, c1x, c1y] = *it;
+      const auto [x, y, c0x, c0y, c1x, c1y, ax, ay] = *it;
 
       // Checks the distance from the mouse to a point.
       float dist = get_dist(x, y);
@@ -215,7 +223,7 @@ void PathEditorPage::present_curve_editor() {
 
       if (get_dist(x_mid, y_mid) > dist) {
         // Insert the point at the start of the list.
-        points.insert(points.cbegin(), { new_pt.x, new_pt.y, new_pt.x, new_pt.y + 0.1f, new_pt.x, new_pt.y - 0.1f });
+        points.insert(points.cbegin(), { new_pt.x, new_pt.y, new_pt.x, new_pt.y + 0.1f, new_pt.x, new_pt.y - 0.1f, new_pt.x, new_pt.y + ROT_POINT_RADIUS });
         updated = true;
         pt_added = true;
       }
@@ -237,7 +245,7 @@ void PathEditorPage::present_curve_editor() {
 
         float ext = 0.1f;
 
-        points.insert(p + 1, { new_pt.x, new_pt.y, new_pt.x + ang_cos * ext, new_pt.y + ang_sin * ext, new_pt.x - ang_cos * ext, new_pt.y - ang_sin * ext });
+        points.insert(p + 1, { new_pt.x, new_pt.y, new_pt.x + ang_cos * ext, new_pt.y + ang_sin * ext, new_pt.x - ang_cos * ext, new_pt.y - ang_sin * ext, new_pt.x, new_pt.y + ROT_POINT_RADIUS });
         updated = true;
         pt_added = true;
       }
@@ -245,7 +253,7 @@ void PathEditorPage::present_curve_editor() {
 
     if (!pt_added) {
       // To the end of the list!
-      points.insert(points.cend(), { new_pt.x, new_pt.y, new_pt.x, new_pt.y + 0.1f, new_pt.x, new_pt.y - 0.1f });
+      points.insert(points.cend(), { new_pt.x, new_pt.y, new_pt.x, new_pt.y + 0.1f, new_pt.x, new_pt.y - 0.1f, new_pt.x, new_pt.y + ROT_POINT_RADIUS });
       updated = true;
     }
   }
@@ -275,16 +283,31 @@ void PathEditorPage::present_curve_editor() {
 
   if (show_handles) {
     // Draw the curve waypoints and tangent lines.
-    for (const auto& [x, y, c0x, c0y, c1x, c1y] : points) {
+    for (const auto& [x, y, c0x, c0y, c1x, c1y, ax, ay] : points) {
       ImVec2 p = ImVec2(x, 1 - y) * (bb.Max - bb.Min) + bb.Min;
-      ImVec2 c0 = ImVec2(c0x, 1- c0y) * (bb.Max - bb.Min) + bb.Min;
-      ImVec2 c1 = ImVec2(c1x, 1- c1y) * (bb.Max - bb.Min) + bb.Min;
+      ImVec2 c0 = ImVec2(c0x, 1 - c0y) * (bb.Max - bb.Min) + bb.Min;
+      ImVec2 c1 = ImVec2(c1x, 1 - c1y) * (bb.Max - bb.Min) + bb.Min;
+      ImVec2 r = ImVec2(ax, 1 - ay) * (bb.Max - bb.Min) + bb.Min;
 
       draw_list->AddLine(p, c0, ImColor(235, 64, 52, 255), TANGENT_THICKNESS);
       draw_list->AddLine(p, c1, ImColor(235, 64, 52, 255), TANGENT_THICKNESS);
       draw_list->AddCircleFilled(p, POINT_RADIUS, ImColor(style.Colors[ImGuiCol_Text]));
       draw_list->AddCircle(c0, POINT_RADIUS, ImColor(252, 186, 3, 255), 0, POINT_BORDER_THICKNESS);
       draw_list->AddCircle(c1, POINT_RADIUS, ImColor(252, 186, 3, 255), 0, POINT_BORDER_THICKNESS);
+      draw_list->AddCircleFilled(r, POINT_RADIUS, ImColor(style.Colors[ImGuiCol_Text]));
+
+      // Draw the robot's rotation.
+      ImVec2 fr, fl, br, bl;
+      {
+        float angle = std::atan2(y - ay, x - ax);
+        float ax1 = x + std::cos(angle) * ROT_POINT_RADIUS,
+              ay1 = y + std::sin(angle) * ROT_POINT_RADIUS;
+        fr = ImVec2(ax + std::cos(angle - M_PI_2) * ROBOT_WIDTH, 1.0f - (ay + std::sin(angle - M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
+        fl = ImVec2(ax + std::cos(angle + M_PI_2) * ROBOT_WIDTH, 1.0f - (ay + std::sin(angle + M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
+        br = ImVec2(ax1 + std::cos(angle - M_PI_2) * ROBOT_WIDTH, 1.0f - (ay1 + std::sin(angle - M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
+        bl = ImVec2(ax1 + std::cos(angle + M_PI_2) * ROBOT_WIDTH, 1.0f - (ay1 + std::sin(angle + M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
+      }
+      draw_list->AddQuad(fr, fl, bl, br, ImColor(style.Colors[ImGuiCol_Text]));
     }
   }
   updated = false;
@@ -460,7 +483,6 @@ std::pair<PathEditorPage::CurvePointTable::const_iterator, float> PathEditorPage
       float t = j / static_cast<float>(samples);
       ImVec2 p = calc_curve_point(it, t);
 
-      // if (std::abs(p.x - x) < 0.05f && std::abs(p.y - y) < 0.05f) {
       if (std::sqrtf((p.x - x) * (p.x - x) + (p.y - y) * (p.y - y)) < 0.02f) {
         return std::make_pair(it, t);
       }
