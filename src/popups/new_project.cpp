@@ -1,5 +1,6 @@
 #include <popups/new_project.h>
 #include <imgui_internal.h>
+#include <thunder_auto.h>
 
 #ifdef THUNDER_AUTO_MACOS
 # include <platform/macos/macos.h>
@@ -26,21 +27,21 @@ void NewProjectPopup::present(bool* running) {
     return;
   }
   
-  static char path_buf[256] = "";
+  static char deploy_path_buf[256] = "";
   
-  ImGui::InputText("File Path", path_buf, 256, ImGuiInputTextFlags_None);
-  path = path_buf;
+  ImGui::InputText("Path", deploy_path_buf, 256, ImGuiInputTextFlags_None);
+  std::string deploy_path = deploy_path_buf;
   
   ImGui::SameLine();
   
   if (ImGui::Button("Browse")) {
-    path = platform->save_file_dialog();
-    strncpy(path_buf, path.c_str(), path.length());
+    deploy_path = platform->save_file_dialog(PATH_EXTENSION);
+    strncpy(deploy_path_buf, deploy_path.c_str(), deploy_path.length());
   }
   
-  bool has_path = !path.empty();
+  bool has_deploy_path = !deploy_path.empty();
   
-  const char* controllers[] = { "Ramsete (ex. tank)", "Holonomic (ex. swerve)" };
+  const char* controllers[] = { "Ramsete", "Holonomic" };
   static int current_controller = 0;
   
   if (ImGui::BeginCombo("Controller Type", controllers[current_controller])) {
@@ -57,23 +58,23 @@ void NewProjectPopup::present(bool* running) {
   static char accel_buf[10] = "";
   
   ImGui::InputText("Max Acceleration (m/s^2)", accel_buf, 9, ImGuiInputTextFlags_CharsDecimal);
-  double max_accel = atof(accel_buf);
+  double max_accel = std::atof(accel_buf);
   
   static char decel_buf[10] = "";
   
   ImGui::InputText("Max Deceleration (m/s^2)", decel_buf, 9, ImGuiInputTextFlags_CharsDecimal);
-  double max_decel = atof(decel_buf);
+  double max_decel = std::atof(decel_buf);
   
   static char vel_buf[10] = "";
   
   ImGui::InputText("Max Velocity (m/s)", vel_buf, 9, ImGuiInputTextFlags_CharsDecimal);
-  double max_vel = atof(vel_buf);
+  double max_vel = std::atof(vel_buf);
   
   bool create_disabled = false;
   
   static const char* err_text = "";
-  if (!has_path) {
-    err_text = "File save path required";
+  if (!has_deploy_path) {
+    err_text = "Project path required";
     create_disabled = true;
   }
   else if (max_accel <= 0) {
@@ -105,7 +106,7 @@ void NewProjectPopup::present(bool* running) {
     
     DriveController drivetrain = current_controller == 0 ? DriveController::RAMSETE : DriveController::HOLONOMIC;
     
-    project = { path, drivetrain, atof(accel_buf), atof(decel_buf), atof(vel_buf) };
+    project = { deploy_path, drivetrain, atof(accel_buf), atof(decel_buf), atof(vel_buf) };
     
     goto close;
   }

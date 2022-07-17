@@ -28,8 +28,6 @@ private:
   
   Platform* platform = nullptr;
   
-  std::string path = "";
-  
   bool has_project = false;
   ProjectSettings project;
   

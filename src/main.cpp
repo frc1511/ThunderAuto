@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
   // --- Initialize window ---
   
   GLFWwindow* window;
-  if (!(window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Thunder Path", nullptr, nullptr))) {
+  if (!(window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "1511 Auto Planner", nullptr, nullptr))) {
     exit(-1);
   }
   
@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
     
     bool main_running = App::get()->is_running();
     
-    if (!ImGui::Begin("Thunder Path", &main_running,
+    if (!ImGui::Begin("1511 Auto Planner", &main_running,
                   ImGuiWindowFlags_MenuBar
                 | ImGuiWindowFlags_NoDocking
                 | ImGuiWindowFlags_NoTitleBar

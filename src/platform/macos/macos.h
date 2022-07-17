@@ -11,8 +11,8 @@ public:
   PlatformMacOS(PlatformMacOS const&) = delete;
   PlatformMacOS& operator=(PlatformMacOS const&) = delete;
   
-  std::string open_file_dialog();
-  std::string save_file_dialog();
+  std::string open_file_dialog(FileType type, const char* extension = nullptr) override;
+  std::string save_file_dialog(const char* extension = nullptr) override;
   
 private:
   PlatformMacOS();

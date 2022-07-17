@@ -31,10 +31,6 @@ App::App() {
 App::~App() { }
 
 void App::present() {
-  static bool demo_window = true;
-  if (demo_window)
-    ImGui::ShowDemoWindow(&demo_window);
-  
   bool item_new = false,
        item_open = false,
        item_save = false,
@@ -46,25 +42,12 @@ void App::present() {
        item_copy = false,
        item_paste = false,
        item_select_all = false;
-  
+
   static bool show_path_editor = true,
               show_path_selector = true,
               show_properties = true;
-  
-  if (close_priority == ClosePriority::CLOSE_PROJECT && !show_path_editor) {
-    close_priority = ClosePriority::DONT_CLOSE;
-  }
-  
-  if (close_priority != ClosePriority::DONT_CLOSE && !show_unsaved_popup) {
-    if (close_priority == ClosePriority::CLOSE_EVERYTHING) {
-      running = false;
-    }
-    else {
-      project_settings = {};
-    }
-  }
-  
-#ifdef THUNDER_PATH_MACOS
+
+#ifdef THUNDER_AUTO_MACOS
 # define CTRL_STR "Cmd+"
 # define CTRL_SHIFT_STR "Cmd+Shift+"
 #else
@@ -77,7 +60,7 @@ void App::present() {
       ImGui::MenuItem("New",     CTRL_STR "N",       &item_new);
       ImGui::MenuItem("Open",    CTRL_STR "O",       &item_open);
       
-      if (!project_settings) {
+      if (!ProjectManager::get()->has_project()) {
         ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
         ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
       }
@@ -86,7 +69,7 @@ void App::present() {
       ImGui::MenuItem("Save As", CTRL_SHIFT_STR "S", &item_save_as);
       ImGui::MenuItem("Close",   CTRL_STR "W",       &item_close);
       
-      if (!project_settings) {
+      if (!ProjectManager::get()->has_project()) {
         ImGui::PopItemFlag();
         ImGui::PopStyleVar();
       }
@@ -94,7 +77,7 @@ void App::present() {
       ImGui::EndMenu();
     }
     
-    if (project_settings) {
+    if (ProjectManager::get()->has_project()) {
       if (ImGui::BeginMenu("Edit")) {
         ImGui::MenuItem("Undo",       CTRL_STR "Z",       &item_undo);
         ImGui::MenuItem("Redo",       CTRL_SHIFT_STR "Z", &item_redo);
@@ -119,125 +102,154 @@ void App::present() {
     
     ImGui::EndMenuBar();
   }
+
+  if (item_new)        menu_new();
+  if (item_open)       menu_open();
+  if (item_save)       menu_save();
+  if (item_save_as)    menu_save_as();
+  if (item_close)      menu_close();
+  if (item_undo)       menu_undo();
+  if (item_redo)       menu_redo();
+  if (item_cut)        menu_cut();
+  if (item_copy)       menu_copy();
+  if (item_paste)      menu_paste();
+  if (item_select_all) menu_select_all();
   
-  if (!project_settings) {
-    show_path_editor = false;
-    show_path_selector = false;
-    show_properties = false;
+
+  if (ProjectManager::get()->has_project()) {
+    if (show_path_editor) PathEditorPage::get()->present(&show_path_editor);
+    if (show_path_selector) PathSelectorPage::get()->present(&show_path_selector);
+    if (show_properties) PropertiesPage::get()->present(&show_properties);
   }
-  
-  if (item_new) {
-    menu_new();
+
+  switch (event_state) {
+    case EventState::NONE:
+      break;
+    case EventState::NEW_PROJECT:
+      new_project();
+      break;
+    case EventState::NEW_PROJECT_UNSAVED_OPENED:
+      unsaved(EventState::NEW_PROJECT);
+      break;
+    case EventState::OPEN_PROJECT:
+      open_project();
+      break;
+    case EventState::OPEN_PROJECT_UNSAVED_OPENED:
+      unsaved(EventState::OPEN_PROJECT);
+      break;
+    case EventState::CLOSE_PROJECT:
+      ProjectManager::get()->close_project();
+      event_state = EventState::NONE;
+      break;
+    case EventState::CLOSE_PROJECT_UNSAVED:
+      unsaved(EventState::CLOSE_PROJECT);
+      break;
+    case EventState::CLOSE_EVERYTHING:
+      running = false;
+      break;
+    case EventState::CLOSE_EVERYTHING_UNSAVED:
+      unsaved(EventState::CLOSE_EVERYTHING);
+      break;
   }
-  if (item_open) {
-    menu_open();
+}
+
+void App::new_project() {
+  ImGui::OpenPopup(NewProjectPopup::get()->get_name().c_str());
+
+  bool showing_popup = true;
+  NewProjectPopup::get()->present(&showing_popup);
+
+  if (!showing_popup) {
+    std::optional<ProjectSettings> settings = NewProjectPopup::get()->get_project_settings();
+
+    if (settings) {
+      ProjectManager::get()->new_project(settings.value());
+    }
+
+    event_state = EventState::NONE;
   }
-  if (item_save) {
-    menu_save();
+}
+
+void App::open_project() {
+  std::string path = platform->open_file_dialog(FileType::FILE, PATH_EXTENSION);
+  if (path.empty()) {
   }
-  if (item_save_as) {
-    menu_save_as();
+  else {
+    ProjectManager::get()->open_project(path);
   }
-  if (item_close) {
-    menu_close();
-  }
-  if (item_undo) {
-    menu_undo();
-  }
-  if (item_redo) {
-    menu_redo();
-  }
-  if (item_cut) {
-    menu_cut();
-  }
-  if (item_copy) {
-    menu_copy();
-  }
-  if (item_paste) {
-    menu_paste();
-  }
-  if (item_select_all) {
-    menu_select_all();
-  }
-  
-  if (show_path_editor) {
-    PathEditorPage::get()->present(&show_path_editor);
-    PathEditorPage::get()->set_unsaved(true);
-  }
-  if (show_path_selector) {
-    PathSelectorPage::get()->present(&show_path_selector);
-  }
-  if (show_properties) {
-    PropertiesPage::get()->present(&show_properties);
-  }
-  
-  bool was_showing_unsaved_popup = show_unsaved_popup,
-       was_shoing_new_project_popup = show_new_project_popup;
-  
-  if (show_unsaved_popup) {
-    ImGui::OpenPopup(UnsavedPopup::get()->get_name().c_str());
-  }
-  else if (show_new_project_popup) {
-    ImGui::OpenPopup(NewProjectPopup::get()->get_name().c_str());
-  }
-  
-  UnsavedPopup::get()->present(&show_unsaved_popup);
-  NewProjectPopup::get()->present(&show_new_project_popup);
-  
-  if (show_unsaved_popup != was_showing_unsaved_popup) {
+
+  event_state = EventState::NONE;
+}
+
+void App::unsaved(EventState next) {
+  ImGui::OpenPopup(UnsavedPopup::get()->get_name().c_str());
+
+  bool showing_popup = true;
+  UnsavedPopup::get()->present(&showing_popup);
+
+  if (!showing_popup) {
     switch (UnsavedPopup::get()->get_result()) {
       case UnsavedPopup::CANCEL:
-        close_priority = ClosePriority::DONT_CLOSE;
-        show_new_project_popup = false;
+        event_state = EventState::NONE;
         break;
-      case UnsavedPopup::SAVE:
-        // TODO Save document.
-        project_settings = {};
+      case UnsavedPopup::SAVE: {
+        ProjectManager::get()->save_project();
+        event_state = next;
         break;
+      }
       case UnsavedPopup::DONT_SAVE:
-        project_settings = {};
+        ProjectManager::get()->close_project();
+        event_state = next;
         break;
-    }
-  }
-  
-  if (show_new_project_popup != was_shoing_new_project_popup) {
-    project_settings = NewProjectPopup::get()->get_project_settings();
-    if (project_settings) {
-      // TODO Create the new document.
-      
-      show_path_editor = true;
-      show_path_selector = true;
-      show_properties = true;
     }
   }
 }
 
 void App::menu_new() {
-  std::cout << "new\n";
-  close_priority = ClosePriority::CLOSE_PROJECT;
-  show_new_project_popup = true;
-  if (project_settings && PathEditorPage::get()->is_unsaved()) {
-    show_unsaved_popup = true;
+  if (event_state == EventState::NONE) {
+    std::cout << "new\n";
+    if (ProjectManager::get()->is_unsaved()) {
+      event_state = EventState::NEW_PROJECT_UNSAVED_OPENED;
+    }
+    else {
+      event_state = EventState::NEW_PROJECT;
+    }
   }
 }
 
 void App::menu_open() {
-  std::cout << "open\n";
-  std::cout << platform->open_file_dialog() << '\n';
+  if (event_state == EventState::NONE) {
+    std::cout << "open\n";
+    if (ProjectManager::get()->is_unsaved()) {
+      event_state = EventState::OPEN_PROJECT_UNSAVED_OPENED;
+    }
+    else {
+      event_state = EventState::OPEN_PROJECT;
+    }
+  }
 }
 
 void App::menu_save() {
   std::cout << "save\n";
+  ProjectManager::get()->save_project();
 }
 
 void App::menu_save_as() {
   std::cout << "save as\n";
-  std::cout << platform->save_file_dialog() << '\n';
+  std::string path = platform->save_file_dialog(PATH_EXTENSION);
+  if (path.empty()) return;
+  ProjectManager::get()->save_project_as(path);
 }
 
 void App::menu_close() {
-  std::cout << "closing project\n";
-  close_priority = ClosePriority::CLOSE_PROJECT;
+  if (event_state == EventState::NONE) {
+    if (ProjectManager::get()->is_unsaved()) {
+      event_state = EventState::CLOSE_PROJECT_UNSAVED;
+    }
+    else {
+      event_state = EventState::CLOSE_PROJECT;
+    }
+  }
 }
 
 void App::menu_undo() {
@@ -265,14 +277,11 @@ void App::menu_select_all() {
 }
 
 void App::close() {
-  static bool closing = false;
-  if (!closing) {
-    std::cout << "closing everything\n";
-    close_priority = ClosePriority::CLOSE_EVERYTHING;
-    closing = true;
-    if (project_settings && PathEditorPage::get()->is_unsaved()) {
-      show_unsaved_popup = true;
-    }
+  if (ProjectManager::get()->is_unsaved()) {
+    event_state = EventState::CLOSE_EVERYTHING_UNSAVED;
+  }
+  else {
+    event_state = EventState::CLOSE_EVERYTHING;
   }
 }
 
@@ -292,7 +301,7 @@ void App::handle_keyboard(int key, int scancode, int action, int mods) {
   else if (GET_CTRL_KEY(GLFW_KEY_O)) {
     menu_open();
   }
-  else if (project_settings) {
+  else if (ProjectManager::get()->has_project()) {
     if (GET_CTRL_KEY(GLFW_KEY_S)) {
       menu_save();
     }

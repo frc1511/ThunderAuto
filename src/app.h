@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <platform/platform.h>
 #include <project.h>
+#include <thunder_auto.h>
 #include <optional>
 
 class App {
@@ -38,16 +39,25 @@ public:
 private:
   App();
   ~App();
-  
-  enum class ClosePriority {
-    DONT_CLOSE = 0,
+
+  void new_project();
+  void open_project();
+
+  enum class EventState {
+    NONE = 0,
+    NEW_PROJECT,
+    NEW_PROJECT_UNSAVED_OPENED,
+    OPEN_PROJECT,
+    OPEN_PROJECT_UNSAVED_OPENED,
     CLOSE_PROJECT,
-    CLOSE_EVERYTHING
+    CLOSE_PROJECT_UNSAVED,
+    CLOSE_EVERYTHING,
+    CLOSE_EVERYTHING_UNSAVED,
   };
-  
-  ClosePriority close_priority = ClosePriority::DONT_CLOSE;
-  
-  std::optional<ProjectSettings> project_settings;
+
+  void unsaved(EventState next);
+
+  EventState event_state = EventState::NONE;
   
   bool running = true;
   
