@@ -116,11 +116,11 @@ void App::present() {
   if (item_select_all) menu_select_all();
   
 
-  if (ProjectManager::get()->has_project()) {
+  // if (ProjectManager::get()->has_project()) {
     if (show_path_editor) PathEditorPage::get()->present(&show_path_editor);
     if (show_path_selector) PathSelectorPage::get()->present(&show_path_selector);
     if (show_properties) PropertiesPage::get()->present(&show_properties);
-  }
+  // }
 
   switch (event_state) {
     case EventState::NONE:

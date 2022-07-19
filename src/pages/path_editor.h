@@ -3,6 +3,7 @@
 #include <pages/page.h>
 #include <vector>
 #include <optional>
+#include <cmath>
 
 class PathEditorPage: public Page {
 public:
@@ -18,28 +19,38 @@ public:
   
   constexpr bool is_unsaved() const { return unsaved; }
   inline void set_unsaved(bool _unsaved) { unsaved = _unsaved; }
+
+  struct CurvePoint {
+    float px;
+    float py;
+    float heading;
+    float w0;
+    float w1;
+    float rotation;
+
+    ImVec2 get_tangent_pt(bool first) const;
+    void set_tangent_pt(bool first, float x, float y);
+
+    ImVec2 get_rot_pt(bool reverse = false) const;
+    void set_rot_pt(float x, float y);
+
+    void translate(float dx, float dy);
+  };
+
+  using CurvePointTable = std::vector<CurvePoint>;
+
+  std::optional<CurvePointTable::iterator> get_selected_point();
+
+  constexpr void update() { updated = true; }
   
 private:
   PathEditorPage();
   ~PathEditorPage();
 
-  struct CurvePoint {
-    float px;
-    float py;
-    float c0x;
-    float c0y;
-    float c1x;
-    float c1y;
-    float ax;
-    float ay;
-  };
-
-  using CurvePointTable = std::vector<CurvePoint>;
-
   CurvePointTable points {
-    { 0.2f, 0.4f, 0.2f, 0.7f, 0.2f, 0.2f, 0.2f, 0.35f },
-    { 0.5f, 0.3f, 0.5f, 0.6f, 0.5f, 0.2f, 0.55f, 0.3f },
-    { 0.8f, 0.5f, 0.8f, 0.6f, 0.8f, 0.2f, 0.8f, 0.55f },
+    { 0.1f, 0.4f, +M_PI_2, 0.3f, 0.3f, 0.0f },
+    { 0.5f, 0.3f, +M_PI_2, 0.3f, 0.3f, 0.0f },
+    { 0.9f, 0.5f, -M_PI_2, 0.3f, 0.3f, 0.0f },
   };
 
   void present_curve_editor();
@@ -61,6 +72,8 @@ private:
     CUBIC_BEZIER = 0,
     CUBIC_HERMITE = 1,
   };
+
+  CurvePointTable::iterator selected_pt = points.end();
 
   CurveKind curve_kind = CurveKind::CUBIC_BEZIER;
 

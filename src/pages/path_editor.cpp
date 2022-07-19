@@ -1,6 +1,5 @@
 #include <pages/path_editor.h>
 #include <imgui_internal.h>
-#include <cmath>
 #include <utility>
 #include <vector>
 #include <iostream>
@@ -16,9 +15,49 @@
 #define ROT_POINT_RADIUS 0.05f
 #define ROBOT_WIDTH 0.04f
 
+ImVec2 PathEditorPage::CurvePoint::get_tangent_pt(bool first) const {
+  float cx = px + std::cos(heading + (M_PI * first)) * (first ? w0 : w1),
+        cy = py + std::sin(heading + (M_PI * first)) * (first ? w0 : w1);
+
+  return ImVec2(cx, cy);
+}
+
+void PathEditorPage::CurvePoint::set_tangent_pt(bool first, float x, float y) {
+  heading = std::atan2(y - py, x - px) + M_PI * first;
+
+  float& w = first ? w0 : w1;
+
+  w = std::hypotf(x - px, y - py);
+}
+
+ImVec2 PathEditorPage::CurvePoint::get_rot_pt(bool reverse) const {
+  float v = reverse * 2 - 1;
+
+  float ax = px + std::cos(rotation + M_PI * v) * ROT_POINT_RADIUS * v,
+        ay = py + std::sin(rotation + M_PI * v) * ROT_POINT_RADIUS * v;
+
+  return ImVec2(ax, ay);
+}
+
+void PathEditorPage::CurvePoint::set_rot_pt(float x, float y) {
+  rotation = std::atan2(y - py, x - px);
+}
+
+void PathEditorPage::CurvePoint::translate(float dx, float dy) {
+  px += dx;
+  py += dy;
+}
+
 PathEditorPage::PathEditorPage() { }
 
 PathEditorPage::~PathEditorPage() { }
+
+std::optional<PathEditorPage::CurvePointTable::iterator> PathEditorPage::get_selected_point() {
+  if (selected_pt == points.end()) {
+    return std::nullopt;
+  }
+  return selected_pt;
+}
 
 void PathEditorPage::present(bool* running) {
   ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
@@ -53,7 +92,8 @@ void PathEditorPage::present_curve_editor() {
 
   if (dim_x < dim_y) {
     dim_y = dim_x;
-  } else {
+  }
+  else {
     dim_x = dim_y;
   }
 
@@ -69,192 +109,180 @@ void PathEditorPage::present_curve_editor() {
 
   // --- Point movement ---
 
-  ImVec2 mouse = io.MousePos;
-  auto move_point = [&](float& x, float& y) {
-    x = mouse.x;
-    y = mouse.y;
+  if (focused) {
+    ImVec2 mouse = io.MousePos;
+    auto move_point = [&](float& x, float& y) {
+      x = mouse.x;
+      y = mouse.y;
 
-    x = (x - bb.Min.x) / (bb.Max.x - bb.Min.x);
-    y = 1 - (y - bb.Min.y) / (bb.Max.y - bb.Min.y);
-    updated = true;
-  };
+      x = (x - bb.Min.x) / (bb.Max.x - bb.Min.x);
+      y = 1 - (y - bb.Min.y) / (bb.Max.y - bb.Min.y);
+      updated = true;
+    };
 
-  auto move_curve_point = [&](CurvePointTable::iterator it) {
-    auto& [x, y, c0x, c0y, c1x, c1y, ax, ay] = *it;
+    auto move_curve_point = [&](CurvePointTable::iterator it) {
+      auto [x, y, head, w0, w1, rot] = *it;
 
-    float prev_x = x, prev_y = y;
+      float prev_x = x, prev_y = y;
 
-    move_point(x, y);
+      move_point(x, y);
 
-    if (x != prev_x || y != prev_y) {
-      float dx = x - prev_x,
-            dy = y - prev_y;
-      // Translate the tangent points with the point.
-      c0x += dx;
-      c0y += dy;
-      c1x += dx;
-      c1y += dy;
-      ax += dx;
-      ay += dy;
-    }
+      if (x != prev_x || y != prev_y) {
+        it->translate(x - prev_x, y - prev_y);
+      }
 
-    ImGui::SetTooltip("%.2f, %.2f", x, y);
-  };
+      ImGui::SetTooltip("%.2f, %.2f", x, y);
+    };
 
-  auto move_rot_point = [&](CurvePointTable::iterator it) {
-    auto& [x, y, c0x, c0y, c1x, c1y, ax, ay] = *it;
+    auto move_rot_point = [&](CurvePointTable::iterator it) {
+      auto& [x, y, head, w0, w1, rot] = *it;
 
-    float prev_x = ax, prev_y = ay;
+      auto [ax, ay] = it->get_rot_pt();
+      float prev_x = ax, prev_y = ay;
 
-    move_point(ax, ay);
-    if (ax != prev_x || ay != prev_y) {
-      float ang = std::atan2(y - ay, x - ax);
-      ax = x + std::cos(ang) * -ROT_POINT_RADIUS;
-      ay = y + std::sin(ang) * -ROT_POINT_RADIUS;
-    }
+      move_point(ax, ay);
 
-    ImGui::SetTooltip("%.2f, %.2f", ax, ay);
-  };
+      if (ax != prev_x || ay != prev_y) {
+        it->set_rot_pt(ax, ay);
+      }
 
-  auto move_tangent_point = [&](CurvePointTable::iterator it, bool first) {
-    auto& [_x, _y, c0x, c0y, c1x, c1y, ax, ay] = *it;
+      ImGui::SetTooltip("%.2f, %.2f", ax, ay);
+    };
 
-    float& x0 = first ? c0x : c1x,
-         & y0 = first ? c0y : c1y,
-         & x1 = first ? c1x : c0x,
-         & y1 = first ? c1y : c0y;
+    auto move_tangent_point = [&](CurvePointTable::iterator it, bool first) {
+      auto& [x, y, head, w0, w1, rot] = *it;
 
-    float prev_x = x0, prev_y = y0;
-    move_point(x0, y0);
+      auto [x0, y0] = it->get_tangent_pt(first);
 
-    if (x0 != prev_x || y0 != prev_y) {
-      // The angle of the moved tangent point.
-      float angle = std::atan2(y0 - _y, x0 - _x) + 3.14159265358979323846f;
-      
-      // The distance of the other tangent point from the point on the curve.
-      float prev_dist = std::sqrt(std::powf(x1 - _x, 2) + std::powf(y1 - _y, 2));
-      
-      // The new position of the other tangent point (180 degrees rotated from
-      // the moved tangent point with its distance to the curve preserved).
-      x1 = _x + std::cos(angle) * prev_dist;
-      y1 = _y + std::sin(angle) * prev_dist;
-    }
+      float prev_x = x0, prev_y = y0;
+      move_point(x0, y0);
 
-    ImGui::SetTooltip("%.2f, %.2f", x0, y0);
-  };
+      if (x0 != prev_x || y0 != prev_y) {
+        it->set_tangent_pt(first, x0, y0);
+      }
 
-  static CurvePointTable::iterator selected = points.end();
-  enum { SELECT_NONE = 0, SELECT_PT = 1 << 0, SELECT_TAN_0 = 1 << 1, SELECT_TAN_1 = 1 << 2, SELECT_ANG = 1 << 3 };
-  static std::size_t select_mode = SELECT_NONE;
+      ImGui::SetTooltip("%.2f, %.2f", x0, y0);
+    };
 
-  if (selected != points.end() && select_mode != SELECT_NONE && (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0))) {
-    if (select_mode & SELECT_PT) {
-      move_curve_point(selected);
-    }
-    else if (select_mode & SELECT_ANG) {
-      move_rot_point(selected);
+    static CurvePointTable::iterator drag_pt = points.end();
+    enum { DRAG_NONE = 0, DRAG_PT = 1 << 0, DRAG_TAN_0 = 1 << 1, DRAG_TAN_1 = 1 << 2, DRAG_ANG = 1 << 3 };
+    static std::size_t drag_pt_type = DRAG_NONE;
+
+    if (drag_pt != points.end() && drag_pt_type != DRAG_NONE && (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0))) {
+      if (drag_pt_type & DRAG_PT) {
+        move_curve_point(drag_pt);
+      }
+      else if (drag_pt_type & DRAG_ANG) {
+        move_rot_point(drag_pt);
+      }
+      else {
+        move_tangent_point(drag_pt, drag_pt_type & DRAG_TAN_0);
+      }
     }
     else {
-      move_tangent_point(selected, select_mode & SELECT_TAN_0);
-    }
-  }
-  else {
-    // Reset the selection.
-    selected = points.end();
-    select_mode = SELECT_NONE;
+      // Reset the selection.
+      drag_pt = points.end();
+      drag_pt_type = DRAG_NONE;
 
-    if (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0)) {
-      for (CurvePointTable::iterator it = points.begin(); it != points.end(); ++it) {
-        auto& [x, y, c0x, c0y, c1x, c1y, ax, ay] = *it;
+      if (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0)) {
+        for (CurvePointTable::iterator it = points.begin(); it != points.end(); ++it) {
+          auto& [x, y, head, w0, w1, rot] = *it;
 
-        // Checks the from the mouse to a point.
-        auto check_dist = [&](float px, float py) -> bool {
-          ImVec2 pos = ImVec2(px, 1 - py) * (bb.Max - bb.Min) + bb.Min;
-          float dist = std::sqrt(std::powf(pos.x - mouse.x, 2) + std::powf(pos.y - mouse.y, 2));
-          return dist < POINT_RADIUS * 4;
-        };
+          // Checks the from the mouse to a point.
+          auto check_dist = [&](float px, float py) -> bool {
+            ImVec2 pos = ImVec2(px, 1 - py) * (bb.Max - bb.Min) + bb.Min;
+            float dist = std::hypotf(pos.x - mouse.x, pos.y - mouse.y);
+            return dist < POINT_RADIUS * 4;
+          };
 
-        select_mode |= check_dist(x, y) * SELECT_PT;
-        select_mode |= check_dist(c0x, c0y) * SELECT_TAN_0;
-        select_mode |= check_dist(c1x, c1y) * SELECT_TAN_1;
-        select_mode |= check_dist(ax, ay) * SELECT_ANG;
+          auto [c0x, c0y] = it->get_tangent_pt(true);
+          auto [c1x, c1y] = it->get_tangent_pt(false);
+          auto [ax, ay] = it->get_rot_pt();
 
-        // A point is selected.
-        if (select_mode != SELECT_NONE) {
-          selected = it;
-          break;
+          drag_pt_type |= check_dist(x, y) * DRAG_PT;
+          drag_pt_type |= check_dist(c0x, c0y) * DRAG_TAN_0;
+          drag_pt_type |= check_dist(c1x, c1y) * DRAG_TAN_1;
+          drag_pt_type |= check_dist(ax, ay) * DRAG_ANG;
+
+          // A point is selected.
+          if (drag_pt_type != DRAG_NONE) {
+            drag_pt = it;
+            selected_pt = it;
+            break;
+          }
+          else if (focused) {
+            // Check if the mouse is within the bounding box.
+            if (mouse.x >= bb.Min.x && mouse.x <= bb.Max.x && mouse.y >= bb.Min.y && mouse.y <= bb.Max.y) {
+              selected_pt = points.end();
+            }
+          }
         }
       }
     }
-  }
 
-  if (ImGui::IsMouseDoubleClicked(0)) {
-    std::pair<CurvePointTable::const_iterator, float> closest_point(points.end(), std::numeric_limits<float>::max());
+    if (ImGui::IsMouseDoubleClicked(0)) {
+      std::pair<CurvePointTable::const_iterator, float> closest_point(points.end(), std::numeric_limits<float>::max());
 
-    auto get_dist = [&](float x, float y) -> float {
-      // Checks the distance from the mouse to a point.
-      ImVec2 pos = ImVec2(x, 1 - y) * (bb.Max - bb.Min) + bb.Min;
-      return std::sqrt(std::powf(pos.x - mouse.x, 2) + std::powf(pos.y - mouse.y, 2));
-    };
+      auto get_dist = [&](float x, float y) -> float {
+        // Checks the distance from the mouse to a point.
+        ImVec2 pos = ImVec2(x, 1 - y) * (bb.Max - bb.Min) + bb.Min;
+        return std::sqrt(std::powf(pos.x - mouse.x, 2) + std::powf(pos.y - mouse.y, 2));
+      };
 
-    // Find the closest point to the mouse.
-    for (CurvePointTable::const_iterator it = points.cbegin(); it != points.cend(); ++it) {
-      const auto [x, y, c0x, c0y, c1x, c1y, ax, ay] = *it;
+      // Find the closest point to the mouse.
+      for (CurvePointTable::const_iterator it = points.cbegin(); it != points.cend(); ++it) {
+        const auto [x, y, head, w0, w1, rot] = *it;
 
-      // Checks the distance from the mouse to a point.
-      float dist = get_dist(x, y);
-      
-      if (dist < closest_point.second) {
-        closest_point = std::make_pair(it, dist);
+        // Checks the distance from the mouse to a point.
+        float dist = get_dist(x, y);
+        
+        if (dist < closest_point.second) {
+          closest_point = std::make_pair(it, dist);
+        }
       }
-    }
 
-    ImVec2 new_pt((mouse.x - bb.Min.x) / (bb.Max.x - bb.Min.x), 1 - (mouse.y - bb.Min.y) / (bb.Max.y - bb.Min.y));
+      ImVec2 new_pt((mouse.x - bb.Min.x) / (bb.Max.x - bb.Min.x), 1 - (mouse.y - bb.Min.y) / (bb.Max.y - bb.Min.y));
 
-    bool dir = true;
-    auto& [pt, dist] = closest_point;
+      bool dir = true;
+      auto& [pt, dist] = closest_point;
 
-    float neighbor_dist = std::numeric_limits<float>::max();
+      float neighbor_dist = std::numeric_limits<float>::max();
 
-    bool pt_added = false;
-    if (pt == points.cbegin()) {
-      float x_mid = (pt->px + (pt + 1)->px) / 2,
-            y_mid = (pt->py + (pt + 1)->py) / 2;
+      bool pt_added = false;
+      if (pt == points.cbegin()) {
+        float x_mid = (pt->px + (pt + 1)->px) / 2,
+              y_mid = (pt->py + (pt + 1)->py) / 2;
 
-      if (get_dist(x_mid, y_mid) > dist) {
-        // Insert the point at the start of the list.
-        points.insert(points.cbegin(), { new_pt.x, new_pt.y, new_pt.x, new_pt.y + 0.1f, new_pt.x, new_pt.y - 0.1f, new_pt.x, new_pt.y + ROT_POINT_RADIUS });
+        if (get_dist(x_mid, y_mid) > dist) {
+          // Insert the point at the start of the list.
+          points.insert(points.cbegin(), { new_pt.x, new_pt.y, M_PI_2, 0.1f, 0.1f, 0.0f });
+          updated = true;
+          pt_added = true;
+        }
+      }
+
+      if (!pt_added) {
+        auto [p, t] = find_curve_point(new_pt.x, new_pt.y);
+        if (p != points.cend()) {
+          ImVec2 p0 = calc_curve_point(p, t);
+          ImVec2 p1 = calc_curve_point(p, t + INTEGRAL_PRECISION);
+
+          float dx = p1.x - p0.x,
+                dy = p1.y - p0.y;
+
+          float angle = std::atan2(dy, dx) + M_PI;
+
+          points.insert(p + 1, { new_pt.x, new_pt.y, angle, 0.1f, 0.1f, 0.0f });
+          updated = true;
+          pt_added = true;
+        }
+      }
+
+      if (!pt_added) {
+        // To the end of the list!
+        points.insert(points.cend(), { new_pt.x, new_pt.y, M_PI_2, 0.1f, 0.1f, 0.0f });
         updated = true;
-        pt_added = true;
       }
-    }
-
-    if (!pt_added) {
-      auto [p, t] = find_curve_point(new_pt.x, new_pt.y);
-      if (p != points.cend()) {
-        ImVec2 p0 = calc_curve_point(p, t);
-        ImVec2 p1 = calc_curve_point(p, t + INTEGRAL_PRECISION);
-
-        float dx = p1.x - p0.x,
-              dy = p1.y - p0.y;
-
-        float angle = std::atan2(dy, dx);
-
-        float ang_cos = std::cos(angle),
-              ang_sin = std::sin(angle);
-
-        float ext = 0.1f;
-
-        points.insert(p + 1, { new_pt.x, new_pt.y, new_pt.x + ang_cos * ext, new_pt.y + ang_sin * ext, new_pt.x - ang_cos * ext, new_pt.y - ang_sin * ext, new_pt.x, new_pt.y + ROT_POINT_RADIUS });
-        updated = true;
-        pt_added = true;
-      }
-    }
-
-    if (!pt_added) {
-      // To the end of the list!
-      points.insert(points.cend(), { new_pt.x, new_pt.y, new_pt.x, new_pt.y + 0.1f, new_pt.x, new_pt.y - 0.1f, new_pt.x, new_pt.y + ROT_POINT_RADIUS });
-      updated = true;
     }
   }
 
@@ -283,31 +311,46 @@ void PathEditorPage::present_curve_editor() {
 
   if (show_handles) {
     // Draw the curve waypoints and tangent lines.
-    for (const auto& [x, y, c0x, c0y, c1x, c1y, ax, ay] : points) {
+    // for (const auto& [x, y, c0x, c0y, c1x, c1y, ax, ay] : points) {
+    for (CurvePointTable::const_iterator it = points.cbegin(); it != points.cend(); ++it) {
+      const auto& [x, y, head, w0, w1, rot] = *it;
+
+      auto [c0x, c0y] = it->get_tangent_pt(true);
+      auto [c1x, c1y] = it->get_tangent_pt(false);
+      auto [ax, ay] = it->get_rot_pt();
+
       ImVec2 p = ImVec2(x, 1 - y) * (bb.Max - bb.Min) + bb.Min;
       ImVec2 c0 = ImVec2(c0x, 1 - c0y) * (bb.Max - bb.Min) + bb.Min;
       ImVec2 c1 = ImVec2(c1x, 1 - c1y) * (bb.Max - bb.Min) + bb.Min;
       ImVec2 r = ImVec2(ax, 1 - ay) * (bb.Max - bb.Min) + bb.Min;
 
+      ImColor pt_color;
+
+      if (it == selected_pt) {
+        pt_color = ImColor(252, 186, 3, 255);
+      }
+      else {
+        pt_color = ImColor(style.Colors[ImGuiCol_Text]);
+      }
+
       draw_list->AddLine(p, c0, ImColor(235, 64, 52, 255), TANGENT_THICKNESS);
       draw_list->AddLine(p, c1, ImColor(235, 64, 52, 255), TANGENT_THICKNESS);
-      draw_list->AddCircleFilled(p, POINT_RADIUS, ImColor(style.Colors[ImGuiCol_Text]));
+      draw_list->AddCircleFilled(p, POINT_RADIUS, pt_color);
       draw_list->AddCircle(c0, POINT_RADIUS, ImColor(252, 186, 3, 255), 0, POINT_BORDER_THICKNESS);
       draw_list->AddCircle(c1, POINT_RADIUS, ImColor(252, 186, 3, 255), 0, POINT_BORDER_THICKNESS);
-      draw_list->AddCircleFilled(r, POINT_RADIUS, ImColor(style.Colors[ImGuiCol_Text]));
+      draw_list->AddCircleFilled(r, POINT_RADIUS, pt_color);
 
       // Draw the robot's rotation.
       ImVec2 fr, fl, br, bl;
       {
-        float angle = std::atan2(y - ay, x - ax);
-        float ax1 = x + std::cos(angle) * ROT_POINT_RADIUS,
-              ay1 = y + std::sin(angle) * ROT_POINT_RADIUS;
-        fr = ImVec2(ax + std::cos(angle - M_PI_2) * ROBOT_WIDTH, 1.0f - (ay + std::sin(angle - M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
-        fl = ImVec2(ax + std::cos(angle + M_PI_2) * ROBOT_WIDTH, 1.0f - (ay + std::sin(angle + M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
-        br = ImVec2(ax1 + std::cos(angle - M_PI_2) * ROBOT_WIDTH, 1.0f - (ay1 + std::sin(angle - M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
-        bl = ImVec2(ax1 + std::cos(angle + M_PI_2) * ROBOT_WIDTH, 1.0f - (ay1 + std::sin(angle + M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
+        auto [ax1, ay1] = it->get_rot_pt(true);
+        
+        fr = ImVec2(ax + std::cos(rot - M_PI_2) * ROBOT_WIDTH, 1.0f - (ay + std::sin(rot - M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
+        fl = ImVec2(ax + std::cos(rot + M_PI_2) * ROBOT_WIDTH, 1.0f - (ay + std::sin(rot + M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
+        br = ImVec2(ax1 + std::cos(rot - M_PI_2) * ROBOT_WIDTH, 1.0f - (ay1 + std::sin(rot - M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
+        bl = ImVec2(ax1 + std::cos(rot + M_PI_2) * ROBOT_WIDTH, 1.0f - (ay1 + std::sin(rot + M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
       }
-      draw_list->AddQuad(fr, fl, bl, br, ImColor(style.Colors[ImGuiCol_Text]));
+      draw_list->AddQuad(fr, fl, bl, br, pt_color);
     }
   }
   updated = false;
@@ -342,8 +385,11 @@ ImVec2 PathEditorPage::calc_curve_point(CurvePointTable::const_iterator it, floa
 
   // Cubic hermite spline.
   if (curve_kind == CurveKind::CUBIC_HERMITE) {
-    float m0 = (it->c0y - py0) / (it->c0x - px0),
-          m1 = ((it + 1)->c0y - py1) / ((it + 1)->c0x - px1);
+      auto [c0x, c0y] = it->get_tangent_pt(true);
+      auto [c1x, c1y] = (it + 1)->get_tangent_pt(true);
+
+      float m0 = (c0y - py0) / (c0x - px0),
+            m1 = (c1y - py1) / (c1x - px1);
 
     // The hermite base functions.
 
@@ -372,11 +418,10 @@ ImVec2 PathEditorPage::calc_curve_point(CurvePointTable::const_iterator it, floa
       return ImVec2(pt_x, pt_y);
     }
   // Cubic bezier curve.
-  } else {
-    float c0x = it->c0x,
-          c0y = it->c0y,
-          c1x = (it + 1)->c1x,
-          c1y = (it + 1)->c1y;
+  }
+  else {
+      auto [c0x, c0y] = it->get_tangent_pt(true);
+      auto [c1x, c1y] = (it + 1)->get_tangent_pt(false);
 
     // (1 - t)^3
     auto b0 = [](float t) -> float {
