@@ -42,6 +42,15 @@ public:
   std::optional<CurvePointTable::iterator> get_selected_point();
 
   constexpr void update() { updated = true; }
+
+  void set_show_tangents(bool show) { show_tangents = show; }
+
+  enum class CurveKind : std::size_t {
+    CUBIC_BEZIER = 0,
+    CUBIC_HERMITE = 1,
+  };
+
+  void set_curve_kind(CurveKind kind) { curve_kind = kind; }
   
 private:
   PathEditorPage();
@@ -68,11 +77,6 @@ private:
   std::vector<ImVec2> cached_curve_points;
   std::vector<float> cached_curvatures;
 
-  enum class CurveKind {
-    CUBIC_BEZIER = 0,
-    CUBIC_HERMITE = 1,
-  };
-
   CurvePointTable::iterator selected_pt = points.end();
 
   CurveKind curve_kind = CurveKind::CUBIC_BEZIER;
@@ -82,7 +86,7 @@ private:
   bool focused = false;
   bool unsaved = false;
 
-  bool show_handles = true;
+  bool show_tangents = true;
   
   static PathEditorPage instance;
 };

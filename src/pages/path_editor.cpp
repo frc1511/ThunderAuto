@@ -309,49 +309,49 @@ void PathEditorPage::present_curve_editor() {
     draw_list->AddLine(ImVec2(p0.x, 1 - p0.y) * (bb.Max - bb.Min) + bb.Min, ImVec2(p1.x, 1 - p1.y) * (bb.Max - bb.Min) + bb.Min, ImColor::HSV(hue, 1.0f, 1.0f), CURVE_THICKNESS);
   }
 
-  if (show_handles) {
-    // Draw the curve waypoints and tangent lines.
-    // for (const auto& [x, y, c0x, c0y, c1x, c1y, ax, ay] : points) {
-    for (CurvePointTable::const_iterator it = points.cbegin(); it != points.cend(); ++it) {
-      const auto& [x, y, head, w0, w1, rot] = *it;
+  // Draw the curve waypoints and tangent lines.
+  // for (const auto& [x, y, c0x, c0y, c1x, c1y, ax, ay] : points) {
+  for (CurvePointTable::const_iterator it = points.cbegin(); it != points.cend(); ++it) {
+    const auto& [x, y, head, w0, w1, rot] = *it;
 
-      auto [c0x, c0y] = it->get_tangent_pt(true);
-      auto [c1x, c1y] = it->get_tangent_pt(false);
-      auto [ax, ay] = it->get_rot_pt();
+    auto [c0x, c0y] = it->get_tangent_pt(true);
+    auto [c1x, c1y] = it->get_tangent_pt(false);
+    auto [ax, ay] = it->get_rot_pt();
 
-      ImVec2 p = ImVec2(x, 1 - y) * (bb.Max - bb.Min) + bb.Min;
-      ImVec2 c0 = ImVec2(c0x, 1 - c0y) * (bb.Max - bb.Min) + bb.Min;
-      ImVec2 c1 = ImVec2(c1x, 1 - c1y) * (bb.Max - bb.Min) + bb.Min;
-      ImVec2 r = ImVec2(ax, 1 - ay) * (bb.Max - bb.Min) + bb.Min;
+    ImVec2 p = ImVec2(x, 1 - y) * (bb.Max - bb.Min) + bb.Min;
+    ImVec2 c0 = ImVec2(c0x, 1 - c0y) * (bb.Max - bb.Min) + bb.Min;
+    ImVec2 c1 = ImVec2(c1x, 1 - c1y) * (bb.Max - bb.Min) + bb.Min;
+    ImVec2 r = ImVec2(ax, 1 - ay) * (bb.Max - bb.Min) + bb.Min;
 
-      ImColor pt_color;
+    ImColor pt_color;
 
-      if (it == selected_pt) {
-        pt_color = ImColor(252, 186, 3, 255);
-      }
-      else {
-        pt_color = ImColor(style.Colors[ImGuiCol_Text]);
-      }
+    if (it == selected_pt) {
+      pt_color = ImColor(252, 186, 3, 255);
+    }
+    else {
+      pt_color = ImColor(style.Colors[ImGuiCol_Text]);
+    }
 
+    if (show_tangents) {
       draw_list->AddLine(p, c0, ImColor(235, 64, 52, 255), TANGENT_THICKNESS);
       draw_list->AddLine(p, c1, ImColor(235, 64, 52, 255), TANGENT_THICKNESS);
-      draw_list->AddCircleFilled(p, POINT_RADIUS, pt_color);
       draw_list->AddCircle(c0, POINT_RADIUS, ImColor(252, 186, 3, 255), 0, POINT_BORDER_THICKNESS);
       draw_list->AddCircle(c1, POINT_RADIUS, ImColor(252, 186, 3, 255), 0, POINT_BORDER_THICKNESS);
-      draw_list->AddCircleFilled(r, POINT_RADIUS, pt_color);
-
-      // Draw the robot's rotation.
-      ImVec2 fr, fl, br, bl;
-      {
-        auto [ax1, ay1] = it->get_rot_pt(true);
-        
-        fr = ImVec2(ax + std::cos(rot - M_PI_2) * ROBOT_WIDTH, 1.0f - (ay + std::sin(rot - M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
-        fl = ImVec2(ax + std::cos(rot + M_PI_2) * ROBOT_WIDTH, 1.0f - (ay + std::sin(rot + M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
-        br = ImVec2(ax1 + std::cos(rot - M_PI_2) * ROBOT_WIDTH, 1.0f - (ay1 + std::sin(rot - M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
-        bl = ImVec2(ax1 + std::cos(rot + M_PI_2) * ROBOT_WIDTH, 1.0f - (ay1 + std::sin(rot + M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
-      }
-      draw_list->AddQuad(fr, fl, bl, br, pt_color);
     }
+    draw_list->AddCircleFilled(p, POINT_RADIUS, pt_color);
+    draw_list->AddCircleFilled(r, POINT_RADIUS, pt_color);
+
+    // Draw the robot's rotation.
+    ImVec2 fr, fl, br, bl;
+    {
+      auto [ax1, ay1] = it->get_rot_pt(true);
+      
+      fr = ImVec2(ax + std::cos(rot - M_PI_2) * ROBOT_WIDTH, 1.0f - (ay + std::sin(rot - M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
+      fl = ImVec2(ax + std::cos(rot + M_PI_2) * ROBOT_WIDTH, 1.0f - (ay + std::sin(rot + M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
+      br = ImVec2(ax1 + std::cos(rot - M_PI_2) * ROBOT_WIDTH, 1.0f - (ay1 + std::sin(rot - M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
+      bl = ImVec2(ax1 + std::cos(rot + M_PI_2) * ROBOT_WIDTH, 1.0f - (ay1 + std::sin(rot + M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
+    }
+    draw_list->AddQuad(fr, fl, bl, br, pt_color);
   }
   updated = false;
 }
