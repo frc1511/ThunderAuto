@@ -6,9 +6,6 @@
 
 #define COL_WIDTH 100.0f
 
-#define RAD_2_DEG (M_PI / 180.0f)
-#define DEG_2_RAD (180.0f / M_PI)
-
 PropertiesPage::PropertiesPage() { }
 
 PropertiesPage::~PropertiesPage() { }
@@ -91,10 +88,12 @@ void PropertiesPage::present(bool* running) {
     auto find_values = [&]() {
       pos[0] = selected_pt->px;
       pos[1] = selected_pt->py;
-      rotation = selected_pt->rotation * DEG_2_RAD;
-      heading = selected_pt->heading * DEG_2_RAD;
+      rotation = selected_pt->rotation * RAD_2_DEG;
+      heading = selected_pt->heading * RAD_2_DEG;
       weights[0] = selected_pt->w0;
       weights[1] = selected_pt->w1;
+      adjust_angle(heading);
+      adjust_angle(rotation);
     };
 
     if (focused) {
@@ -106,12 +105,12 @@ void PropertiesPage::present(bool* running) {
       }
       else if (new_heading != heading) {
         heading = new_heading;
-        selected_pt->heading = heading * RAD_2_DEG;
+        selected_pt->heading = heading * DEG_2_RAD;
         PathEditorPage::get()->update();
       }
       else if (new_rotation != rotation) {
         rotation = new_rotation;
-        selected_pt->rotation = rotation * RAD_2_DEG;
+        selected_pt->rotation = rotation * DEG_2_RAD;
         PathEditorPage::get()->update();
       }
       else if (new_weights[0] != weights[0] || new_weights[1] != weights[1]) {

@@ -16,14 +16,14 @@
 #define ROBOT_WIDTH 0.04f
 
 ImVec2 PathEditorPage::CurvePoint::get_tangent_pt(bool first) const {
-  float cx = px + std::cos(heading + (M_PI * first)) * (first ? w0 : w1),
-        cy = py + std::sin(heading + (M_PI * first)) * (first ? w0 : w1);
+  float cx = px + std::cos(heading + (M_PI * !first)) * (first ? w0 : w1),
+        cy = py + std::sin(heading + (M_PI * !first)) * (first ? w0 : w1);
 
   return ImVec2(cx, cy);
 }
 
 void PathEditorPage::CurvePoint::set_tangent_pt(bool first, float x, float y) {
-  heading = std::atan2(y - py, x - px) + M_PI * first;
+  heading = std::atan2(y - py, x - px) + (M_PI * !first);
 
   float& w = first ? w0 : w1;
 
@@ -146,7 +146,11 @@ void PathEditorPage::present_curve_editor() {
         it->set_rot_pt(ax, ay);
       }
 
-      ImGui::SetTooltip("%.2f, %.2f", ax, ay);
+      if (rot < 0.0f) {
+        rot += M_PI * 2.0f;
+      }
+
+      ImGui::SetTooltip("%.2f degrees", rot * RAD_2_DEG);
     };
 
     auto move_tangent_point = [&](CurvePointTable::iterator it, bool first) {
@@ -160,8 +164,12 @@ void PathEditorPage::present_curve_editor() {
       if (x0 != prev_x || y0 != prev_y) {
         it->set_tangent_pt(first, x0, y0);
       }
+      
+      if (head < 0.0f) {
+        head += M_PI * 2.0f;
+      }
 
-      ImGui::SetTooltip("%.2f, %.2f", x0, y0);
+      ImGui::SetTooltip("%.2f degrees", head * RAD_2_DEG);
     };
 
     static CurvePointTable::iterator drag_pt = points.end();
@@ -270,7 +278,7 @@ void PathEditorPage::present_curve_editor() {
           float dx = p1.x - p0.x,
                 dy = p1.y - p0.y;
 
-          float angle = std::atan2(dy, dx) + M_PI;
+          float angle = std::atan2(dy, dx);
 
           selected_pt = points.insert(p + 1, { new_pt.x, new_pt.y, angle, 0.1f, 0.1f, 0.0f });
           updated = true;
@@ -323,10 +331,19 @@ void PathEditorPage::present_curve_editor() {
     ImVec2 c1 = ImVec2(c1x, 1 - c1y) * (bb.Max - bb.Min) + bb.Min;
     ImVec2 r = ImVec2(ax, 1 - ay) * (bb.Max - bb.Min) + bb.Min;
 
-    ImColor pt_color;
+    ImColor pt_color, border_color = ImColor(style.Colors[ImGuiCol_Text]);
 
     if (it == selected_pt) {
       pt_color = ImColor(252, 186, 3, 255);
+      border_color = pt_color;
+    }
+    else if (it == points.cbegin()) {
+      // Green
+      pt_color = ImColor(0, 255, 0, 255);
+    }
+    else if (it == points.cend() - 1) {
+      // Red
+      pt_color = ImColor(255, 0, 0, 255);
     }
     else {
       pt_color = ImColor(style.Colors[ImGuiCol_Text]);
@@ -339,7 +356,7 @@ void PathEditorPage::present_curve_editor() {
       draw_list->AddCircle(c1, POINT_RADIUS, ImColor(252, 186, 3, 255), 0, POINT_BORDER_THICKNESS);
     }
     draw_list->AddCircleFilled(p, POINT_RADIUS, pt_color);
-    draw_list->AddCircleFilled(r, POINT_RADIUS, pt_color);
+    draw_list->AddCircleFilled(r, POINT_RADIUS, border_color);
 
     // Draw the robot's rotation.
     ImVec2 fr, fl, br, bl;
@@ -351,7 +368,7 @@ void PathEditorPage::present_curve_editor() {
       br = ImVec2(ax1 + std::cos(rot - M_PI_2) * ROBOT_WIDTH, 1.0f - (ay1 + std::sin(rot - M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
       bl = ImVec2(ax1 + std::cos(rot + M_PI_2) * ROBOT_WIDTH, 1.0f - (ay1 + std::sin(rot + M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
     }
-    draw_list->AddQuad(fr, fl, bl, br, pt_color);
+    draw_list->AddQuad(fr, fl, bl, br, border_color);
   }
   updated = false;
 }

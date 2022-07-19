@@ -5,6 +5,9 @@
 #include <optional>
 #include <cmath>
 
+#define DEG_2_RAD (M_PI / 180.0f)
+#define RAD_2_DEG (180.0f / M_PI)
+
 class PathEditorPage: public Page {
 public:
   static PathEditorPage* get() {
@@ -57,9 +60,9 @@ private:
   ~PathEditorPage();
 
   CurvePointTable points {
-    { 0.1f, 0.4f, +M_PI_2, 0.3f, 0.3f, 0.0f },
-    { 0.5f, 0.3f, +M_PI_2, 0.3f, 0.3f, 0.0f },
     { 0.9f, 0.5f, -M_PI_2, 0.3f, 0.3f, 0.0f },
+    { 0.5f, 0.3f, +M_PI_2, 0.3f, 0.3f, 0.0f },
+    { 0.1f, 0.4f, +M_PI_2, 0.3f, 0.3f, 0.0f },
   };
 
   void present_curve_editor();
