@@ -255,7 +255,7 @@ void PathEditorPage::present_curve_editor() {
 
         if (get_dist(x_mid, y_mid) > dist) {
           // Insert the point at the start of the list.
-          points.insert(points.cbegin(), { new_pt.x, new_pt.y, M_PI_2, 0.1f, 0.1f, 0.0f });
+          selected_pt = points.insert(points.cbegin(), { new_pt.x, new_pt.y, M_PI_2, 0.1f, 0.1f, 0.0f });
           updated = true;
           pt_added = true;
         }
@@ -272,7 +272,7 @@ void PathEditorPage::present_curve_editor() {
 
           float angle = std::atan2(dy, dx) + M_PI;
 
-          points.insert(p + 1, { new_pt.x, new_pt.y, angle, 0.1f, 0.1f, 0.0f });
+          selected_pt = points.insert(p + 1, { new_pt.x, new_pt.y, angle, 0.1f, 0.1f, 0.0f });
           updated = true;
           pt_added = true;
         }
@@ -280,7 +280,7 @@ void PathEditorPage::present_curve_editor() {
 
       if (!pt_added) {
         // To the end of the list!
-        points.insert(points.cend(), { new_pt.x, new_pt.y, M_PI_2, 0.1f, 0.1f, 0.0f });
+        selected_pt = points.insert(points.cend(), { new_pt.x, new_pt.y, M_PI_2, 0.1f, 0.1f, 0.0f });
         updated = true;
       }
     }
