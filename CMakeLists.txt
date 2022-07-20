@@ -62,8 +62,9 @@ option(GLFW_BUILD_TESTS OFF)
 option(GLFW_BUILD_DOCS OFF)
 option(GLFW_INSTALL OFF)
 add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/glfw")
-
 add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/imgui")
+add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/stb_image")
+add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/glad")
 
 if(THUNDER_AUTO_WINDOWS)
   add_executable(${PROJECT_NAME} WIN32 ${THUNDER_AUTO_SRC})
@@ -90,6 +91,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${THUNDER_AUTO_INC_DIR})
 
 target_link_libraries(${PROJECT_NAME} glfw)
 target_link_libraries(${PROJECT_NAME} imgui)
+target_link_libraries(${PROJECT_NAME} stb_image)
+target_link_libraries(${PROJECT_NAME} glad)
 
 if(THUNDER_AUTO_MACOS)
   target_link_libraries(${PROJECT_NAME} "-framework Foundation -framework AppKit -framework UniformTypeIdentifiers")

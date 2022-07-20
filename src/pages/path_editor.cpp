@@ -4,6 +4,8 @@
 #include <vector>
 #include <iostream>
 #include <limits>
+#include <stb_image.h>
+#include <glad/glad.h>
 
 #define CURVE_RESOLUTION_FACTOR 128.0f
 #define CURVE_THICKNESS 2
@@ -51,6 +53,24 @@ void PathEditorPage::CurvePoint::translate(float dx, float dy) {
 PathEditorPage::PathEditorPage() { }
 
 PathEditorPage::~PathEditorPage() { }
+
+void PathEditorPage::init() {
+  glGenTextures(1, &bg_texture);
+  glBindTexture(GL_TEXTURE_2D, bg_texture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  int width, height, nr_channels;
+  unsigned char* data = stbi_load("bg_2022.png", &width, &height, &nr_channels, 0);
+  if (data) {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+  } else {
+    std::cout << "Failed to load texture" << std::endl;
+  }
+  stbi_image_free(data);
+}
 
 std::optional<PathEditorPage::CurvePointTable::iterator> PathEditorPage::get_selected_point() {
   if (selected_pt == points.end()) {

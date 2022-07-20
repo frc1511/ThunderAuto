@@ -13,6 +13,8 @@ public:
   static PathEditorPage* get() {
     return &instance;
   }
+
+  void init();
   
   PathEditorPage(PathEditorPage const&) = delete;
   PathEditorPage& operator=(PathEditorPage const&) = delete;
@@ -90,6 +92,8 @@ private:
   bool unsaved = false;
 
   bool show_tangents = true;
+
+  unsigned int bg_texture;
   
   static PathEditorPage instance;
 };
