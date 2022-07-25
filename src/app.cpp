@@ -243,12 +243,10 @@ void App::menu_open() {
 }
 
 void App::menu_save() {
-  std::cout << "save\n";
   ProjectManager::get()->save_project();
 }
 
 void App::menu_save_as() {
-  std::cout << "save as\n";
   std::string path = platform->save_file_dialog(PATH_EXTENSION);
   if (path.empty()) return;
   ProjectManager::get()->save_project_as(path);
