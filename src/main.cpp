@@ -270,4 +270,6 @@ static void set_imgui_style() {
   
   io->Fonts->AddFontFromFileTTF("Comic Sans MS.ttf", 16.0f);
   io->Fonts->AddFontFromFileTTF("Comic Sans MS Bold.ttf", 16.0f);
+
+  io->ConfigWindowsMoveFromTitleBarOnly = true;
 }

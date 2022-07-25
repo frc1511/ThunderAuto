@@ -1,6 +1,8 @@
 #include <popups/new_project.h>
 #include <imgui_internal.h>
 #include <thunder_auto.h>
+#include <popups/new_field.h>
+#include <iostream>
 
 #ifdef THUNDER_AUTO_MACOS
 # include <platform/macos/macos.h>
@@ -20,6 +22,10 @@ NewProjectPopup::NewProjectPopup() {
 #endif
 }
 
+const Field field_constants[] {
+  { "field_2022.png", ImVec2(0.1f, 0.1f), ImVec2(0.9f, 0.9f) },
+};
+
 NewProjectPopup::~NewProjectPopup() { }
 
 void NewProjectPopup::present(bool* running) {
@@ -27,6 +33,8 @@ void NewProjectPopup::present(bool* running) {
     return;
   }
   
+  // --- File ---
+
   static char deploy_path_buf[256] = "";
   
   ImGui::InputText("Path", deploy_path_buf, 256, ImGuiInputTextFlags_None);
@@ -40,6 +48,38 @@ void NewProjectPopup::present(bool* running) {
   }
   
   bool has_deploy_path = !deploy_path.empty();
+
+  // --- Field Selection ---
+
+  static std::optional<Field> field;
+
+  const char* fields[] = { "2022 - Rapid React", "Custom" };
+  static int current_field = 0;
+
+  const char* field_str = (current_field == 1 && field) ? field->img_path.c_str() : fields[current_field];
+
+  if (current_field == 1) {
+    field = NewFieldPopup::get()->get_field();
+  }
+  else {
+    field = field_constants[current_field];
+  }
+
+  if (ImGui::BeginCombo("Field", field_str)) {
+    for (int i = 0; i < 2; i++) {
+      if (ImGui::Selectable(fields[i], current_field == i)) {
+        current_field = i;
+        if (current_field == 1) {
+          show_new_field_popup = true;
+        }
+      }
+    }
+    ImGui::EndCombo();
+  }
+  
+  ImGui::Separator();
+
+  // --- Drive Controller Selection ---
   
   const char* controllers[] = { "Ramsete", "Holonomic" };
   static int current_controller = 0;
@@ -52,23 +92,29 @@ void NewProjectPopup::present(bool* running) {
     }
     ImGui::EndCombo();
   }
-  
-  ImGui::Separator();
+
+  // --- Max Acceleration ---
   
   static char accel_buf[10] = "";
   
   ImGui::InputText("Max Acceleration (m/s^2)", accel_buf, 9, ImGuiInputTextFlags_CharsDecimal);
   double max_accel = std::atof(accel_buf);
+
+  // --- Max Deceleration ---
   
   static char decel_buf[10] = "";
   
   ImGui::InputText("Max Deceleration (m/s^2)", decel_buf, 9, ImGuiInputTextFlags_CharsDecimal);
   double max_decel = std::atof(decel_buf);
+
+  // --- Max Velocity ---
   
   static char vel_buf[10] = "";
   
   ImGui::InputText("Max Velocity (m/s)", vel_buf, 9, ImGuiInputTextFlags_CharsDecimal);
   double max_vel = std::atof(vel_buf);
+
+  // --- Create and Cancel Buttons ---
   
   bool create_disabled = false;
   
@@ -89,6 +135,8 @@ void NewProjectPopup::present(bool* running) {
     err_text = "Max velocity should be greater than 0 m/s";
     create_disabled = true;
   }
+
+  // --- Cancel Button ---
   
   if (ImGui::Button("Cancel")) {
     has_project = false;
@@ -96,6 +144,8 @@ void NewProjectPopup::present(bool* running) {
   }
   
   ImGui::SameLine();
+
+  // --- Create Button ---
 
   if (create_disabled) {
     ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
@@ -106,7 +156,7 @@ void NewProjectPopup::present(bool* running) {
     
     DriveController drivetrain = current_controller == 0 ? DriveController::RAMSETE : DriveController::HOLONOMIC;
     
-    project = { deploy_path, drivetrain, atof(accel_buf), atof(decel_buf), atof(vel_buf) };
+    project = { deploy_path, field.value(), drivetrain, atof(accel_buf), atof(decel_buf), atof(vel_buf) };
     
     goto close;
   }

@@ -17,6 +17,7 @@
 #include <pages/properties.h>
 #include <popups/new_project.h>
 #include <popups/unsaved.h>
+#include <popups/new_field.h>
 
 App::App() {
 #ifdef THUNDER_AUTO_MACOS
@@ -116,11 +117,11 @@ void App::present() {
   if (item_select_all) menu_select_all();
   
 
-  // if (ProjectManager::get()->has_project()) {
+  if (ProjectManager::get()->has_project()) {
     if (show_path_editor) PathEditorPage::get()->present(&show_path_editor);
     if (show_path_manager) PathManagerPage::get()->present(&show_path_manager);
     if (show_properties) PropertiesPage::get()->present(&show_properties);
-  // }
+  }
 
   switch (event_state) {
     case EventState::NONE:
@@ -154,19 +155,31 @@ void App::present() {
 }
 
 void App::new_project() {
-  ImGui::OpenPopup(NewProjectPopup::get()->get_name().c_str());
 
   bool showing_popup = true;
-  NewProjectPopup::get()->present(&showing_popup);
+  if (NewProjectPopup::get()->is_showing_new_field_popup()) {
+    ImGui::OpenPopup(NewFieldPopup::get()->get_name().c_str());
 
-  if (!showing_popup) {
-    std::optional<ProjectSettings> settings = NewProjectPopup::get()->get_project_settings();
+    NewFieldPopup::get()->present(&showing_popup);
 
-    if (settings) {
-      ProjectManager::get()->new_project(settings.value());
+    if (!showing_popup) {
+      NewProjectPopup::get()->set_is_showing_new_field_popup(false);
     }
+  }
+  else {
+    ImGui::OpenPopup(NewProjectPopup::get()->get_name().c_str());
 
-    event_state = EventState::NONE;
+    NewProjectPopup::get()->present(&showing_popup);
+
+    if (!showing_popup) {
+      std::optional<ProjectSettings> settings = NewProjectPopup::get()->get_project_settings();
+
+      if (settings) {
+        ProjectManager::get()->new_project(settings.value());
+      }
+
+      event_state = EventState::NONE;
+    }
   }
 }
 

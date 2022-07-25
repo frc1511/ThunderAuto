@@ -1,6 +1,8 @@
 #pragma once
 
+#include <field.h>
 #include <string>
+#include <pages/path_editor.h>
 
 enum class DriveController {
   RAMSETE,
@@ -10,12 +12,19 @@ enum class DriveController {
 struct ProjectSettings {
   std::string path;
   
+  Field field;
+  
   DriveController drive_controller;
   
   double max_acceleration; // m/s2
   double max_deceleration; // m/s2
   
   double max_velocity; // m/s
+};
+
+struct Project {
+  ProjectSettings settings;
+  PathEditorPage::CurvePointTable points;
 };
 
 class ProjectManager {
@@ -43,7 +52,7 @@ private:
   ProjectManager();
   ~ProjectManager();
   
-  ProjectSettings settings;
+  Project project;
 
   bool working_project = false;
   bool unsaved = false;

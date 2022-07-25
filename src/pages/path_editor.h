@@ -5,6 +5,8 @@
 #include <optional>
 #include <cmath>
 
+struct Project;
+
 #define DEG_2_RAD (M_PI / 180.0f)
 #define RAD_2_DEG (180.0f / M_PI)
 
@@ -21,9 +23,8 @@ public:
   
   void present(bool* running) override;
   bool is_focused() override { return focused; }
-  
-  constexpr bool is_unsaved() const { return unsaved; }
-  inline void set_unsaved(bool _unsaved) { unsaved = _unsaved; }
+
+  void set_project(Project* project);
 
   struct CurvePoint {
     float px;
@@ -61,12 +62,6 @@ private:
   PathEditorPage();
   ~PathEditorPage();
 
-  CurvePointTable points {
-    { 0.9f, 0.5f, -M_PI_2, 0.3f, 0.3f, 0.0f },
-    { 0.5f, 0.3f, +M_PI_2, 0.3f, 0.3f, 0.0f },
-    { 0.1f, 0.4f, +M_PI_2, 0.3f, 0.3f, 0.0f },
-  };
-
   void present_curve_editor();
   std::vector<ImVec2> calc_curve_points() const;
 
@@ -78,23 +73,23 @@ private:
 
   std::pair<CurvePointTable::const_iterator, float> find_curve_point(float x, float y) const;
 
+  Project* project = nullptr;
+
   std::vector<float> cached_curve_lengths;
   std::vector<ImVec2> cached_curve_points;
   std::vector<float> cached_curvatures;
 
-  CurvePointTable::iterator selected_pt = points.end();
+  CurvePointTable::iterator selected_pt;
 
   CurveKind curve_kind = CurveKind::CUBIC_BEZIER;
 
   bool updated = true;
-
   bool focused = false;
-  bool unsaved = false;
 
   bool show_tangents = true;
 
-  float bg_aspect_ratio;
-  unsigned int bg_texture;
+  float field_aspect_ratio;
+  unsigned int field_tex;
   
   static PathEditorPage instance;
 };

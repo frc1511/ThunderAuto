@@ -1,4 +1,5 @@
 #include <pages/path_editor.h>
+#include <project.h>
 #include <imgui_internal.h>
 #include <utility>
 #include <vector>
@@ -16,6 +17,10 @@
 
 #define ROT_POINT_RADIUS 0.05f
 #define ROBOT_WIDTH 0.04f
+
+// Field dimensions (meters).
+#define FIELD_X 15.5702 // 54' 1"
+#define FIELD_Y 8.1026 // 26' 7"
 
 ImVec2 PathEditorPage::CurvePoint::get_tangent_pt(bool first) const {
   float cx = px + std::cos(heading + (M_PI * !first)) * (first ? w0 : w1),
@@ -55,33 +60,31 @@ PathEditorPage::PathEditorPage() { }
 PathEditorPage::~PathEditorPage() { }
 
 void PathEditorPage::init() {
-  glGenTextures(1, &bg_texture);
-  glBindTexture(GL_TEXTURE_2D, bg_texture);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  // glGenTextures(1, &bg_texture);
+  // glBindTexture(GL_TEXTURE_2D, bg_texture);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  int width, height, nr_channels;
-  unsigned char* data = stbi_load("bg_2022.png", &width, &height, &nr_channels, 0);
+  // int width, height, nr_channels;
+  // unsigned char* data = stbi_load("field_2022.png", &width, &height, &nr_channels, 0);
 
-  std::cout << nr_channels << '\n';
+  // int tex_channels = nr_channels == 3 ? GL_RGB : GL_RGBA;
 
-  int tex_channels = nr_channels == 3 ? GL_RGB : GL_RGBA;
-
-  if (data) {
-    glTexImage2D(GL_TEXTURE_2D, 0, tex_channels, width, height, 0, tex_channels, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    stbi_image_free(data);
-    bg_aspect_ratio = static_cast<float>(width) / static_cast<float>(height);
-  }
-  else {
-    std::cout << "Failed to load texture" << std::endl;
-  }
+  // if (data) {
+  //   glTexImage2D(GL_TEXTURE_2D, 0, tex_channels, width, height, 0, tex_channels, GL_UNSIGNED_BYTE, data);
+  //   glGenerateMipmap(GL_TEXTURE_2D);
+  //   stbi_image_free(data);
+  //   field_aspect_ratio = static_cast<float>(width) / static_cast<float>(height);
+  // }
+  // else {
+  //   std::cout << "Failed to load texture" << std::endl;
+  // }
 }
 
 std::optional<PathEditorPage::CurvePointTable::iterator> PathEditorPage::get_selected_point() {
-  if (selected_pt == points.end()) {
+  if (selected_pt == project->points.end()) {
     return std::nullopt;
   }
   return selected_pt;
@@ -91,16 +94,43 @@ void PathEditorPage::present(bool* running) {
   ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
   if (!ImGui::Begin("Path Editor", running,
                 ImGuiWindowFlags_NoCollapse
-              | ImGuiWindowFlags_UnsavedDocument * unsaved)) {
+              | ImGuiWindowFlags_UnsavedDocument * ProjectManager::get()->is_unsaved())) {
     ImGui::End();
     return;
   }
 
   focused = ImGui::IsWindowFocused();
 
-  present_curve_editor();
+  if (ProjectManager::get()->has_project()) {
+    present_curve_editor();
+  }
   
   ImGui::End();
+}
+
+void PathEditorPage::set_project(Project* _project) {
+  project = _project;
+
+  int width, height, nr_channels;
+  unsigned char* img_data = stbi_load(project->settings.field.img_path.c_str(), &width, &height, &nr_channels, 0);
+  if (img_data) {
+    int tex_channels = nr_channels == 3 ? GL_RGB : GL_RGBA;
+
+    glGenTextures(1, &field_tex);
+    glBindTexture(GL_TEXTURE_2D, field_tex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, tex_channels, width, height, 0, tex_channels, GL_UNSIGNED_BYTE, img_data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    stbi_image_free(img_data);
+    field_aspect_ratio = static_cast<float>(width) / static_cast<float>(height);
+  }
+  else {
+    std::cout << "Failed to load texture" << std::endl;
+  }
 }
 
 void PathEditorPage::present_curve_editor() {
@@ -119,11 +149,11 @@ void PathEditorPage::present_curve_editor() {
         dim_y = win_size.y;
 
   // Fit within the window size while maintaining aspect ratio.
-  if ((dim_x / dim_y) > bg_aspect_ratio) {
-    dim_x = dim_y * bg_aspect_ratio;
+  if ((dim_x / dim_y) > field_aspect_ratio) {
+    dim_x = dim_y * field_aspect_ratio;
   }
   else {
-    dim_y = dim_x / bg_aspect_ratio;
+    dim_y = dim_x / field_aspect_ratio;
   }
 
   ImVec2 canvas(dim_x, dim_y);
@@ -134,7 +164,7 @@ void PathEditorPage::present_curve_editor() {
 
   const ImGuiID id = win->GetID("Path Editor");
 
-  draw_list->AddImage(reinterpret_cast<void*>(static_cast<intptr_t>(bg_texture)), bb.Min, bb.Max);
+  draw_list->AddImage(reinterpret_cast<void*>(static_cast<intptr_t>(field_tex)), bb.Min, bb.Max);
 
   // --- Point movement ---
 
@@ -201,11 +231,11 @@ void PathEditorPage::present_curve_editor() {
       ImGui::SetTooltip("%.2f degrees", head * RAD_2_DEG);
     };
 
-    static CurvePointTable::iterator drag_pt = points.end();
+    static CurvePointTable::iterator drag_pt = project->points.end();
     enum { DRAG_NONE = 0, DRAG_PT = 1 << 0, DRAG_TAN_0 = 1 << 1, DRAG_TAN_1 = 1 << 2, DRAG_ANG = 1 << 3 };
     static std::size_t drag_pt_type = DRAG_NONE;
 
-    if (drag_pt != points.end() && drag_pt_type != DRAG_NONE && (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0))) {
+    if (drag_pt != project->points.end() && drag_pt_type != DRAG_NONE && (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0))) {
       if (drag_pt_type & DRAG_PT) {
         move_curve_point(drag_pt);
       }
@@ -218,11 +248,11 @@ void PathEditorPage::present_curve_editor() {
     }
     else {
       // Reset the selection.
-      drag_pt = points.end();
+      drag_pt = project->points.end();
       drag_pt_type = DRAG_NONE;
 
       if (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0)) {
-        for (CurvePointTable::iterator it = points.begin(); it != points.end(); ++it) {
+        for (CurvePointTable::iterator it = project->points.begin(); it != project->points.end(); ++it) {
           auto& [x, y, head, w0, w1, rot] = *it;
 
           // Checks the from the mouse to a point.
@@ -250,7 +280,7 @@ void PathEditorPage::present_curve_editor() {
           else if (focused) {
             // Check if the mouse is within the bounding box.
             if (mouse.x >= bb.Min.x && mouse.x <= bb.Max.x && mouse.y >= bb.Min.y && mouse.y <= bb.Max.y) {
-              selected_pt = points.end();
+              selected_pt = project->points.end();
             }
           }
         }
@@ -258,7 +288,7 @@ void PathEditorPage::present_curve_editor() {
     }
 
     if (ImGui::IsMouseDoubleClicked(0)) {
-      std::pair<CurvePointTable::const_iterator, float> closest_point(points.end(), std::numeric_limits<float>::max());
+      std::pair<CurvePointTable::const_iterator, float> closest_point(project->points.end(), std::numeric_limits<float>::max());
 
       auto get_dist = [&](float x, float y) -> float {
         // Checks the distance from the mouse to a point.
@@ -267,7 +297,7 @@ void PathEditorPage::present_curve_editor() {
       };
 
       // Find the closest point to the mouse.
-      for (CurvePointTable::const_iterator it = points.cbegin(); it != points.cend(); ++it) {
+      for (CurvePointTable::const_iterator it = project->points.cbegin(); it != project->points.cend(); ++it) {
         const auto [x, y, head, w0, w1, rot] = *it;
 
         // Checks the distance from the mouse to a point.
@@ -286,13 +316,13 @@ void PathEditorPage::present_curve_editor() {
       float neighbor_dist = std::numeric_limits<float>::max();
 
       bool pt_added = false;
-      if (pt == points.cbegin()) {
+      if (pt == project->points.cbegin()) {
         float x_mid = (pt->px + (pt + 1)->px) / 2,
               y_mid = (pt->py + (pt + 1)->py) / 2;
 
         if (get_dist(x_mid, y_mid) > dist) {
           // Insert the point at the start of the list.
-          selected_pt = points.insert(points.cbegin(), { new_pt.x, new_pt.y, M_PI_2, 0.1f, 0.1f, 0.0f });
+          selected_pt = project->points.insert(project->points.cbegin(), { new_pt.x, new_pt.y, M_PI_2, 0.1f, 0.1f, 0.0f });
           updated = true;
           pt_added = true;
         }
@@ -300,7 +330,7 @@ void PathEditorPage::present_curve_editor() {
 
       if (!pt_added) {
         auto [p, t] = find_curve_point(new_pt.x, new_pt.y);
-        if (p != points.cend()) {
+        if (p != project->points.cend()) {
           ImVec2 p0 = calc_curve_point(p, t);
           ImVec2 p1 = calc_curve_point(p, t + INTEGRAL_PRECISION);
 
@@ -309,7 +339,7 @@ void PathEditorPage::present_curve_editor() {
 
           float angle = std::atan2(dy, dx);
 
-          selected_pt = points.insert(p + 1, { new_pt.x, new_pt.y, angle, 0.1f, 0.1f, 0.0f });
+          selected_pt = project->points.insert(p + 1, { new_pt.x, new_pt.y, angle, 0.1f, 0.1f, 0.0f });
           updated = true;
           pt_added = true;
         }
@@ -317,7 +347,7 @@ void PathEditorPage::present_curve_editor() {
 
       if (!pt_added) {
         // To the end of the list!
-        selected_pt = points.insert(points.cend(), { new_pt.x, new_pt.y, M_PI_2, 0.1f, 0.1f, 0.0f });
+        selected_pt = project->points.insert(project->points.cend(), { new_pt.x, new_pt.y, M_PI_2, 0.1f, 0.1f, 0.0f });
         updated = true;
       }
     }
@@ -348,7 +378,7 @@ void PathEditorPage::present_curve_editor() {
 
   // Draw the curve waypoints and tangent lines.
   // for (const auto& [x, y, c0x, c0y, c1x, c1y, ax, ay] : points) {
-  for (CurvePointTable::const_iterator it = points.cbegin(); it != points.cend(); ++it) {
+  for (CurvePointTable::const_iterator it = project->points.cbegin(); it != project->points.cend(); ++it) {
     const auto& [x, y, head, w0, w1, rot] = *it;
 
     auto [c0x, c0y] = it->get_tangent_pt(true);
@@ -366,11 +396,11 @@ void PathEditorPage::present_curve_editor() {
       pt_color = ImColor(252, 186, 3, 255);
       border_color = pt_color;
     }
-    else if (it == points.cbegin()) {
+    else if (it == project->points.cbegin()) {
       // Green
       pt_color = ImColor(0, 255, 0, 255);
     }
-    else if (it == points.cend() - 1) {
+    else if (it == project->points.cend() - 1) {
       // Red
       pt_color = ImColor(255, 0, 0, 255);
     }
@@ -405,8 +435,8 @@ void PathEditorPage::present_curve_editor() {
 std::vector<ImVec2> PathEditorPage::calc_curve_points() const {
   std::vector<ImVec2> res;
 
-  for (CurvePointTable::const_iterator it = points.cbegin(); it + 1 != points.cend(); ++it) {
-    std::size_t i = it - points.cbegin();
+  for (CurvePointTable::const_iterator it = project->points.cbegin(); it + 1 != project->points.cend(); ++it) {
+    std::size_t i = it - project->points.cbegin();
     float len = cached_curve_lengths.at(i);
 
     std::size_t samples = len * CURVE_RESOLUTION_FACTOR;
@@ -500,7 +530,7 @@ ImVec2 PathEditorPage::calc_curve_point(CurvePointTable::const_iterator it, floa
 std::vector<float> PathEditorPage::calc_curve_lengths() const {
   std::vector<float> lengths;
 
-  for (CurvePointTable::const_iterator it = points.cbegin(); it + 1 != points.cend(); ++it) {
+  for (CurvePointTable::const_iterator it = project->points.cbegin(); it + 1 != project->points.cend(); ++it) {
     lengths.push_back(calc_curve_part_length(it));
   }
 
@@ -565,8 +595,8 @@ std::vector<float> PathEditorPage::calc_curvature() const {
 }
 
 std::pair<PathEditorPage::CurvePointTable::const_iterator, float> PathEditorPage::find_curve_point(float x, float y) const {
-  for (CurvePointTable::const_iterator it = points.cbegin(); it + 1 != points.cend(); ++it) {
-    std::size_t i = it - points.cbegin();
+  for (CurvePointTable::const_iterator it = project->points.cbegin(); it + 1 != project->points.cend(); ++it) {
+    std::size_t i = it - project->points.cbegin();
     float len = cached_curve_lengths.at(i);
 
     std::size_t samples = len * 64.0f;
@@ -579,7 +609,7 @@ std::pair<PathEditorPage::CurvePointTable::const_iterator, float> PathEditorPage
       }
     }
   }
-  return std::make_pair(points.cend(), 0.0f);
+  return std::make_pair(project->points.cend(), 0.0f);
 }
 
 PathEditorPage PathEditorPage::instance {};
