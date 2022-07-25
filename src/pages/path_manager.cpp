@@ -1,10 +1,10 @@
-#include <pages/path_selector.h>
+#include <pages/path_manager.h>
   
-PathSelectorPage::PathSelectorPage() { }
+PathManagerPage::PathManagerPage() { }
 
-PathSelectorPage::~PathSelectorPage() { }
+PathManagerPage::~PathManagerPage() { }
 
-void PathSelectorPage::present(bool* running) {
+void PathManagerPage::present(bool* running) {
   ImGui::SetNextWindowSize(ImVec2(400, 400), ImGuiCond_FirstUseEver);
   if (!ImGui::Begin("Path Selector", running, ImGuiWindowFlags_NoCollapse)) {
     ImGui::End();
@@ -17,4 +17,4 @@ void PathSelectorPage::present(bool* running) {
   ImGui::End();
 }
 
-PathSelectorPage PathSelectorPage::instance {};
+PathManagerPage PathManagerPage::instance {};

@@ -93,6 +93,7 @@ private:
 
   bool show_tangents = true;
 
+  float bg_aspect_ratio;
   unsigned int bg_texture;
   
   static PathEditorPage instance;

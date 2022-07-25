@@ -3,8 +3,6 @@
 
 #include <imgui.h>
 
-// #define GL_SILENCE_DEPRECATION
-// #include <GLFW/glfw3.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
@@ -54,10 +52,6 @@ int main(int argc, char** argv) {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 #endif
-
-  // if (!gladLoadGL()) {
-  //   exit(-1);
-  // }
   
   // --- Initialize window ---
   

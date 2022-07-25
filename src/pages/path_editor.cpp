@@ -61,15 +61,23 @@ void PathEditorPage::init() {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
   int width, height, nr_channels;
   unsigned char* data = stbi_load("bg_2022.png", &width, &height, &nr_channels, 0);
+
+  std::cout << nr_channels << '\n';
+
+  int tex_channels = nr_channels == 3 ? GL_RGB : GL_RGBA;
+
   if (data) {
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, tex_channels, width, height, 0, tex_channels, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
-  } else {
+    stbi_image_free(data);
+    bg_aspect_ratio = static_cast<float>(width) / static_cast<float>(height);
+  }
+  else {
     std::cout << "Failed to load texture" << std::endl;
   }
-  stbi_image_free(data);
 }
 
 std::optional<PathEditorPage::CurvePointTable::iterator> PathEditorPage::get_selected_point() {
@@ -107,14 +115,15 @@ void PathEditorPage::present_curve_editor() {
   // Fit the canvas to the window.
   ImVec2 win_size = ImGui::GetWindowSize();
 
-  float dim_x = win_size.x * 0.98f;
-  float dim_y = win_size.y * 0.9f;
+  float dim_x = win_size.x,
+        dim_y = win_size.y;
 
-  if (dim_x < dim_y) {
-    dim_y = dim_x;
+  // Fit within the window size while maintaining aspect ratio.
+  if ((dim_x / dim_y) > bg_aspect_ratio) {
+    dim_x = dim_y * bg_aspect_ratio;
   }
   else {
-    dim_x = dim_y;
+    dim_y = dim_x / bg_aspect_ratio;
   }
 
   ImVec2 canvas(dim_x, dim_y);
@@ -125,7 +134,7 @@ void PathEditorPage::present_curve_editor() {
 
   const ImGuiID id = win->GetID("Path Editor");
 
-  ImGui::RenderFrame(bb.Min, bb.Max, ImGui::GetColorU32(ImGuiCol_FrameBg, 1), true, style.FrameRounding);
+  draw_list->AddImage(reinterpret_cast<void*>(static_cast<intptr_t>(bg_texture)), bb.Min, bb.Max);
 
   // --- Point movement ---
 

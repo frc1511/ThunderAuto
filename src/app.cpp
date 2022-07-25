@@ -13,7 +13,7 @@
 #endif
 
 #include <pages/path_editor.h>
-#include <pages/path_selector.h>
+#include <pages/path_manager.h>
 #include <pages/properties.h>
 #include <popups/new_project.h>
 #include <popups/unsaved.h>
@@ -44,7 +44,7 @@ void App::present() {
        item_select_all = false;
 
   static bool show_path_editor = true,
-              show_path_selector = true,
+              show_path_manager = true,
               show_properties = true;
 
 #ifdef THUNDER_AUTO_MACOS
@@ -92,7 +92,7 @@ void App::present() {
 
       if (ImGui::BeginMenu("Tools")) {
         ImGui::MenuItem("Editor", nullptr, &show_path_editor);
-        ImGui::MenuItem("Paths", nullptr, &show_path_selector);
+        ImGui::MenuItem("Paths", nullptr, &show_path_manager);
         ImGui::MenuItem("Properties", nullptr, &show_properties);
         
         ImGui::EndMenu();
@@ -118,7 +118,7 @@ void App::present() {
 
   // if (ProjectManager::get()->has_project()) {
     if (show_path_editor) PathEditorPage::get()->present(&show_path_editor);
-    if (show_path_selector) PathSelectorPage::get()->present(&show_path_selector);
+    if (show_path_manager) PathManagerPage::get()->present(&show_path_manager);
     if (show_properties) PropertiesPage::get()->present(&show_properties);
   // }
 
