@@ -62,6 +62,7 @@ void ProjectManager::open_project(std::string path) {
   project.settings.max_deceleration = std::stof(get_str()); ++file_iter;
   project.settings.max_velocity = std::stof(get_str()); ++file_iter;
 
+  project.points.clear();
   while (file_iter != file_str.cend() && *file_iter == '{') {
       ++file_iter;
       PathEditorPage::CurvePoint point;

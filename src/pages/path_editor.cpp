@@ -1,6 +1,5 @@
 #include <pages/path_editor.h>
 #include <project.h>
-#include <imgui_internal.h>
 #include <utility>
 #include <vector>
 #include <iostream>
@@ -59,28 +58,12 @@ PathEditorPage::PathEditorPage() { }
 
 PathEditorPage::~PathEditorPage() { }
 
-void PathEditorPage::init() {
-  // glGenTextures(1, &bg_texture);
-  // glBindTexture(GL_TEXTURE_2D, bg_texture);
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+ImVec2 PathEditorPage::to_field_coord(ImVec2 pt) const {
+  return ImVec2((pt.x - bb.Min.x) / (bb.Max.x - bb.Min.x), 1 - (pt.y - bb.Min.y) / (bb.Max.y - bb.Min.y));
+}
 
-  // int width, height, nr_channels;
-  // unsigned char* data = stbi_load("field_2022.png", &width, &height, &nr_channels, 0);
-
-  // int tex_channels = nr_channels == 3 ? GL_RGB : GL_RGBA;
-
-  // if (data) {
-  //   glTexImage2D(GL_TEXTURE_2D, 0, tex_channels, width, height, 0, tex_channels, GL_UNSIGNED_BYTE, data);
-  //   glGenerateMipmap(GL_TEXTURE_2D);
-  //   stbi_image_free(data);
-  //   field_aspect_ratio = static_cast<float>(width) / static_cast<float>(height);
-  // }
-  // else {
-  //   std::cout << "Failed to load texture" << std::endl;
-  // }
+ImVec2 PathEditorPage::to_draw_coord(ImVec2 pt) const {
+  return ImVec2(pt.x, 1 - pt.y) * (bb.Max - bb.Min) + bb.Min;
 }
 
 std::optional<PathEditorPage::CurvePointTable::iterator> PathEditorPage::get_selected_point() {
@@ -131,6 +114,8 @@ void PathEditorPage::set_project(Project* _project) {
   else {
     std::cout << "Failed to load texture" << std::endl;
   }
+
+  updated = true;
 }
 
 void PathEditorPage::present_curve_editor() {
@@ -158,7 +143,7 @@ void PathEditorPage::present_curve_editor() {
 
   ImVec2 canvas(dim_x, dim_y);
 
-  ImRect bb(win->DC.CursorPos, win->DC.CursorPos + canvas);
+  bb = ImRect(win->DC.CursorPos, win->DC.CursorPos + canvas);
   ImGui::ItemSize(bb);
   if (!ImGui::ItemAdd(bb, 0)) return;
 
@@ -171,11 +156,10 @@ void PathEditorPage::present_curve_editor() {
   if (focused) {
     ImVec2 mouse = io.MousePos;
     auto move_point = [&](float& x, float& y) {
-      x = mouse.x;
-      y = mouse.y;
+      ImVec2 pt = to_field_coord(mouse);
+      x = pt.x;
+      y = pt.y;
 
-      x = (x - bb.Min.x) / (bb.Max.x - bb.Min.x);
-      y = 1 - (y - bb.Min.y) / (bb.Max.y - bb.Min.y);
       updated = true;
     };
 
@@ -257,7 +241,7 @@ void PathEditorPage::present_curve_editor() {
 
           // Checks the from the mouse to a point.
           auto check_dist = [&](float px, float py) -> bool {
-            ImVec2 pos = ImVec2(px, 1 - py) * (bb.Max - bb.Min) + bb.Min;
+            ImVec2 pos = to_draw_coord(ImVec2(px, py));
             float dist = std::hypotf(pos.x - mouse.x, pos.y - mouse.y);
             return dist < POINT_RADIUS * 4;
           };
@@ -292,7 +276,7 @@ void PathEditorPage::present_curve_editor() {
 
       auto get_dist = [&](float x, float y) -> float {
         // Checks the distance from the mouse to a point.
-        ImVec2 pos = ImVec2(x, 1 - y) * (bb.Max - bb.Min) + bb.Min;
+        ImVec2 pos = to_draw_coord(ImVec2(x, y));
         return std::sqrt(std::powf(pos.x - mouse.x, 2) + std::powf(pos.y - mouse.y, 2));
       };
 
@@ -308,7 +292,7 @@ void PathEditorPage::present_curve_editor() {
         }
       }
 
-      ImVec2 new_pt((mouse.x - bb.Min.x) / (bb.Max.x - bb.Min.x), 1 - (mouse.y - bb.Min.y) / (bb.Max.y - bb.Min.y));
+      ImVec2 new_pt = to_field_coord(mouse);
 
       bool dir = true;
       auto& [pt, dist] = closest_point;
@@ -373,7 +357,7 @@ void PathEditorPage::present_curve_editor() {
 
     ImVec2 p0 = *it, p1 = *(it + 1);
 
-    draw_list->AddLine(ImVec2(p0.x, 1 - p0.y) * (bb.Max - bb.Min) + bb.Min, ImVec2(p1.x, 1 - p1.y) * (bb.Max - bb.Min) + bb.Min, ImColor::HSV(hue, 1.0f, 1.0f), CURVE_THICKNESS);
+    draw_list->AddLine(to_draw_coord(p0), to_draw_coord(p1), ImColor::HSV(hue, 1.0f, 1.0f), CURVE_THICKNESS);
   }
 
   // Draw the curve waypoints and tangent lines.
@@ -385,10 +369,10 @@ void PathEditorPage::present_curve_editor() {
     auto [c1x, c1y] = it->get_tangent_pt(false);
     auto [ax, ay] = it->get_rot_pt();
 
-    ImVec2 p = ImVec2(x, 1 - y) * (bb.Max - bb.Min) + bb.Min;
-    ImVec2 c0 = ImVec2(c0x, 1 - c0y) * (bb.Max - bb.Min) + bb.Min;
-    ImVec2 c1 = ImVec2(c1x, 1 - c1y) * (bb.Max - bb.Min) + bb.Min;
-    ImVec2 r = ImVec2(ax, 1 - ay) * (bb.Max - bb.Min) + bb.Min;
+    ImVec2 p = to_draw_coord(ImVec2(x, y));
+    ImVec2 c0 = to_draw_coord(ImVec2(c0x, c0y));
+    ImVec2 c1 = to_draw_coord(ImVec2(c1x, c1y));
+    ImVec2 r = to_draw_coord(ImVec2(ax, ay));
 
     ImColor pt_color, border_color = ImColor(style.Colors[ImGuiCol_Text]);
 
@@ -422,10 +406,10 @@ void PathEditorPage::present_curve_editor() {
     {
       auto [ax1, ay1] = it->get_rot_pt(true);
       
-      fr = ImVec2(ax + std::cos(rot - M_PI_2) * ROBOT_WIDTH, 1.0f - (ay + std::sin(rot - M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
-      fl = ImVec2(ax + std::cos(rot + M_PI_2) * ROBOT_WIDTH, 1.0f - (ay + std::sin(rot + M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
-      br = ImVec2(ax1 + std::cos(rot - M_PI_2) * ROBOT_WIDTH, 1.0f - (ay1 + std::sin(rot - M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
-      bl = ImVec2(ax1 + std::cos(rot + M_PI_2) * ROBOT_WIDTH, 1.0f - (ay1 + std::sin(rot + M_PI_2) * ROBOT_WIDTH)) * (bb.Max - bb.Min) + bb.Min;
+      fr = to_draw_coord(ImVec2(ax + std::cos(rot - M_PI_2) * ROBOT_WIDTH, ay + std::sin(rot - M_PI_2) * ROBOT_WIDTH));
+      fl = to_draw_coord(ImVec2(ax + std::cos(rot + M_PI_2) * ROBOT_WIDTH, ay + std::sin(rot + M_PI_2) * ROBOT_WIDTH));
+      br = to_draw_coord(ImVec2(ax1 + std::cos(rot - M_PI_2) * ROBOT_WIDTH, ay1 + std::sin(rot - M_PI_2) * ROBOT_WIDTH));
+      bl = to_draw_coord(ImVec2(ax1 + std::cos(rot + M_PI_2) * ROBOT_WIDTH, ay1 + std::sin(rot + M_PI_2) * ROBOT_WIDTH));
     }
     draw_list->AddQuad(fr, fl, bl, br, border_color);
   }
@@ -575,9 +559,12 @@ std::vector<float> PathEditorPage::calc_curvature() const {
           dy2 = p0.y - p1.y;
 
     // Side lengths.
-    float a = std::sqrtf(dx0 * dx0 + dy0 * dy0),
-          b = std::sqrtf(dx1 * dx1 + dy1 * dy1),
-          c = std::sqrtf(dx2 * dx2 + dy2 * dy2);
+    // float a = std::sqrtf(dx0 * dx0 + dy0 * dy0),
+    //       b = std::sqrtf(dx1 * dx1 + dy1 * dy1),
+    //       c = std::sqrtf(dx2 * dx2 + dy2 * dy2);
+    float a = std::hypotf(dx0, dy0),
+          b = std::hypotf(dx1, dy1),
+          c = std::hypotf(dx2, dy2);
 
     // Semi-perimeter.
     float s = (a + b + c) / 2.0f;
@@ -604,9 +591,12 @@ std::pair<PathEditorPage::CurvePointTable::const_iterator, float> PathEditorPage
       float t = j / static_cast<float>(samples);
       ImVec2 p = calc_curve_point(it, t);
 
-      if (std::sqrtf((p.x - x) * (p.x - x) + (p.y - y) * (p.y - y)) < 0.02f) {
+      if (std::hypotf(p.x - x, p.y - y) < 0.02f) {
         return std::make_pair(it, t);
       }
+      // if (std::sqrtf((p.x - x) * (p.x - x) + (p.y - y) * (p.y - y)) < 0.02f) {
+      //   return std::make_pair(it, t);
+      // }
     }
   }
   return std::make_pair(project->points.cend(), 0.0f);

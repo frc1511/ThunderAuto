@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pages/page.h>
+#include <imgui_internal.h>
 #include <vector>
 #include <optional>
 #include <cmath>
@@ -15,8 +16,6 @@ public:
   static PathEditorPage* get() {
     return &instance;
   }
-
-  void init();
   
   PathEditorPage(PathEditorPage const&) = delete;
   PathEditorPage& operator=(PathEditorPage const&) = delete;
@@ -90,6 +89,13 @@ private:
 
   float field_aspect_ratio;
   unsigned int field_tex;
+
+  // From draw coordinates.
+  ImVec2 to_field_coord(ImVec2 pt) const;
+  // From field coordinates.
+  ImVec2 to_draw_coord(ImVec2 pt) const; // 237
+  
+  ImRect bb;
   
   static PathEditorPage instance;
 };

@@ -6,8 +6,6 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
-#include <pages/path_editor.h>
-
 #include <iostream>
 
 #define WINDOW_WIDTH 1200
@@ -89,10 +87,6 @@ int main(int argc, char** argv) {
   // Setup OpenGL backend.
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init(GLSL_VERSION);
-
-  // --- Initialize pages ---
-
-  PathEditorPage::get()->init();
   
   // --- The main loop ---
   

@@ -1,3 +1,3 @@
 #pragma once
 
-#define PATH_EXTENSION "thunderpath"
+#define PATH_EXTENSION "thunderauto"

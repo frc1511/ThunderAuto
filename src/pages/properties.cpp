@@ -44,7 +44,7 @@ void PropertiesPage::present(bool* running) {
 
     static float heading = 0.0f;
     float new_heading = heading;
-    ImGui::DragFloat("##Heading", &new_heading, -1.0f, 0.0f, 0.0f, "%.2f deg");
+    ImGui::DragFloat("##Heading", &new_heading, 1.0f, 0.0f, 0.0f, "%.2f deg");
 
     ImGui::Columns(1);
     ImGui::PopID();
@@ -57,7 +57,7 @@ void PropertiesPage::present(bool* running) {
 
     static float rotation = 0.0f;
     float new_rotation = rotation;
-    ImGui::DragFloat("##Rotation", &new_rotation, -1.0f, 0.0f, 0.0f, "%.2f deg");
+    ImGui::DragFloat("##Rotation", &new_rotation, 1.0f, 0.0f, 0.0f, "%.2f deg");
 
     ImGui::Columns(1);
     ImGui::PopID();
