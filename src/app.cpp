@@ -31,6 +31,10 @@ App::App() {
 
 App::~App() { }
 
+void App::init(GLFWwindow* win) {
+    window = win;
+}
+
 void App::present() {
   bool item_new = false,
        item_open = false,
@@ -42,7 +46,8 @@ void App::present() {
        item_cut = false,
        item_copy = false,
        item_paste = false,
-       item_select_all = false;
+       item_select_all = false,
+       item_delete = false;
 
   static bool show_path_editor = true,
               show_path_manager = true,
@@ -87,6 +92,7 @@ void App::present() {
         ImGui::MenuItem("Copy",       CTRL_STR "C", &item_copy);
         ImGui::MenuItem("Paste",      CTRL_STR "V", &item_paste);
         ImGui::MenuItem("Select All", CTRL_STR "A", &item_select_all);
+        ImGui::MenuItem("Delete",     "Delete", &item_delete);
         
         ImGui::EndMenu();
       }
@@ -115,6 +121,7 @@ void App::present() {
   if (item_copy)       menu_copy();
   if (item_paste)      menu_paste();
   if (item_select_all) menu_select_all();
+  if (item_delete)     menu_delete();
   
 
   if (ProjectManager::get()->has_project()) {
@@ -287,6 +294,10 @@ void App::menu_select_all() {
   std::cout << "select all\n";
 }
 
+void App::menu_delete() {
+  PathEditorPage::get()->delete_point();
+}
+
 void App::close() {
   if (ProjectManager::get()->is_unsaved()) {
     event_state = EventState::CLOSE_EVERYTHING_UNSAVED;
@@ -339,6 +350,9 @@ void App::handle_keyboard(int key, int scancode, int action, int mods) {
     }
     else if (GET_CTRL_KEY(GLFW_KEY_A)) {
       menu_select_all();
+    }
+    else if (key == GLFW_KEY_DELETE) {
+      menu_delete();
     }
   }
 }

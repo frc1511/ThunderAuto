@@ -15,6 +15,10 @@ public:
   
   App(App const&) = delete;
   App& operator=(App const&) = delete;
+
+  void init(GLFWwindow* window);
+
+  inline GLFWwindow* get_window() { return window; }
   
   void present();
   
@@ -29,6 +33,7 @@ public:
   void menu_copy();
   void menu_paste();
   void menu_select_all();
+  void menu_delete();
   
   void close();
   
@@ -65,6 +70,8 @@ private:
   bool show_unsaved_popup = false;
   
   Platform* platform = nullptr;
+
+  GLFWwindow* window = nullptr;
   
   static App instance;
 };

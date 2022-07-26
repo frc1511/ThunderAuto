@@ -5,6 +5,8 @@
 #include <vector>
 #include <optional>
 #include <cmath>
+#define M_PI 3.14159265359264
+#define M_PI_2 (M_PI / 2)
 
 struct Project;
 
@@ -45,6 +47,8 @@ public:
   using CurvePointTable = std::vector<CurvePoint>;
 
   std::optional<CurvePointTable::iterator> get_selected_point();
+
+  void delete_point();
 
   constexpr void update() { updated = true; }
 

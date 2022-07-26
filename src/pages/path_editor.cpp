@@ -73,6 +73,14 @@ std::optional<PathEditorPage::CurvePointTable::iterator> PathEditorPage::get_sel
   return selected_pt;
 }
 
+void PathEditorPage::delete_point() {
+    if (selected_pt != project->points.end() && project->points.size() > 1) {
+        project->points.erase(selected_pt);
+        selected_pt = project->points.end();
+        updated = true;
+    }
+}
+
 void PathEditorPage::present(bool* running) {
   ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
   if (!ImGui::Begin("Path Editor", running,
@@ -93,6 +101,7 @@ void PathEditorPage::present(bool* running) {
 
 void PathEditorPage::set_project(Project* _project) {
   project = _project;
+  selected_pt = project->points.end();
 
   int width, height, nr_channels;
   unsigned char* img_data = stbi_load(project->settings.field.img_path.c_str(), &width, &height, &nr_channels, 0);
@@ -306,6 +315,7 @@ void PathEditorPage::present_curve_editor() {
 
         if (get_dist(x_mid, y_mid) > dist) {
           // Insert the point at the start of the list.
+
           selected_pt = project->points.insert(project->points.cbegin(), { new_pt.x, new_pt.y, M_PI_2, 0.1f, 0.1f, 0.0f });
           updated = true;
           pt_added = true;
@@ -352,8 +362,18 @@ void PathEditorPage::present_curve_editor() {
     
     std::size_t i = it - cached_curve_points.cbegin();
 
+    auto my_clamp = [](float value, float min, float max) -> float {
+        if (value > max) {
+            value = max;
+        }
+        else if (value < min) {
+            value = min;
+        }
+        return value;
+    };
+
     // Blue is low curvature, red is high curvature.
-    float hue = 0.6f - (std::clamp(cached_curvatures.at(i), 0.0f, 50.0f) / 50.0f);
+    float hue = 0.6f - (my_clamp(cached_curvatures.at(i), 0.0f, 50.0f) / 50.0f);
 
     ImVec2 p0 = *it, p1 = *(it + 1);
 
@@ -361,7 +381,6 @@ void PathEditorPage::present_curve_editor() {
   }
 
   // Draw the curve waypoints and tangent lines.
-  // for (const auto& [x, y, c0x, c0y, c1x, c1y, ax, ay] : points) {
   for (CurvePointTable::const_iterator it = project->points.cbegin(); it != project->points.cend(); ++it) {
     const auto& [x, y, head, w0, w1, rot] = *it;
 
@@ -559,9 +578,6 @@ std::vector<float> PathEditorPage::calc_curvature() const {
           dy2 = p0.y - p1.y;
 
     // Side lengths.
-    // float a = std::sqrtf(dx0 * dx0 + dy0 * dy0),
-    //       b = std::sqrtf(dx1 * dx1 + dy1 * dy1),
-    //       c = std::sqrtf(dx2 * dx2 + dy2 * dy2);
     float a = std::hypotf(dx0, dy0),
           b = std::hypotf(dx1, dy1),
           c = std::hypotf(dx2, dy2);
@@ -594,9 +610,6 @@ std::pair<PathEditorPage::CurvePointTable::const_iterator, float> PathEditorPage
       if (std::hypotf(p.x - x, p.y - y) < 0.02f) {
         return std::make_pair(it, t);
       }
-      // if (std::sqrtf((p.x - x) * (p.x - x) + (p.y - y) * (p.y - y)) < 0.02f) {
-      //   return std::make_pair(it, t);
-      // }
     }
   }
   return std::make_pair(project->points.cend(), 0.0f);
