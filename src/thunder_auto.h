@@ -16,6 +16,7 @@
 #define RAD_2_DEG (180.0f / M_PI)
 
 #include <string>
+#include <string_view>
 #include <fstream>
 #include <iostream>
 #include <algorithm>
@@ -23,6 +24,7 @@
 #include <vector>
 #include <limits>
 #include <utility>
+#include <filesystem>
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>

@@ -10,16 +10,14 @@ enum class DriveController {
 };
 
 struct ProjectSettings {
-  std::string path;
+  std::filesystem::path path;
   
   Field field;
   
-  DriveController drive_controller;
+  DriveController drive_ctrl;
   
-  double max_acceleration; // m/s2
-  double max_deceleration; // m/s2
-  
-  double max_velocity; // m/s
+  double max_accel; // m/s2
+  double max_vel; // m/s
 };
 
 struct Project {

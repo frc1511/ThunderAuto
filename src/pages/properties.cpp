@@ -185,7 +185,7 @@ void PropertiesPage::present(bool* running) {
     static bool auto_export = false;
     if (ImGui::Checkbox("##Auto Export", &auto_export)) {
       if (auto_export) {
-        // PathEditorPage::get()->export_path(export_path_dir);
+        PathEditorPage::get()->export_path(export_path_dir);
       }
     }
 
@@ -200,7 +200,7 @@ void PropertiesPage::present(bool* running) {
     }
 
     if (ImGui::Button("Export")) {
-      // PathEditorPage::get()->export_path(export_path_dir);
+      PathEditorPage::get()->export_path(export_path_dir);
     }
 
     if (auto_export) {

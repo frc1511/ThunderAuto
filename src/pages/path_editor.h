@@ -24,6 +24,8 @@ public:
 
   void set_project(Project* project);
 
+  void export_path(std::string path);
+
   struct CurvePoint {
     float px;
     float py;
@@ -72,13 +74,29 @@ private:
   float calc_curve_part_length(CurvePointTable::const_iterator pt_it) const;
   std::vector<float> calc_curvature() const;
 
+  std::pair<std::vector<float>, std::vector<float>> calc_velocity_time() const;
+
   std::pair<CurvePointTable::const_iterator, float> find_curve_point(float x, float y) const;
+
+  struct ExportCurvePoint {
+    float time;
+    float x;
+    float y;
+    float heading;
+    float velocity;
+  };
+
+  using ExportCurvePointTable = std::vector<ExportCurvePoint>;
+
+  ExportCurvePointTable calc_export_curve_points() const;
 
   inline static Project* project = nullptr;
 
   std::vector<float> cached_curve_lengths;
   std::vector<ImVec2> cached_curve_points;
   std::vector<float> cached_curvatures;
+  std::vector<float> cached_velocities;
+  std::vector<float> cached_times;
 
   CurvePointTable::iterator selected_pt;
 

@@ -32,7 +32,7 @@ public:
   void menu_copy();
   void menu_paste();
   void menu_select_all();
-  void menu_delete();
+  void menu_delete(bool from_menu);
   
   void close();
   

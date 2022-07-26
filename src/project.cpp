@@ -54,10 +54,9 @@ void ProjectManager::open_project(std::string path) {
   project.settings.field.min.y = std::stof(get_str()); ++file_iter;
   project.settings.field.max.x = std::stof(get_str()); ++file_iter;
   project.settings.field.max.y = std::stof(get_str()); ++file_iter;
-  project.settings.drive_controller = static_cast<DriveController>(std::stoi(get_str())); ++file_iter;
-  project.settings.max_acceleration = std::stof(get_str()); ++file_iter;
-  project.settings.max_deceleration = std::stof(get_str()); ++file_iter;
-  project.settings.max_velocity = std::stof(get_str()); ++file_iter;
+  project.settings.drive_ctrl = static_cast<DriveController>(std::stoi(get_str())); ++file_iter;
+  project.settings.max_accel = std::stof(get_str()); ++file_iter;
+  project.settings.max_vel = std::stof(get_str()); ++file_iter;
 
   project.points.clear();
   while (file_iter != file_str.cend() && *file_iter == '{') {
@@ -84,10 +83,9 @@ void ProjectManager::save_project() {
   std::ofstream file(project.settings.path);
 
   file << field.img_path << ',' << field.min.x << ',' << field.min.y << ',' << field.max.x << ',' << field.max.y << '\n';
-  file << static_cast<int>(settings.drive_controller) << ',';
-  file << settings.max_acceleration << ',';
-  file << settings.max_deceleration << ',';
-  file << settings.max_velocity << '\n';
+  file << static_cast<int>(settings.drive_ctrl) << ',';
+  file << settings.max_accel << ',';
+  file << settings.max_vel << '\n';
   
   for (const PathEditorPage::CurvePoint& pt : project.points) {
     file << '{' << pt.px << "," << pt.py << "," << pt.heading << "," << pt.w0 << "," << pt.w1 << "," << pt.rotation << '}';

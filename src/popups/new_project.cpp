@@ -83,13 +83,6 @@ void NewProjectPopup::present(bool* running) {
   ImGui::InputText("Max Acceleration (m/s^2)", accel_buf, 9, ImGuiInputTextFlags_CharsDecimal);
   double max_accel = std::atof(accel_buf);
 
-  // --- Max Deceleration ---
-  
-  static char decel_buf[10] = "";
-  
-  ImGui::InputText("Max Deceleration (m/s^2)", decel_buf, 9, ImGuiInputTextFlags_CharsDecimal);
-  double max_decel = std::atof(decel_buf);
-
   // --- Max Velocity ---
   
   static char vel_buf[10] = "";
@@ -108,10 +101,6 @@ void NewProjectPopup::present(bool* running) {
   }
   else if (max_accel <= 0) {
     err_text = "Max acceleration should be greater than 0 m/s^2";
-    create_disabled = true;
-  }
-  else if (max_decel >= 0) {
-    err_text = "Max declaration should be less than 0 m/s^2";
     create_disabled = true;
   }
   else if (max_vel <= 0) {
@@ -139,7 +128,7 @@ void NewProjectPopup::present(bool* running) {
     
     DriveController drivetrain = current_controller == 0 ? DriveController::RAMSETE : DriveController::HOLONOMIC;
     
-    project = { deploy_path, field.value(), drivetrain, atof(accel_buf), atof(decel_buf), atof(vel_buf) };
+    project = { deploy_path, field.value(), drivetrain, atof(accel_buf), atof(vel_buf) };
     
     goto close;
   }

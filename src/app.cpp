@@ -103,7 +103,7 @@ void App::present() {
   if (item_copy)       menu_copy();
   if (item_paste)      menu_paste();
   if (item_select_all) menu_select_all();
-  if (item_delete)     menu_delete();
+  if (item_delete)     menu_delete(true);
   
 
   if (ProjectManager::get()->has_project()) {
@@ -276,8 +276,10 @@ void App::menu_select_all() {
   std::cout << "select all\n";
 }
 
-void App::menu_delete() {
-  PathEditorPage::get()->delete_point();
+void App::menu_delete(bool from_menu) {
+  if (from_menu || PathEditorPage::get()->is_focused()) {
+    PathEditorPage::get()->delete_point();
+  }
 }
 
 void App::close() {
@@ -334,7 +336,7 @@ void App::handle_keyboard(int key, int scancode, int action, int mods) {
       menu_select_all();
     }
     else if (key == GLFW_KEY_DELETE || key == GLFW_KEY_BACKSPACE) {
-      menu_delete();
+      menu_delete(false);
     }
   }
 }

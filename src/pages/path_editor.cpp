@@ -178,6 +178,25 @@ void PathEditorPage::set_project(Project* _project) {
   updated = true;
 }
 
+void PathEditorPage::export_path(std::string path) {
+  auto replace_macro = [&](std::string macro, std::string value) {
+    std::size_t pos;
+    while (pos = path.find("${" + macro + "}"), pos != std::string::npos) {
+      path.replace(pos, macro.length() + 3, value);
+    }
+  };
+
+  replace_macro("PROJECT_DIR", project->settings.path.parent_path().string());
+  replace_macro("PATH_NAME", "the_path");
+
+  std::cout << "Exporting path to " << path << std::endl;
+
+  std::ofstream file(path);
+
+  file << "time, x_pos, y_pos, heading, velocity\n";
+  file << "0,0,0,0,0\n";
+}
+
 void PathEditorPage::present_curve_editor() {
   const ImGuiStyle& style = ImGui::GetStyle();
   const ImGuiIO& io = ImGui::GetIO();
@@ -397,12 +416,27 @@ void PathEditorPage::present_curve_editor() {
     }
   }
 
+  ImVec2 mouse_pt = to_field_coord(io.MousePos);
+
+  std::vector<ImVec2>::const_iterator it = std::find_if(cached_curve_points.cbegin(), cached_curve_points.cend(), [&](const ImVec2& pt) {
+    ImVec2 new_pt = to_draw_coord(pt);
+    return std::hypotf(io.MousePos.x - new_pt.x, io.MousePos.y - new_pt.y) < POINT_RADIUS;
+  });
+
+  if (it != cached_curve_points.cend()) {
+    ImGui::SetTooltip("%f m/s, %f s", cached_velocities.at(it - cached_curve_points.cbegin()), cached_times.at(it - cached_curve_points.cbegin()));
+  }
+
+
   // --- Drawing ---
 
   if (updated) {
     cached_curve_lengths = calc_curve_lengths();
     cached_curve_points = calc_curve_points();
     cached_curvatures = calc_curvature();
+    auto [vels, times] = calc_velocity_time();
+    cached_velocities = vels;
+    cached_times = times;
   }
 
   static float highest_curve = 0;
@@ -423,7 +457,8 @@ void PathEditorPage::present_curve_editor() {
     };
 
     // Blue is low curvature, red is high curvature.
-    float hue = 0.6f - (my_clamp(cached_curvatures.at(i), 0.0f, 50.0f) / 50.0f);
+    // float hue = 0.6f - (my_clamp(cached_curvatures.at(i), 0.0f, 50.0f) / 50.0f);
+    float hue = 0.8f - (cached_velocities.at(i) / project->settings.max_vel);
 
     ImVec2 p0 = *it, p1 = *(it + 1);
 
@@ -641,10 +676,174 @@ std::vector<float> PathEditorPage::calc_curvature() const {
     // Menger's curvature formula.
     float curv = (4 * A) / (a * b * c);
 
+    // Idk why it happens, but it does.
+    if (std::isnan(curv)) {
+      curv = 0.0f;
+    }
+
     curvatures.push_back(curv);
   }
 
   return curvatures;
+}
+
+struct PathInterval {
+  std::size_t start,
+              end;
+
+  enum class Type {
+    REGULAR,
+    CLAMPED,
+  };
+
+  Type type;
+};
+
+std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_time() const {
+  std::vector<PathInterval> path_intervals;
+
+  // Intervals in which the maximum velocity is adjusted because of a high curvature.
+  std::vector<std::pair<std::size_t, std::size_t>> clamped_intervals;
+
+  for (decltype(cached_curvatures)::const_iterator it = cached_curvatures.cbegin(); it != cached_curvatures.cend(); ++it) {
+    if (*it > 15.0f) {
+      decltype(it) start = it;
+
+      while (++it != cached_curvatures.cend() - 1 && *it > 15.0f);
+
+      clamped_intervals.push_back(std::make_pair(start - cached_curvatures.cbegin(), it - cached_curvatures.cbegin()));
+    }
+  }
+
+  {
+    decltype(clamped_intervals)::const_iterator it = clamped_intervals.cbegin();
+
+    do {
+      std::size_t last = it == clamped_intervals.cend() ? cached_curve_points.size() : it->first;
+
+      if (last != 0) {
+        std::size_t start = 0;
+        if (!path_intervals.empty()) {
+          start = path_intervals.back().end;
+        }
+        path_intervals.push_back({ start, last, PathInterval::Type::REGULAR });
+      }
+
+      if (clamped_intervals.empty()) break;
+
+      path_intervals.push_back(PathInterval{ it->first, it->second, PathInterval::Type::CLAMPED });
+
+      if (it == clamped_intervals.cend() - 1 && it->second != cached_curve_points.size() - 1) {
+        std::size_t start = it->second;
+        if (!path_intervals.empty()) {
+          start = path_intervals.back().end;
+        }
+        path_intervals.push_back(PathInterval{ start, cached_curve_points.size(), PathInterval::Type::REGULAR });
+      }
+
+      ++it;
+    } while (it != clamped_intervals.cend());
+  }
+
+  std::vector<float> velocities, times;
+
+  float t_elapsed = 0.0f;
+  for (decltype(path_intervals)::const_iterator it = path_intervals.cbegin(); it != path_intervals.cend(); ++it) {
+    auto [start, end, type] = *it;
+    
+    if (type == PathInterval::Type::REGULAR) {
+      // Calculate the length of the path in this interval.
+      float d_total = 0.0f;
+      for (std::size_t i = start; i < end - (cached_curve_points.size() == end); ++i) {
+        // TODO: Calculate velocity :D
+        float dx = (cached_curve_points.at(i).x - cached_curve_points.at(i + 1).x) * FIELD_X,
+              dy = (cached_curve_points.at(i).y - cached_curve_points.at(i + 1).y) * FIELD_Y;
+
+        d_total += std::hypotf(dx, dy);
+      }
+
+      // Get the start velocity and the preferred end velocity.
+      float v0 = 0.0f, v1 = 0.0f;
+
+      if (it != path_intervals.cbegin()) {
+        v0 = velocities.back();
+
+        if (it != path_intervals.cend() - 1) {
+          v1 = 0.3f; // TODO: Change this.
+        }
+      }
+
+      float v_max = std::sqrtf((2.0f * project->settings.max_accel * d_total + std::powf(v0, 2.0f) + std::powf(v1, 2.0f)) / 2.0f);
+      if (v_max > project->settings.max_vel) {
+        v_max = project->settings.max_vel;
+      }
+
+      // Distance accelerating.
+      float d_accel = (std::powf(v_max, 2.0f) - std::powf(v0, 2.0f)) / (2.0f * project->settings.max_accel);
+      // Distance decelerating.
+      float d_decel = (std::powf(v1, 2.0f) - std::powf(v_max, 2.0f)) / (2.0f * -project->settings.max_accel);
+
+      if (v0 < v1) {
+        if (v_max < v1) {
+          d_accel = d_total;
+          d_decel = 0.0f;
+        }
+      }
+      else if (v_max < v0) {
+        d_decel = d_total;
+        d_accel = 0.0f;
+      }
+
+      // Distance at constant velocity.
+      float d_cruise = d_total - d_accel - d_decel;
+
+      float d_travelled = 0.0f;
+      for (std::size_t i = start; i < end; ++i) {
+        if (d_travelled < d_accel) {
+          velocities.push_back(std::sqrtf(std::powf(v0, 2.0f) + 2.0f * project->settings.max_accel * d_travelled));
+        }
+        else if (d_travelled < d_accel + d_cruise) {
+          velocities.push_back(v_max);
+        }
+        else if (d_travelled < d_accel + d_cruise + d_decel) {
+          velocities.push_back(std::sqrtf(std::powf(v_max, 2.0f) + 2.0f * -project->settings.max_accel * (d_travelled - d_accel - d_cruise)));
+        }
+        else {
+          velocities.push_back(v1);
+        }
+
+        if (i != end - 1) {
+          float dx = (cached_curve_points.at(i).x - cached_curve_points.at(i + 1).x) * FIELD_X,
+                dy = (cached_curve_points.at(i).y - cached_curve_points.at(i + 1).y) * FIELD_Y;
+
+          float d = std::hypotf(dx, dy);
+
+          d_travelled += d;
+
+          t_elapsed += d / velocities.at(i);
+        }
+
+        times.push_back(t_elapsed);
+      }
+    }
+    else {
+      for (std::size_t i = start; i < end; ++i) {
+        velocities.push_back(0.3f);
+
+        if (i != end - 1) {
+          float dx = (cached_curve_points.at(i).x - cached_curve_points.at(i + 1).x) * FIELD_X,
+                dy = (cached_curve_points.at(i).y - cached_curve_points.at(i + 1).y) * FIELD_Y;
+
+          float d = std::hypotf(dx, dy);
+
+          t_elapsed += d / velocities.at(i);
+        }
+
+        times.push_back(t_elapsed);
+      }
+    }
+  }
+  return std::make_pair(velocities, times);
 }
 
 std::pair<PathEditorPage::CurvePointTable::const_iterator, float> PathEditorPage::find_curve_point(float x, float y) const {
@@ -663,6 +862,17 @@ std::pair<PathEditorPage::CurvePointTable::const_iterator, float> PathEditorPage
     }
   }
   return std::make_pair(project->points.cend(), 0.0f);
+}
+
+PathEditorPage::ExportCurvePointTable PathEditorPage::calc_export_curve_points() const {
+  ExportCurvePointTable points;
+
+  float vel = 0.0f;
+  for (CurvePointTable::const_iterator it = project->points.cbegin(); it + 1 != project->points.cend(); ++it) {
+
+  }
+
+  return points;
 }
 
 PathEditorPage PathEditorPage::instance {};
