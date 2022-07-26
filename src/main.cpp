@@ -26,8 +26,13 @@ static void glfwErrorCallback(int error, const char* description) {
 
 static void set_imgui_style();
 
+#ifdef THUNDER_AUTO_WINDOWS
+#include <Windows.h>
+int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
+#else
 int main(int argc, char** argv) {
-  int exit_code = 0;
+#endif
+    int exit_code = 0;
   
   // --- Initialize GLFW ---
   
@@ -70,6 +75,8 @@ int main(int argc, char** argv) {
   glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
     App::get()->handle_keyboard(key, scancode, action, mods);
   });
+
+  App::get()->init(window);
   
   // --- Initialize ImGui ---
   
@@ -256,14 +263,14 @@ static void set_imgui_style() {
   ImGuiIO* io = &ImGui::GetIO();
   
   // Fonts.
-  io->Fonts->AddFontFromFileTTF("Roboto-Regular.ttf", 15.0f);
-  io->Fonts->AddFontFromFileTTF("Roboto-Regular.ttf", 16.0f);
-  ImFont* default_font = io->Fonts->AddFontFromFileTTF("Roboto-Bold.ttf", 15.0f);
-  io->FontDefault = default_font;
-  io->Fonts->AddFontFromFileTTF("Roboto-Bold.ttf", 16.0f);
+  //io->Fonts->AddFontFromFileTTF("Roboto-Regular.ttf", 15.0f);
+  //io->Fonts->AddFontFromFileTTF("Roboto-Regular.ttf", 16.0f);
+  //ImFont* default_font = io->Fonts->AddFontFromFileTTF("Roboto-Bold.ttf", 15.0f);
+  //io->FontDefault = default_font;
+  //io->Fonts->AddFontFromFileTTF("Roboto-Bold.ttf", 16.0f);
   
-  io->Fonts->AddFontFromFileTTF("Comic Sans MS.ttf", 16.0f);
-  io->Fonts->AddFontFromFileTTF("Comic Sans MS Bold.ttf", 16.0f);
+  ImFont* default_font = io->Fonts->AddFontFromFileTTF("Comic Sans MS.ttf", 16.0f);
+  //io->Fonts->AddFontFromFileTTF("Comic Sans MS Bold.ttf", 16.0f);
 
   io->ConfigWindowsMoveFromTitleBarOnly = true;
 }

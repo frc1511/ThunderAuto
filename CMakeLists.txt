@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_compile_options(-Wdeprecated-declarations)
+#add_compile_options(-Wdeprecated-declarations)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release")
@@ -86,6 +86,8 @@ endif()
 set_target_properties(${PROJECT_NAME} PROPERTIES
   RESOURCE                             "${THUNDER_AUTO_RESOURCES}"
 )
+
+#file(COPY ${THUNDER_AUTO_RESOURCES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${THUNDER_AUTO_INC_DIR})
 
