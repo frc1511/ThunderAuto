@@ -23,7 +23,7 @@ NewProjectPopup::NewProjectPopup() {
 }
 
 const Field field_constants[] {
-  { "field_2022.png", ImVec2(0.1f, 0.1f), ImVec2(0.9f, 0.9f) },
+  { "field_2022.png", ImVec2(0.12f, 0.16f), ImVec2(0.88f, 0.84f) },
 };
 
 NewProjectPopup::~NewProjectPopup() { }
