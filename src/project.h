@@ -1,7 +1,7 @@
 #pragma once
 
+#include <thunder_auto.h>
 #include <field.h>
-#include <string>
 #include <pages/path_editor.h>
 
 enum class DriveController {

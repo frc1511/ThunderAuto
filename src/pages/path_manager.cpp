@@ -1,5 +1,5 @@
 #include <pages/path_manager.h>
-  
+
 PathManagerPage::PathManagerPage() { }
 
 PathManagerPage::~PathManagerPage() { }

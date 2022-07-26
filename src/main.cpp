@@ -1,12 +1,8 @@
 #include <thunder_auto.h>
 #include <app.h>
 
-#include <imgui.h>
-
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
-
-#include <iostream>
 
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 700

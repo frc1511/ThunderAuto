@@ -3,8 +3,7 @@
 #include <popups/popup.h>
 #include <platform/platform.h>
 #include <field.h>
-#include <string>
-#include <optional>
+#include <thunder_auto.h>
 
 class NewFieldPopup: public Popup {
 public:

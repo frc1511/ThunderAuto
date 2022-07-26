@@ -1,7 +1,6 @@
 #pragma once
 
-#define IMGUI_DEFINE_MATH_OPERATORS
-#include <imgui.h>
+#include <thunder_auto.h>
 
 class Page {
 public:

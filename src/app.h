@@ -5,7 +5,6 @@
 #include <platform/platform.h>
 #include <project.h>
 #include <thunder_auto.h>
-#include <optional>
 
 class App {
 public:

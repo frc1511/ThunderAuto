@@ -1,9 +1,5 @@
 #include <pages/path_editor.h>
 #include <project.h>
-#include <utility>
-#include <vector>
-#include <iostream>
-#include <limits>
 #include <stb_image.h>
 #include <glad/glad.h>
 
@@ -59,11 +55,37 @@ PathEditorPage::PathEditorPage() { }
 PathEditorPage::~PathEditorPage() { }
 
 ImVec2 PathEditorPage::to_field_coord(ImVec2 pt) const {
-  return ImVec2((pt.x - bb.Min.x) / (bb.Max.x - bb.Min.x), 1 - (pt.y - bb.Min.y) / (bb.Max.y - bb.Min.y));
+  pt = ImVec2((pt.x - bb.Min.x) / (bb.Max.x - bb.Min.x), 1 - (pt.y - bb.Min.y) / (bb.Max.y - bb.Min.y));
+  return un_adjust_field_coord(pt);
 }
 
 ImVec2 PathEditorPage::to_draw_coord(ImVec2 pt) const {
+  pt = adjust_field_coord(pt);
   return ImVec2(pt.x, 1 - pt.y) * (bb.Max - bb.Min) + bb.Min;
+}
+
+ImVec2 PathEditorPage::adjust_field_coord(ImVec2 pt) const {
+  const Field& field = project->settings.field;
+
+  pt.x *= (field.max.x - field.min.x);
+  pt.y *= (field.max.y - field.min.y);
+
+  pt.x += field.min.x;
+  pt.y += field.min.y;
+
+  return pt;
+}
+
+ImVec2 PathEditorPage::un_adjust_field_coord(ImVec2 pt) const {
+  const Field& field = project->settings.field;
+
+  pt.x -= field.min.x;
+  pt.y -= field.min.y;
+
+  pt.x /= (field.max.x - field.min.x);
+  pt.y /= (field.max.y - field.min.y);
+
+  return pt;
 }
 
 std::optional<PathEditorPage::CurvePointTable::iterator> PathEditorPage::get_selected_point() {

@@ -1,10 +1,6 @@
 #include <pages/properties.h>
 #include <imgui_internal.h>
-#include <cmath>
-#include <string>
 #include <pages/path_editor.h>
-#define M_PI 3.14159265359264
-#define M_PI_2 (M_PI / 2)
 
 #define COL_WIDTH 100.0f
 

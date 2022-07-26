@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pages/page.h>
+#include <thunder_auto.h>
 
 class PropertiesPage: public Page {
 public:

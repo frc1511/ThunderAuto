@@ -3,8 +3,6 @@
 #include <thunder_auto.h>
 #include <stb_image.h>
 #include <glad/glad.h>
-#include <iostream>
-#include <cmath>
 
 #ifdef THUNDER_AUTO_MACOS
 # include <platform/macos/macos.h>

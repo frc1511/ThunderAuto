@@ -1,8 +1,5 @@
 #include <app.h>
-#include <imgui.h>
 #include <imgui_internal.h>
-
-#include <iostream>
 
 #ifdef THUNDER_AUTO_MACOS
 # include <platform/macos/macos.h>
@@ -191,7 +188,7 @@ void App::new_project() {
 }
 
 void App::open_project() {
-  std::string path = platform->open_file_dialog(FileType::FILE, PATH_EXTENSION);
+  std::string path = platform->open_file_dialog(FileType::FILE, FILE_EXTENSION);
   if (path.empty()) {
   }
   else {
@@ -254,7 +251,7 @@ void App::menu_save() {
 }
 
 void App::menu_save_as() {
-  std::string path = platform->save_file_dialog(PATH_EXTENSION);
+  std::string path = platform->save_file_dialog(FILE_EXTENSION);
   if (path.empty()) return;
   ProjectManager::get()->save_project_as(path);
 }
@@ -351,7 +348,7 @@ void App::handle_keyboard(int key, int scancode, int action, int mods) {
     else if (GET_CTRL_KEY(GLFW_KEY_A)) {
       menu_select_all();
     }
-    else if (key == GLFW_KEY_DELETE) {
+    else if (key == GLFW_KEY_DELETE || key == GLFW_KEY_BACKSPACE) {
       menu_delete();
     }
   }

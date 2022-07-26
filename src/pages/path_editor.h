@@ -1,17 +1,10 @@
 #pragma once
 
 #include <pages/page.h>
+#include <thunder_auto.h>
 #include <imgui_internal.h>
-#include <vector>
-#include <optional>
-#include <cmath>
-#define M_PI 3.14159265359264
-#define M_PI_2 (M_PI / 2)
 
 struct Project;
-
-#define DEG_2_RAD (M_PI / 180.0f)
-#define RAD_2_DEG (180.0f / M_PI)
 
 class PathEditorPage: public Page {
 public:
@@ -94,10 +87,11 @@ private:
   float field_aspect_ratio;
   unsigned int field_tex;
 
-  // From draw coordinates.
   ImVec2 to_field_coord(ImVec2 pt) const;
-  // From field coordinates.
-  ImVec2 to_draw_coord(ImVec2 pt) const; // 237
+  ImVec2 to_draw_coord(ImVec2 pt) const;
+
+  ImVec2 adjust_field_coord(ImVec2 pt) const;
+  ImVec2 un_adjust_field_coord(ImVec2 pt) const;
   
   ImRect bb;
   

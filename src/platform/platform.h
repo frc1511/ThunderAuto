@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include <thunder_auto.h>
 
 enum class FileType {
   FILE,
@@ -9,7 +9,6 @@ enum class FileType {
 
 class Platform {
 public:
-  
   virtual std::string open_file_dialog(FileType type, const char* extension = nullptr) = 0;
   virtual std::string save_file_dialog(const char* extension = nullptr) = 0;
 };

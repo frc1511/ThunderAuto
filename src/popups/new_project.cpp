@@ -1,8 +1,7 @@
 #include <popups/new_project.h>
-#include <imgui_internal.h>
 #include <thunder_auto.h>
+#include <imgui_internal.h>
 #include <popups/new_field.h>
-#include <iostream>
 
 #ifdef THUNDER_AUTO_MACOS
 # include <platform/macos/macos.h>
@@ -43,7 +42,7 @@ void NewProjectPopup::present(bool* running) {
   ImGui::SameLine();
   
   if (ImGui::Button("Browse")) {
-    deploy_path = platform->save_file_dialog(PATH_EXTENSION);
+    deploy_path = platform->save_file_dialog(FILE_EXTENSION);
     strncpy(deploy_path_buf, deploy_path.c_str(), deploy_path.length());
   }
   

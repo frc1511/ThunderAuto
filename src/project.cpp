@@ -1,11 +1,6 @@
 #include <project.h>
-#include <fstream>
-#include <cmath>
-
 #include <pages/path_editor.h>
 #include <pages/path_manager.h>
-#define M_PI 3.14159265359264
-#define M_PI_2 (M_PI / 2)
 
 ProjectManager::ProjectManager() { }
 
