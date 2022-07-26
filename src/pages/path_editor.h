@@ -4,6 +4,10 @@
 #include <thunder_auto.h>
 #include <imgui_internal.h>
 
+// Field dimensions (meters).
+#define FIELD_X 15.5702 // 54' 1"
+#define FIELD_Y 8.1026 // 26' 7"
+
 struct Project;
 
 class PathEditorPage: public Page {
@@ -32,6 +36,7 @@ public:
     void set_tangent_pt(bool first, float x, float y);
 
     ImVec2 get_rot_pt(bool reverse = false) const;
+    ImVec2 get_rot_corner_pt(int index) const;
     void set_rot_pt(float x, float y);
 
     void translate(float dx, float dy);
@@ -69,7 +74,7 @@ private:
 
   std::pair<CurvePointTable::const_iterator, float> find_curve_point(float x, float y) const;
 
-  Project* project = nullptr;
+  inline static Project* project = nullptr;
 
   std::vector<float> cached_curve_lengths;
   std::vector<ImVec2> cached_curve_points;
@@ -87,13 +92,13 @@ private:
   float field_aspect_ratio;
   unsigned int field_tex;
 
-  ImVec2 to_field_coord(ImVec2 pt) const;
-  ImVec2 to_draw_coord(ImVec2 pt) const;
+  static ImVec2 to_field_coord(ImVec2 pt);
+  static ImVec2 to_draw_coord(ImVec2 pt);
 
-  ImVec2 adjust_field_coord(ImVec2 pt) const;
-  ImVec2 un_adjust_field_coord(ImVec2 pt) const;
+  static ImVec2 adjust_field_coord(ImVec2 pt);
+  static ImVec2 un_adjust_field_coord(ImVec2 pt);
   
-  ImRect bb;
+  inline static ImRect bb;
   
   static PathEditorPage instance;
 };

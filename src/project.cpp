@@ -9,9 +9,9 @@ ProjectManager::~ProjectManager() { }
 void ProjectManager::new_project(ProjectSettings _settings) {
   project.settings = _settings;
   project.points = PathEditorPage::CurvePointTable({
-    { 0.9f, 0.5f, -M_PI_2, 0.3f, 0.3f, 0.0f },
-    { 0.5f, 0.3f, +M_PI_2, 0.3f, 0.3f, 0.0f },
-    { 0.1f, 0.4f, +M_PI_2, 0.3f, 0.3f, 0.0f },
+    { 0.9f, 0.5f, -M_PI_2, 50.0f, 50.0f, 0.0f },
+    { 0.5f, 0.3f, +M_PI_2, 50.0f, 50.0f, 0.0f },
+    { 0.1f, 0.4f, +M_PI_2, 50.0f, 50.0f, 0.0f },
   });
 
   working_project = true;

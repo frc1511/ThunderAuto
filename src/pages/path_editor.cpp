@@ -10,39 +10,68 @@
 #define POINT_BORDER_THICKNESS 2
 #define INTEGRAL_PRECISION 0.0001f
 
-#define ROT_POINT_RADIUS 0.05f
-#define ROBOT_WIDTH 0.04f
-
-// Field dimensions (meters).
-#define FIELD_X 15.5702 // 54' 1"
-#define FIELD_Y 8.1026 // 26' 7"
+#define ROT_POINT_RADIUS 25.0f
+#define ROBOT_WIDTH 20.0f
 
 ImVec2 PathEditorPage::CurvePoint::get_tangent_pt(bool first) const {
-  float cx = px + std::cos(heading + (M_PI * !first)) * (first ? w0 : w1),
-        cy = py + std::sin(heading + (M_PI * !first)) * (first ? w0 : w1);
+  ImVec2 pt = to_draw_coord(ImVec2(px, py));
 
-  return ImVec2(cx, cy);
+  pt.x = pt.x + std::cos(heading + (M_PI * !first)) * (first ? w0 : w1);
+  pt.y = pt.y + std::sin(heading + (M_PI * !first)) * (first ? w0 : w1);
+
+  pt = to_field_coord(pt);
+
+  return pt;
 }
 
 void PathEditorPage::CurvePoint::set_tangent_pt(bool first, float x, float y) {
-  heading = std::atan2(y - py, x - px) + (M_PI * !first);
+  ImVec2 pt0 = to_draw_coord(ImVec2(x, y)),
+         pt1 = to_draw_coord(ImVec2(px, py));
+
+  heading = std::atan2(pt0.y - pt1.y, pt0.x - pt1.x) + (M_PI * !first);
 
   float& w = first ? w0 : w1;
 
-  w = std::hypotf(x - px, y - py);
+  w = std::hypotf(pt0.x - pt1.x, pt0.y - pt1.y);
 }
 
 ImVec2 PathEditorPage::CurvePoint::get_rot_pt(bool reverse) const {
   float v = reverse * 2 - 1;
 
-  float ax = px + std::cos(rotation + M_PI * v) * ROT_POINT_RADIUS * v,
-        ay = py + std::sin(rotation + M_PI * v) * ROT_POINT_RADIUS * v;
+  ImVec2 pt = to_draw_coord(ImVec2(px, py));
 
-  return ImVec2(ax, ay);
+  pt.x = pt.x + std::cos(rotation + M_PI * v) * ROT_POINT_RADIUS * v;
+  pt.y = pt.y + std::sin(rotation + M_PI * v) * ROT_POINT_RADIUS * v;
+
+  pt = to_field_coord(pt);
+
+  return pt;
+}
+
+// 0 = FL, 1 = FR, 2 = BL, 3 = BR
+ImVec2 PathEditorPage::CurvePoint::get_rot_corner_pt(int index) const {
+  bool reverse = false;
+  if (index > 1) {
+    reverse = true;
+    index -= 2;
+  }
+
+  ImVec2 pt = to_draw_coord(get_rot_pt(reverse));
+
+  pt.x = pt.x + std::cos(rotation + M_PI_2 * ((2 * index) - 1)) * ROBOT_WIDTH;
+  pt.y = pt.y + std::sin(rotation + M_PI_2 * ((2 * index) - 1)) * ROBOT_WIDTH;
+
+  pt = to_field_coord(pt);
+  return pt;
 }
 
 void PathEditorPage::CurvePoint::set_rot_pt(float x, float y) {
-  rotation = std::atan2(y - py, x - px);
+  // rotation = std::atan2(y - py, x - px);
+
+  ImVec2 pt0 = to_draw_coord(ImVec2(x, y)),
+         pt1 = to_draw_coord(ImVec2(px, py));
+
+  rotation = std::atan2(pt0.y - pt1.y, pt0.x - pt1.x);
 }
 
 void PathEditorPage::CurvePoint::translate(float dx, float dy) {
@@ -54,17 +83,17 @@ PathEditorPage::PathEditorPage() { }
 
 PathEditorPage::~PathEditorPage() { }
 
-ImVec2 PathEditorPage::to_field_coord(ImVec2 pt) const {
+ImVec2 PathEditorPage::to_field_coord(ImVec2 pt) {
   pt = ImVec2((pt.x - bb.Min.x) / (bb.Max.x - bb.Min.x), 1 - (pt.y - bb.Min.y) / (bb.Max.y - bb.Min.y));
   return un_adjust_field_coord(pt);
 }
 
-ImVec2 PathEditorPage::to_draw_coord(ImVec2 pt) const {
+ImVec2 PathEditorPage::to_draw_coord(ImVec2 pt) {
   pt = adjust_field_coord(pt);
   return ImVec2(pt.x, 1 - pt.y) * (bb.Max - bb.Min) + bb.Min;
 }
 
-ImVec2 PathEditorPage::adjust_field_coord(ImVec2 pt) const {
+ImVec2 PathEditorPage::adjust_field_coord(ImVec2 pt) {
   const Field& field = project->settings.field;
 
   pt.x *= (field.max.x - field.min.x);
@@ -76,7 +105,7 @@ ImVec2 PathEditorPage::adjust_field_coord(ImVec2 pt) const {
   return pt;
 }
 
-ImVec2 PathEditorPage::un_adjust_field_coord(ImVec2 pt) const {
+ImVec2 PathEditorPage::un_adjust_field_coord(ImVec2 pt) {
   const Field& field = project->settings.field;
 
   pt.x -= field.min.x;
@@ -337,8 +366,7 @@ void PathEditorPage::present_curve_editor() {
 
         if (get_dist(x_mid, y_mid) > dist) {
           // Insert the point at the start of the list.
-
-          selected_pt = project->points.insert(project->points.cbegin(), { new_pt.x, new_pt.y, M_PI_2, 0.1f, 0.1f, 0.0f });
+          selected_pt = project->points.insert(project->points.cbegin(), { new_pt.x, new_pt.y, M_PI_2, 50.0f, 50.0f, 0.0f });
           updated = true;
           pt_added = true;
         }
@@ -355,7 +383,7 @@ void PathEditorPage::present_curve_editor() {
 
           float angle = std::atan2(dy, dx);
 
-          selected_pt = project->points.insert(p + 1, { new_pt.x, new_pt.y, angle, 0.1f, 0.1f, 0.0f });
+          selected_pt = project->points.insert(p + 1, { new_pt.x, new_pt.y, angle, 50.0f, 50.0f, 0.0f });
           updated = true;
           pt_added = true;
         }
@@ -363,7 +391,7 @@ void PathEditorPage::present_curve_editor() {
 
       if (!pt_added) {
         // To the end of the list!
-        selected_pt = project->points.insert(project->points.cend(), { new_pt.x, new_pt.y, M_PI_2, 0.1f, 0.1f, 0.0f });
+        selected_pt = project->points.insert(project->points.cend(), { new_pt.x, new_pt.y, M_PI_2, 50.0f, 50.0f, 0.0f });
         updated = true;
       }
     }
@@ -443,14 +471,14 @@ void PathEditorPage::present_curve_editor() {
     draw_list->AddCircleFilled(r, POINT_RADIUS, border_color);
 
     // Draw the robot's rotation.
-    ImVec2 fr, fl, br, bl;
+    ImVec2 fl, fr, bl, br;
     {
       auto [ax1, ay1] = it->get_rot_pt(true);
       
-      fr = to_draw_coord(ImVec2(ax + std::cos(rot - M_PI_2) * ROBOT_WIDTH, ay + std::sin(rot - M_PI_2) * ROBOT_WIDTH));
-      fl = to_draw_coord(ImVec2(ax + std::cos(rot + M_PI_2) * ROBOT_WIDTH, ay + std::sin(rot + M_PI_2) * ROBOT_WIDTH));
-      br = to_draw_coord(ImVec2(ax1 + std::cos(rot - M_PI_2) * ROBOT_WIDTH, ay1 + std::sin(rot - M_PI_2) * ROBOT_WIDTH));
-      bl = to_draw_coord(ImVec2(ax1 + std::cos(rot + M_PI_2) * ROBOT_WIDTH, ay1 + std::sin(rot + M_PI_2) * ROBOT_WIDTH));
+      fl = to_draw_coord(it->get_rot_corner_pt(0));
+      fr = to_draw_coord(it->get_rot_corner_pt(1));
+      bl = to_draw_coord(it->get_rot_corner_pt(2));
+      br = to_draw_coord(it->get_rot_corner_pt(3));
     }
     draw_list->AddQuad(fr, fl, bl, br, border_color);
   }
