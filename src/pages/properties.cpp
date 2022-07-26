@@ -1,6 +1,7 @@
 #include <pages/properties.h>
 #include <imgui_internal.h>
 #include <pages/path_editor.h>
+#include <platform/platform.h>
 
 #define COL_WIDTH 100.0f
 
@@ -18,8 +19,13 @@ void PropertiesPage::present(bool* running) {
   focused = ImGui::IsWindowFocused();
 
   std::optional<PathEditorPage::CurvePointTable::iterator> _selected_pt = PathEditorPage::get()->get_selected_point();
+  
+  // --- Point Properties ---
+
   if (_selected_pt && ImGui::CollapsingHeader("Point")) {
     PathEditorPage::CurvePointTable::iterator selected_pt = _selected_pt.value();
+
+    // --- Position ---
 
     ImGui::PushID("Position");
     ImGui::Columns(2, nullptr, false);
@@ -34,6 +40,8 @@ void PropertiesPage::present(bool* running) {
     ImGui::Columns(1);
     ImGui::PopID();
 
+    // --- Heading ---
+
     ImGui::PushID("Heading");
     ImGui::Columns(2, nullptr, false);
     ImGui::SetColumnWidth(0, COL_WIDTH);
@@ -47,6 +55,8 @@ void PropertiesPage::present(bool* running) {
     ImGui::Columns(1);
     ImGui::PopID();
 
+    // --- Rotation ---
+
     ImGui::PushID("Rotation");
     ImGui::Columns(2, nullptr, false);
     ImGui::SetColumnWidth(0, COL_WIDTH);
@@ -59,6 +69,8 @@ void PropertiesPage::present(bool* running) {
 
     ImGui::Columns(1);
     ImGui::PopID();
+
+    // --- Weights ---
 
     ImGui::PushID("Weights");
     ImGui::Columns(2, nullptr, false);
@@ -133,7 +145,73 @@ void PropertiesPage::present(bool* running) {
     }
   }
 
-  if (ImGui::CollapsingHeader("Curve")) {
+  // --- Path Properties ---
+
+  if (ImGui::CollapsingHeader("Path")) {
+    // --- Export Path ---
+
+    static char export_path_dir[256] = "${PROJECT_DIR}/${PATH_NAME}.csv";
+
+    ImGui::PushID("Export Path");
+    ImGui::Columns(2, nullptr, false);
+    ImGui::SetColumnWidth(0, COL_WIDTH);
+    ImGui::Text("Export Path");
+    ImGui::NextColumn();
+
+    ImGui::InputText("##Export Path", export_path_dir, 256);
+
+    ImGui::SameLine();
+
+    std::string path_dir;
+    if (ImGui::Button("Browse")) {
+      path_dir = Platform::get_current()->save_file_dialog("csv");
+      if (!path_dir.empty()) {
+        memset(export_path_dir, 0, 256);
+        strncpy(export_path_dir, path_dir.c_str(), path_dir.length());
+      }
+    }
+
+    ImGui::Columns(1);
+    ImGui::PopID();
+
+    // --- Auto Export ---
+
+    ImGui::PushID("Auto Export");
+    ImGui::Columns(2, nullptr, false);
+    ImGui::SetColumnWidth(0, COL_WIDTH);
+    ImGui::Text("Auto Export");
+    ImGui::NextColumn();
+
+    static bool auto_export = false;
+    if (ImGui::Checkbox("##Auto Export", &auto_export)) {
+      if (auto_export) {
+        // PathEditorPage::get()->export_path(export_path_dir);
+      }
+    }
+
+    ImGui::Columns(1);
+    ImGui::PopID();
+
+    // --- Export Button ---
+
+    if (auto_export) {
+      ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+      ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+    }
+
+    if (ImGui::Button("Export")) {
+      // PathEditorPage::get()->export_path(export_path_dir);
+    }
+
+    if (auto_export) {
+      ImGui::PopItemFlag();
+      ImGui::PopStyleVar();
+    }
+
+    ImGui::Separator();
+
+    // --- Curve Kind ---
+
     static PathEditorPage::CurveKind curve_kind = PathEditorPage::CurveKind::CUBIC_BEZIER;
     PathEditorPage::CurveKind new_curve_kind = curve_kind;
 
@@ -160,6 +238,8 @@ void PropertiesPage::present(bool* running) {
     }
 
     static bool show_tangents = true;
+
+    // --- Show Tangents ---
 
     ImGui::PushID("Show Tangents");
     ImGui::Columns(2, nullptr, false);

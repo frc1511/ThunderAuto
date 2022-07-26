@@ -27,8 +27,6 @@ private:
   
   std::string name = "New Field";
 
-  Platform* platform = nullptr;
-  
   bool selected_img = false;
 
   unsigned int field_tex;

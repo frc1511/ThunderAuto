@@ -3,23 +3,7 @@
 #include <imgui_internal.h>
 #include <popups/new_field.h>
 
-#ifdef THUNDER_AUTO_MACOS
-# include <platform/macos/macos.h>
-#elif THUNDER_AUTO_WINDOWS
-# include <platform/windows/windows.h>
-#elif THUNDER_AUTO_LINUX
-# include <platform/linux/linux.h>
-#endif
-
-NewProjectPopup::NewProjectPopup() {
-#ifdef THUNDER_AUTO_MACOS
-  platform = PlatformMacOS::get();
-#elif THUNDER_AUTO_WINDOWS
-  platform = PlatformWindows::get();
-#elif THUNDER_AUTO_LINUX
-  platform = PlatformLinux::get();
-#endif
-}
+NewProjectPopup::NewProjectPopup() { }
 
 const Field field_constants[] {
   { "field_2022.png", ImVec2(0.12f, 0.16f), ImVec2(0.88f, 0.84f) },
@@ -42,7 +26,7 @@ void NewProjectPopup::present(bool* running) {
   ImGui::SameLine();
   
   if (ImGui::Button("Browse")) {
-    deploy_path = platform->save_file_dialog(FILE_EXTENSION);
+    deploy_path = Platform::get_current()->save_file_dialog(FILE_EXTENSION);
     strncpy(deploy_path_buf, deploy_path.c_str(), deploy_path.length());
   }
   

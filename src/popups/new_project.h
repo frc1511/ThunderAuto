@@ -28,8 +28,6 @@ private:
 
   std::string name = "New Project";
   
-  Platform* platform = nullptr;
-  
   bool has_project = false;
   ProjectSettings project;
 

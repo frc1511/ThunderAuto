@@ -4,23 +4,7 @@
 #include <stb_image.h>
 #include <glad/glad.h>
 
-#ifdef THUNDER_AUTO_MACOS
-# include <platform/macos/macos.h>
-#elif THUNDER_AUTO_WINDOWS
-# include <platform/windows/windows.h>
-#elif THUNDER_AUTO_LINUX
-# include <platform/linux/linux.h>
-#endif
-
-NewFieldPopup::NewFieldPopup() {
-#ifdef THUNDER_AUTO_MACOS
-  platform = PlatformMacOS::get();
-#elif THUNDER_AUTO_WINDOWS
-  platform = PlatformWindows::get();
-#elif THUNDER_AUTO_LINUX
-  platform = PlatformLinux::get();
-#endif
-}
+NewFieldPopup::NewFieldPopup() { }
 
 NewFieldPopup::~NewFieldPopup() { }
 
@@ -51,7 +35,7 @@ void NewFieldPopup::present(bool* running) {
 
     std::string img_path;
     if (ImGui::Button("Browse")) {
-      img_path = platform->open_file_dialog(FileType::FILE, nullptr);
+      img_path = Platform::get_current()->open_file_dialog(FileType::FILE, nullptr);
       memset(img_path_buf, 0, 256);
       strncpy(img_path_buf, img_path.c_str(), img_path.length());
     }

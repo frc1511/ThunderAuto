@@ -234,7 +234,7 @@ void PathEditorPage::present_curve_editor() {
         it->translate(x - prev_x, y - prev_y);
       }
 
-      ImGui::SetTooltip("%.2f, %.2f", x, y);
+      ImGui::SetTooltip("%.2f, %.2f", x * FIELD_X, y * FIELD_Y);
     };
 
     auto move_rot_point = [&](CurvePointTable::iterator it) {

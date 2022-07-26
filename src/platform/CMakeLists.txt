@@ -1,5 +1,9 @@
 set(THUNDER_AUTO_PLATFORM_DIR "${THUNDER_AUTO_SRC_DIR}/platform")
 
+add_thunder_auto_sources(
+  "${THUNDER_AUTO_PLATFORM_DIR}/platform.cpp"
+)
+
 if(THUNDER_AUTO_MACOS)
   include("${THUNDER_AUTO_PLATFORM_DIR}/macos/CMakeLists.txt")
 elseif(THUNDER_AUTO_WINDOWS)

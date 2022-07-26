@@ -1,14 +1,6 @@
 #include <app.h>
 #include <imgui_internal.h>
 
-#ifdef THUNDER_AUTO_MACOS
-# include <platform/macos/macos.h>
-#elif THUNDER_AUTO_WINDOWS
-# include <platform/windows/windows.h>
-#elif THUNDER_AUTO_LINUX
-# include <platform/linux/linux.h>
-#endif
-
 #include <pages/path_editor.h>
 #include <pages/path_manager.h>
 #include <pages/properties.h>
@@ -17,13 +9,6 @@
 #include <popups/new_field.h>
 
 App::App() {
-#ifdef THUNDER_AUTO_MACOS
-  platform = PlatformMacOS::get();
-#elif THUNDER_AUTO_WINDOWS
-  platform = PlatformWindows::get();
-#elif THUNDER_AUTO_LINUX
-  platform = PlatformLinux::get();
-#endif
 }
 
 App::~App() { }
@@ -188,7 +173,7 @@ void App::new_project() {
 }
 
 void App::open_project() {
-  std::string path = platform->open_file_dialog(FileType::FILE, FILE_EXTENSION);
+  std::string path = Platform::get_current()->open_file_dialog(FileType::FILE, FILE_EXTENSION);
   if (path.empty()) {
   }
   else {
@@ -251,7 +236,7 @@ void App::menu_save() {
 }
 
 void App::menu_save_as() {
-  std::string path = platform->save_file_dialog(FILE_EXTENSION);
+  std::string path = Platform::get_current()->save_file_dialog(FILE_EXTENSION);
   if (path.empty()) return;
   ProjectManager::get()->save_project_as(path);
 }
