@@ -708,48 +708,58 @@ struct PathInterval {
   };
 
   Type type;
+
+  PathInterval(std::size_t start, std::size_t end, Type type)
+  : start(start), end(end), type(type) { }
 };
 
-std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_time() const {
-  std::vector<PathInterval> path_intervals;
+#define CURVATURE_THRESHOLD 15.0f
 
-  // Intervals in which the maximum velocity is adjusted because of a high curvature.
+#define SLOW_CRUISE_VELOCITY 0.3f // m/s
+
+std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_time() const {
   std::vector<std::pair<std::size_t, std::size_t>> clamped_intervals;
 
+  // Find intervals in which the curvature is greater than the threshold.
   for (decltype(cached_curvatures)::const_iterator it = cached_curvatures.cbegin(); it != cached_curvatures.cend(); ++it) {
-    if (*it > 15.0f) {
+    if (*it >= CURVATURE_THRESHOLD) {
+      // The beginning of the interval.
       decltype(it) start = it;
 
-      while (++it != cached_curvatures.cend() - 1 && *it > 15.0f);
+      // Until the end of the path or the curvature is below the threshold.
+      while (++it != cached_curvatures.cend() - 1 && *it >= CURVATURE_THRESHOLD);
 
-      clamped_intervals.push_back(std::make_pair(start - cached_curvatures.cbegin(), it - cached_curvatures.cbegin()));
+      clamped_intervals.emplace_back(start - cached_curvatures.cbegin(), it - cached_curvatures.cbegin());
     }
   }
+
+  // The path divided into intervals.
+  std::vector<PathInterval> path_intervals;
 
   {
     decltype(clamped_intervals)::const_iterator it = clamped_intervals.cbegin();
 
     do {
-      std::size_t last = it == clamped_intervals.cend() ? cached_curve_points.size() : it->first;
+      // The end of the path if there are no clamped intervals, or the beginning of the next clamped interval.
+      std::size_t last = (it == clamped_intervals.cend()) ? cached_curve_points.size() : it->first;
 
       if (last != 0) {
         std::size_t start = 0;
+        // The end of the last interval.
         if (!path_intervals.empty()) {
           start = path_intervals.back().end;
         }
-        path_intervals.push_back({ start, last, PathInterval::Type::REGULAR });
+        path_intervals.emplace_back(start, last, PathInterval::Type::REGULAR);
       }
 
       if (clamped_intervals.empty()) break;
 
+      // The clamped interval. (Alternates between regular and clamped.)
       path_intervals.push_back(PathInterval{ it->first, it->second, PathInterval::Type::CLAMPED });
 
+      // If it is the last clamped interval but it is not the end of the path, then the next interval is regular.
       if (it == clamped_intervals.cend() - 1 && it->second != cached_curve_points.size() - 1) {
-        std::size_t start = it->second;
-        if (!path_intervals.empty()) {
-          start = path_intervals.back().end;
-        }
-        path_intervals.push_back(PathInterval{ start, cached_curve_points.size(), PathInterval::Type::REGULAR });
+        path_intervals.emplace_back(path_intervals.back().end, cached_curve_points.size(), PathInterval::Type::REGULAR);
       }
 
       ++it;
@@ -758,15 +768,18 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
 
   std::vector<float> velocities, times;
 
+  // Calculate the velocities and times for each interval.
   float t_elapsed = 0.0f;
   for (decltype(path_intervals)::const_iterator it = path_intervals.cbegin(); it != path_intervals.cend(); ++it) {
     auto [start, end, type] = *it;
+
+    std::cout << "Interval: " << start << " - " << end << std::endl;
     
+    // A regular interval. Accelerate, cruise, decelerate.
     if (type == PathInterval::Type::REGULAR) {
       // Calculate the length of the path in this interval.
       float d_total = 0.0f;
       for (std::size_t i = start; i < end - (cached_curve_points.size() == end); ++i) {
-        // TODO: Calculate velocity :D
         float dx = (cached_curve_points.at(i).x - cached_curve_points.at(i + 1).x) * FIELD_X,
               dy = (cached_curve_points.at(i).y - cached_curve_points.at(i + 1).y) * FIELD_Y;
 
@@ -780,7 +793,7 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
         v0 = velocities.back();
 
         if (it != path_intervals.cend() - 1) {
-          v1 = 0.3f; // TODO: Change this.
+          v1 = SLOW_CRUISE_VELOCITY;
         }
       }
 
@@ -810,52 +823,54 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
 
       float d_travelled = 0.0f;
       for (std::size_t i = start; i < end; ++i) {
+        float d = 0.0f;
+
+        if (i != end - 1) {
+          float dx = (cached_curve_points.at(i).x - cached_curve_points.at(i + 1).x) * FIELD_X,
+                dy = (cached_curve_points.at(i).y - cached_curve_points.at(i + 1).y) * FIELD_Y;
+
+          d = std::hypotf(dx, dy);
+
+          d_travelled += d;
+        }
+
         if (d_travelled < d_accel) {
           velocities.push_back(std::sqrtf(std::powf(v0, 2.0f) + 2.0f * project->settings.max_accel * d_travelled));
+          if (i != start) {
+            t_elapsed += (velocities.at(i) - velocities.at(i - 1)) / project->settings.max_accel;
+          }
         }
         else if (d_travelled < d_accel + d_cruise) {
           velocities.push_back(v_max);
+          t_elapsed += d / v_max;
         }
         else if (d_travelled < d_accel + d_cruise + d_decel) {
           velocities.push_back(std::sqrtf(std::powf(v_max, 2.0f) + 2.0f * -project->settings.max_accel * (d_travelled - d_accel - d_cruise)));
+          if (i != start) {
+            t_elapsed += (velocities.at(i) - velocities.at(i - 1)) / -project->settings.max_accel;
+          }
         }
         else {
           velocities.push_back(v1);
         }
 
-        if (i != end - 1) {
-          float dx = (cached_curve_points.at(i).x - cached_curve_points.at(i + 1).x) * FIELD_X,
-                dy = (cached_curve_points.at(i).y - cached_curve_points.at(i + 1).y) * FIELD_Y;
-
-          float d = std::hypotf(dx, dy);
-
-          d_travelled += d;
-
-          if (velocities.at(i) > 0.01f) {
-            t_elapsed += d / velocities.at(i);
-          }
-
-          //std::cout << "time: " << t_elapsed << " dist " << d << " vel " << velocities.at(i) << '\n';
-        }
-
         times.push_back(t_elapsed);
       }
     }
+    // A clamped interval. Cruise at a slow velocity. It could be better, but this is good enough.
     else {
       for (std::size_t i = start; i < end; ++i) {
-        velocities.push_back(0.3f);
+        velocities.push_back(SLOW_CRUISE_VELOCITY);
 
+        // Calculate the distance travelled.
         if (i != end - 1) {
           float dx = (cached_curve_points.at(i).x - cached_curve_points.at(i + 1).x) * FIELD_X,
                 dy = (cached_curve_points.at(i).y - cached_curve_points.at(i + 1).y) * FIELD_Y;
 
           float d = std::hypotf(dx, dy);
 
-          if (velocities.at(i) > 0.01f) {
-            t_elapsed += d / velocities.at(i);
-          }
- 
-          //std::cout << "time: " << t_elapsed << " dist " << d << " vel " << velocities.at(i) << '\n';
+          // Add to the time elapsed.
+          t_elapsed += d / velocities.back();
         }
 
         times.push_back(t_elapsed);
