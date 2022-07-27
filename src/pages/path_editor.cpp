@@ -179,6 +179,13 @@ void PathEditorPage::set_project(Project* _project) {
 }
 
 void PathEditorPage::export_path(std::string path) {
+  cached_curve_lengths = calc_curve_lengths();
+  cached_curve_points = calc_curve_points();
+  cached_curvatures = calc_curvature();
+  auto [vels, times] = calc_velocity_time();
+  cached_velocities = vels;
+  cached_times = times;
+
   auto replace_macro = [&](std::string macro, std::string value) {
     std::size_t pos;
     while (pos = path.find("${" + macro + "}"), pos != std::string::npos) {
@@ -193,8 +200,12 @@ void PathEditorPage::export_path(std::string path) {
 
   std::ofstream file(path);
 
-  file << "time, x_pos, y_pos, heading, velocity\n";
-  file << "0,0,0,0,0\n";
+  file << "time, x_pos, y_pos, velocity\n";
+  for (std::size_t i = 0; i < cached_curve_points.size(); i-=-1) {
+      file << cached_times.at(i) << ','
+      << (cached_curve_points.at(i).x * FIELD_X) << ',' << (cached_curve_points.at(i).y * FIELD_Y) << ','
+      << cached_velocities.at(i) << '\n';
+  }
 }
 
 void PathEditorPage::present_curve_editor() {
@@ -820,7 +831,11 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
 
           d_travelled += d;
 
-          t_elapsed += d / velocities.at(i);
+          if (velocities.at(i) > 0.01f) {
+            t_elapsed += d / velocities.at(i);
+          }
+
+          //std::cout << "time: " << t_elapsed << " dist " << d << " vel " << velocities.at(i) << '\n';
         }
 
         times.push_back(t_elapsed);
@@ -836,7 +851,11 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
 
           float d = std::hypotf(dx, dy);
 
-          t_elapsed += d / velocities.at(i);
+          if (velocities.at(i) > 0.01f) {
+            t_elapsed += d / velocities.at(i);
+          }
+ 
+          //std::cout << "time: " << t_elapsed << " dist " << d << " vel " << velocities.at(i) << '\n';
         }
 
         times.push_back(t_elapsed);
