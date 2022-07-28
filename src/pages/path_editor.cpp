@@ -4,14 +4,19 @@
 #include <glad/glad.h>
 
 #define CURVE_RESOLUTION_FACTOR 16.0f
-#define CURVE_THICKNESS 2
-#define TANGENT_THICKNESS 1
-#define POINT_RADIUS 5
-#define POINT_BORDER_THICKNESS 2
+#define CURVE_THICKNESS 2.0f
+#define TANGENT_THICKNESS 1.0f
+#define POINT_RADIUS 5.0f
+#define POINT_BORDER_THICKNESS 2.0f
 #define INTEGRAL_PRECISION 0.01f
 
 #define ROT_POINT_RADIUS 25.0f
 #define ROBOT_WIDTH 20.0f
+
+// The threshold for the curvature of a curve to slow down the robot.
+#define CURVATURE_THRESHOLD 15.0f
+// The maximum velocity of the robot when the curvature is above the threshold.
+#define SLOW_CRUISE_VELOCITY 0.5f // m/s
 
 ImVec2 PathEditorPage::CurvePoint::get_tangent_pt(bool first) const {
   ImVec2 pt(to_draw_coord(ImVec2(px, py)));
@@ -234,6 +239,13 @@ void PathEditorPage::present_curve_editor() {
 
   draw_list->AddImage(reinterpret_cast<void*>(static_cast<intptr_t>(field_tex)), bb.Min, bb.Max);
 
+  // --- Curve tooltip ---
+
+  decltype(cached_curve_points)::const_iterator it(find_curve_point(io.MousePos.x, io.MousePos.y));
+  if (it != cached_curve_points.cend()) {
+    ImGui::SetTooltip("%f m/s, %f s", cached_velocities.at(it - cached_curve_points.cbegin()), cached_times.at(it - cached_curve_points.cbegin()));
+  }
+
   // --- Point movement ---
 
   if (focused) {
@@ -426,11 +438,6 @@ void PathEditorPage::present_curve_editor() {
         updated = true;
       }
     }
-  }
-
-  decltype(cached_curve_points)::const_iterator it(find_curve_point(io.MousePos.x, io.MousePos.y));
-  if (it != cached_curve_points.cend()) {
-    ImGui::SetTooltip("%f m/s, %f s", cached_velocities.at(it - cached_curve_points.cbegin()), cached_times.at(it - cached_curve_points.cbegin()));
   }
 
   // --- Drawing ---
@@ -711,10 +718,6 @@ struct PathInterval {
   : start(start), end(end), type(type) { }
 };
 
-#define CURVATURE_THRESHOLD 15.0f
-
-#define SLOW_CRUISE_VELOCITY 0.3f // m/s
-
 std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_time() const {
   std::vector<std::pair<float, float>> clamped_intervals;
 
@@ -818,7 +821,8 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
           else {
             // Accelerate to slow speed.
             float vel(std::sqrtf(std::powf(last_vel, 2.0f) + 2.0f * project->settings.max_accel * d_delta));
-            if (std::isnan(vel) || vel < SLOW_CRUISE_VELOCITY) vel = SLOW_CRUISE_VELOCITY;
+            if (std::isnan(vel)) vel = 0.0f;
+
             velocities.push_back(vel);
             t_elapsed += (vel - last_vel) / project->settings.max_accel;
           }
@@ -831,6 +835,7 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
           if (clamped_interval_it != clamped_intervals.cend() && d_traveled >= clamped_interval_it->first - d_to_slow_cruise) {
             // Accelerate / decelerate to slow speed.
             float vel(std::sqrtf(std::powf(last_vel, 2.0f) + 2.0f * project->settings.max_accel * (last_vel < SLOW_CRUISE_VELOCITY ? +1 : -1) * d_delta));
+
             velocities.push_back(vel);
             t_elapsed += (vel - last_vel) / (project->settings.max_accel * (last_vel < SLOW_CRUISE_VELOCITY ? +1 : -1));
           }
@@ -843,6 +848,7 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
           else {
             // Accelerate to max speed.
             float vel(std::sqrtf(std::powf(last_vel, 2.0f) + 2.0f * project->settings.max_accel * d_delta));
+
             velocities.push_back(vel);
             t_elapsed += (vel - last_vel) / project->settings.max_accel;
           }
