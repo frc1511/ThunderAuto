@@ -14,10 +14,10 @@
 #define ROBOT_WIDTH 20.0f
 
 ImVec2 PathEditorPage::CurvePoint::get_tangent_pt(bool first) const {
-  ImVec2 pt = to_draw_coord(ImVec2(px, py));
+  ImVec2 pt(to_draw_coord(ImVec2(px, py)));
 
-  pt.x = pt.x + std::cos(heading + (M_PI * !first)) * (first ? w0 : w1);
-  pt.y = pt.y + std::sin(heading + (M_PI * !first)) * (first ? w0 : w1);
+  pt.x += std::cos(heading + (M_PI * !first)) * (first ? w0 : w1);
+  pt.y += std::sin(heading + (M_PI * !first)) * (first ? w0 : w1);
 
   pt = to_field_coord(pt);
 
@@ -25,26 +25,25 @@ ImVec2 PathEditorPage::CurvePoint::get_tangent_pt(bool first) const {
 }
 
 void PathEditorPage::CurvePoint::set_tangent_pt(bool first, float x, float y) {
-  ImVec2 pt0 = to_draw_coord(ImVec2(x, y)),
-         pt1 = to_draw_coord(ImVec2(px, py));
+  ImVec2 pt0(to_draw_coord(ImVec2(x, y))),
+         pt1(to_draw_coord(ImVec2(px, py)));
 
   heading = std::atan2(pt0.y - pt1.y, pt0.x - pt1.x) + (M_PI * !first);
 
-  float& w = first ? w0 : w1;
+  float& w(first ? w0 : w1);
 
   w = std::hypotf(pt0.x - pt1.x, pt0.y - pt1.y);
 }
 
 ImVec2 PathEditorPage::CurvePoint::get_rot_pt(bool reverse) const {
-  float v = reverse * 2 - 1;
+  float v(reverse * 2 - 1);
 
-  ImVec2 pt = to_draw_coord(ImVec2(px, py));
+  ImVec2 pt(to_draw_coord(ImVec2(px, py)));
 
-  pt.x = pt.x + std::cos(rotation + M_PI * v) * ROT_POINT_RADIUS * v;
-  pt.y = pt.y + std::sin(rotation + M_PI * v) * ROT_POINT_RADIUS * v;
+  pt.x += std::cos(rotation + M_PI * v) * ROT_POINT_RADIUS * v;
+  pt.y += std::sin(rotation + M_PI * v) * ROT_POINT_RADIUS * v;
 
   pt = to_field_coord(pt);
-
   return pt;
 }
 
@@ -56,20 +55,18 @@ ImVec2 PathEditorPage::CurvePoint::get_rot_corner_pt(int index) const {
     index -= 2;
   }
 
-  ImVec2 pt = to_draw_coord(get_rot_pt(reverse));
+  ImVec2 pt(to_draw_coord(get_rot_pt(reverse)));
 
-  pt.x = pt.x + std::cos(rotation + M_PI_2 * ((2 * index) - 1)) * ROBOT_WIDTH;
-  pt.y = pt.y + std::sin(rotation + M_PI_2 * ((2 * index) - 1)) * ROBOT_WIDTH;
+  pt.x += std::cos(rotation + M_PI_2 * ((2 * index) - 1)) * ROBOT_WIDTH;
+  pt.y += std::sin(rotation + M_PI_2 * ((2 * index) - 1)) * ROBOT_WIDTH;
 
   pt = to_field_coord(pt);
   return pt;
 }
 
 void PathEditorPage::CurvePoint::set_rot_pt(float x, float y) {
-  // rotation = std::atan2(y - py, x - px);
-
-  ImVec2 pt0 = to_draw_coord(ImVec2(x, y)),
-         pt1 = to_draw_coord(ImVec2(px, py));
+  ImVec2 pt0(to_draw_coord(ImVec2(x, y))),
+         pt1(to_draw_coord(ImVec2(px, py)));
 
   rotation = std::atan2(pt0.y - pt1.y, pt0.x - pt1.x);
 }
@@ -94,7 +91,7 @@ ImVec2 PathEditorPage::to_draw_coord(ImVec2 pt) {
 }
 
 ImVec2 PathEditorPage::adjust_field_coord(ImVec2 pt) {
-  const Field& field = project->settings.field;
+  const Field& field(project->settings.field);
 
   pt.x *= (field.max.x - field.min.x);
   pt.y *= (field.max.y - field.min.y);
@@ -106,7 +103,7 @@ ImVec2 PathEditorPage::adjust_field_coord(ImVec2 pt) {
 }
 
 ImVec2 PathEditorPage::un_adjust_field_coord(ImVec2 pt) {
-  const Field& field = project->settings.field;
+  const Field& field(project->settings.field);
 
   pt.x -= field.min.x;
   pt.y -= field.min.y;
@@ -155,9 +152,9 @@ void PathEditorPage::set_project(Project* _project) {
   selected_pt = project->points.end();
 
   int width, height, nr_channels;
-  unsigned char* img_data = stbi_load(project->settings.field.img_path.c_str(), &width, &height, &nr_channels, 0);
+  unsigned char* img_data(stbi_load(project->settings.field.img_path.c_str(), &width, &height, &nr_channels, 0));
   if (img_data) {
-    int tex_channels = nr_channels == 3 ? GL_RGB : GL_RGBA;
+    int tex_channels(nr_channels == 3 ? GL_RGB : GL_RGBA);
 
     glGenTextures(1, &field_tex);
     glBindTexture(GL_TEXTURE_2D, field_tex);
@@ -179,12 +176,8 @@ void PathEditorPage::set_project(Project* _project) {
 }
 
 void PathEditorPage::export_path(std::string path) {
-  cached_curve_lengths = calc_curve_lengths();
-  cached_curve_points = calc_curve_points();
-  cached_curvatures = calc_curvature();
-  auto [vels, times] = calc_velocity_time();
-  cached_velocities = vels;
-  cached_times = times;
+  // Update the values.
+  cache_values();
 
   auto replace_macro = [&](std::string macro, std::string value) {
     std::size_t pos;
@@ -209,19 +202,19 @@ void PathEditorPage::export_path(std::string path) {
 }
 
 void PathEditorPage::present_curve_editor() {
-  const ImGuiStyle& style = ImGui::GetStyle();
-  const ImGuiIO& io = ImGui::GetIO();
-  ImDrawList* draw_list = ImGui::GetWindowDrawList();
-  ImGuiWindow* win = ImGui::GetCurrentWindow();
+  const ImGuiStyle& style(ImGui::GetStyle());
+  const ImGuiIO& io(ImGui::GetIO());
+  ImDrawList* draw_list(ImGui::GetWindowDrawList());
+  ImGuiWindow* win(ImGui::GetCurrentWindow());
   if (win->SkipItems) return;
 
-  // Setup the canvas.
+  // --- Setup the canvas ---
 
   // Fit the canvas to the window.
-  ImVec2 win_size = ImGui::GetWindowSize();
+  ImVec2 win_size(ImGui::GetWindowSize());
 
-  float dim_x = win_size.x,
-        dim_y = win_size.y;
+  float dim_x(win_size.x),
+        dim_y(win_size.y);
 
   // Fit within the window size while maintaining aspect ratio.
   if ((dim_x / dim_y) > field_aspect_ratio) {
@@ -237,16 +230,16 @@ void PathEditorPage::present_curve_editor() {
   ImGui::ItemSize(bb);
   if (!ImGui::ItemAdd(bb, 0)) return;
 
-  const ImGuiID id = win->GetID("Path Editor");
+  const ImGuiID id(win->GetID("Path Editor"));
 
   draw_list->AddImage(reinterpret_cast<void*>(static_cast<intptr_t>(field_tex)), bb.Min, bb.Max);
 
   // --- Point movement ---
 
   if (focused) {
-    ImVec2 mouse = io.MousePos;
+    ImVec2 mouse(io.MousePos);
     auto move_point = [&](float& x, float& y) {
-      ImVec2 pt = to_field_coord(mouse);
+      ImVec2 pt(to_field_coord(mouse));
       x = pt.x;
       y = pt.y;
 
@@ -256,7 +249,8 @@ void PathEditorPage::present_curve_editor() {
     auto move_curve_point = [&](CurvePointTable::iterator it) {
       auto [x, y, head, w0, w1, rot] = *it;
 
-      float prev_x = x, prev_y = y;
+      float prev_x(x),
+            prev_y(y);
 
       move_point(x, y);
 
@@ -271,7 +265,8 @@ void PathEditorPage::present_curve_editor() {
       auto& [x, y, head, w0, w1, rot] = *it;
 
       auto [ax, ay] = it->get_rot_pt();
-      float prev_x = ax, prev_y = ay;
+      float prev_x(ax),
+            prev_y(ay);
 
       move_point(ax, ay);
 
@@ -291,7 +286,9 @@ void PathEditorPage::present_curve_editor() {
 
       auto [x0, y0] = it->get_tangent_pt(first);
 
-      float prev_x = x0, prev_y = y0;
+      float prev_x(x0),
+            prev_y(y0);
+
       move_point(x0, y0);
 
       if (x0 != prev_x || y0 != prev_y) {
@@ -307,7 +304,7 @@ void PathEditorPage::present_curve_editor() {
 
     static CurvePointTable::iterator drag_pt = project->points.end();
     enum { DRAG_NONE = 0, DRAG_PT = 1 << 0, DRAG_TAN_0 = 1 << 1, DRAG_TAN_1 = 1 << 2, DRAG_ANG = 1 << 3 };
-    static std::size_t drag_pt_type = DRAG_NONE;
+    static std::size_t drag_pt_type(DRAG_NONE);
 
     if (drag_pt != project->points.end() && drag_pt_type != DRAG_NONE && (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0))) {
       if (drag_pt_type & DRAG_PT) {
@@ -331,8 +328,8 @@ void PathEditorPage::present_curve_editor() {
 
           // Checks the from the mouse to a point.
           auto check_dist = [&](float px, float py) -> bool {
-            ImVec2 pos = to_draw_coord(ImVec2(px, py));
-            float dist = std::hypotf(pos.x - mouse.x, pos.y - mouse.y);
+            ImVec2 pos(to_draw_coord(ImVec2(px, py)));
+            float dist(std::hypotf(pos.x - mouse.x, pos.y - mouse.y));
             return dist < POINT_RADIUS * 4;
           };
 
@@ -341,9 +338,13 @@ void PathEditorPage::present_curve_editor() {
           auto [ax, ay] = it->get_rot_pt();
 
           drag_pt_type |= check_dist(x, y) * DRAG_PT;
-          drag_pt_type |= check_dist(c0x, c0y) * DRAG_TAN_0;
-          drag_pt_type |= check_dist(c1x, c1y) * DRAG_TAN_1;
-          drag_pt_type |= check_dist(ax, ay) * DRAG_ANG;
+          if (show_tangents) {
+            drag_pt_type |= check_dist(c0x, c0y) * DRAG_TAN_0;
+            drag_pt_type |= check_dist(c1x, c1y) * DRAG_TAN_1;
+          }
+          if (show_rotation) {
+            drag_pt_type |= check_dist(ax, ay) * DRAG_ANG;
+          }
 
           // A point is selected.
           if (drag_pt_type != DRAG_NONE) {
@@ -366,7 +367,7 @@ void PathEditorPage::present_curve_editor() {
 
       auto get_dist = [&](float x, float y) -> float {
         // Checks the distance from the mouse to a point.
-        ImVec2 pos = to_draw_coord(ImVec2(x, y));
+        ImVec2 pos(to_draw_coord(ImVec2(x, y)));
         return std::sqrt(std::powf(pos.x - mouse.x, 2) + std::powf(pos.y - mouse.y, 2));
       };
 
@@ -375,7 +376,7 @@ void PathEditorPage::present_curve_editor() {
         const auto [x, y, head, w0, w1, rot] = *it;
 
         // Checks the distance from the mouse to a point.
-        float dist = get_dist(x, y);
+        float dist(get_dist(x, y));
         
         if (dist < closest_point.second) {
           closest_point = std::make_pair(it, dist);
@@ -384,15 +385,15 @@ void PathEditorPage::present_curve_editor() {
 
       ImVec2 new_pt = to_field_coord(mouse);
 
-      bool dir = true;
+      bool dir(true);
       auto& [pt, dist] = closest_point;
 
-      float neighbor_dist = std::numeric_limits<float>::max();
+      float neighbor_dist(std::numeric_limits<float>::max());
 
-      bool pt_added = false;
+      bool pt_added(false);
       if (pt == project->points.cbegin()) {
-        float x_mid = (pt->px + (pt + 1)->px) / 2,
-              y_mid = (pt->py + (pt + 1)->py) / 2;
+        float x_mid((pt->px + (pt + 1)->px) / 2),
+              y_mid((pt->py + (pt + 1)->py) / 2);
 
         if (get_dist(x_mid, y_mid) > dist) {
           // Insert the point at the start of the list.
@@ -403,15 +404,15 @@ void PathEditorPage::present_curve_editor() {
       }
 
       if (!pt_added) {
-        auto [p, t] = find_curve_point(new_pt.x, new_pt.y);
+        auto [p, t] = find_curve_part_point(new_pt.x, new_pt.y);
         if (p != project->points.cend()) {
-          ImVec2 p0 = calc_curve_point(p, t);
-          ImVec2 p1 = calc_curve_point(p, t + INTEGRAL_PRECISION);
+          ImVec2 p0(calc_curve_point(p, t));
+          ImVec2 p1(calc_curve_point(p, t + INTEGRAL_PRECISION));
 
-          float dx = p1.x - p0.x,
-                dy = p1.y - p0.y;
+          float dx(p1.x - p0.x),
+                dy(p1.y - p0.y);
 
-          float angle = std::atan2(dy, dx);
+          float angle(std::atan2(dy, dx));
 
           selected_pt = project->points.insert(p + 1, { new_pt.x, new_pt.y, angle, 50.0f, 50.0f, 0.0f });
           updated = true;
@@ -427,35 +428,23 @@ void PathEditorPage::present_curve_editor() {
     }
   }
 
-  ImVec2 mouse_pt = to_field_coord(io.MousePos);
-
-  std::vector<ImVec2>::const_iterator it = std::find_if(cached_curve_points.cbegin(), cached_curve_points.cend(), [&](const ImVec2& pt) {
-    ImVec2 new_pt = to_draw_coord(pt);
-    return std::hypotf(io.MousePos.x - new_pt.x, io.MousePos.y - new_pt.y) < POINT_RADIUS;
-  });
-
+  decltype(cached_curve_points)::const_iterator it(find_curve_point(io.MousePos.x, io.MousePos.y));
   if (it != cached_curve_points.cend()) {
     ImGui::SetTooltip("%f m/s, %f s", cached_velocities.at(it - cached_curve_points.cbegin()), cached_times.at(it - cached_curve_points.cbegin()));
   }
 
-
   // --- Drawing ---
 
   if (updated) {
-    cached_curve_lengths = calc_curve_lengths();
-    cached_curve_points = calc_curve_points();
-    cached_curvatures = calc_curvature();
-    auto [vels, times] = calc_velocity_time();
-    cached_velocities = vels;
-    cached_times = times;
+    cache_values();
   }
 
-  static float highest_curve = 0;
+  static float highest_curve(0);
   // Draw lines connecting the points of the spline.
   for (std::vector<ImVec2>::const_iterator it = cached_curve_points.cbegin(); it != cached_curve_points.cend(); ++it) {
     if (it + 1 == cached_curve_points.cend()) break;
     
-    std::size_t i = it - cached_curve_points.cbegin();
+    std::size_t i(it - cached_curve_points.cbegin());
 
     auto my_clamp = [](float value, float min, float max) -> float {
         if (value > max) {
@@ -467,29 +456,39 @@ void PathEditorPage::present_curve_editor() {
         return value;
     };
 
-    // Blue is low curvature, red is high curvature.
-    // float hue = 0.6f - (my_clamp(cached_curvatures.at(i), 0.0f, 50.0f) / 50.0f);
-    float hue = 0.8f - (cached_velocities.at(i) / project->settings.max_vel);
+    float hue;
+    switch (curve_style) {
+      case CurveStyle::VELOCITY:
+        // Dark blue is low velocity, bright red is high velocity.
+        hue = 0.8f - (cached_velocities.at(i) / project->settings.max_vel);
+        break;
+      case CurveStyle::CURVATURE:
+        // Dark blue is low curvature, bright red is high curvature.
+        hue = 0.6f - (my_clamp(cached_curvatures.at(i), 0.0f, 50.0f) / 50.0f);
+        break;
+    }
 
-    ImVec2 p0 = *it, p1 = *(it + 1);
+    ImVec2 p0(*it),
+           p1(*(it + 1));
 
     draw_list->AddLine(to_draw_coord(p0), to_draw_coord(p1), ImColor::HSV(hue, 1.0f, 1.0f), CURVE_THICKNESS);
   }
 
   // Draw the curve waypoints and tangent lines.
-  for (CurvePointTable::const_iterator it = project->points.cbegin(); it != project->points.cend(); ++it) {
+  for (CurvePointTable::const_iterator it(project->points.cbegin()); it != project->points.cend(); ++it) {
     const auto& [x, y, head, w0, w1, rot] = *it;
 
     auto [c0x, c0y] = it->get_tangent_pt(true);
     auto [c1x, c1y] = it->get_tangent_pt(false);
     auto [ax, ay] = it->get_rot_pt();
 
-    ImVec2 p = to_draw_coord(ImVec2(x, y));
-    ImVec2 c0 = to_draw_coord(ImVec2(c0x, c0y));
-    ImVec2 c1 = to_draw_coord(ImVec2(c1x, c1y));
-    ImVec2 r = to_draw_coord(ImVec2(ax, ay));
+    ImVec2 p(to_draw_coord(ImVec2(x, y)));
+    ImVec2 c0(to_draw_coord(ImVec2(c0x, c0y)));
+    ImVec2 c1(to_draw_coord(ImVec2(c1x, c1y)));
+    ImVec2 r(to_draw_coord(ImVec2(ax, ay)));
 
-    ImColor pt_color, border_color = ImColor(style.Colors[ImGuiCol_Text]);
+    ImColor pt_color,
+            border_color(ImColor(style.Colors[ImGuiCol_Text]));
 
     if (it == selected_pt) {
       pt_color = ImColor(252, 186, 3, 255);
@@ -513,20 +512,18 @@ void PathEditorPage::present_curve_editor() {
       draw_list->AddCircle(c0, POINT_RADIUS, ImColor(252, 186, 3, 255), 0, POINT_BORDER_THICKNESS);
       draw_list->AddCircle(c1, POINT_RADIUS, ImColor(252, 186, 3, 255), 0, POINT_BORDER_THICKNESS);
     }
-    draw_list->AddCircleFilled(p, POINT_RADIUS, pt_color);
-    draw_list->AddCircleFilled(r, POINT_RADIUS, border_color);
 
-    // Draw the robot's rotation.
-    ImVec2 fl, fr, bl, br;
-    {
-      auto [ax1, ay1] = it->get_rot_pt(true);
-      
-      fl = to_draw_coord(it->get_rot_corner_pt(0));
-      fr = to_draw_coord(it->get_rot_corner_pt(1));
-      bl = to_draw_coord(it->get_rot_corner_pt(2));
-      br = to_draw_coord(it->get_rot_corner_pt(3));
+    draw_list->AddCircleFilled(p, POINT_RADIUS, pt_color);
+
+    if (show_rotation) {
+      draw_list->AddCircleFilled(r, POINT_RADIUS, border_color);
+
+      ImVec2 rot_pts[4];
+      for (std::size_t i = 0; i < 4; ++i) {
+        rot_pts[i] = to_draw_coord(it->get_rot_corner_pt(i));
+      }
+      draw_list->AddQuad(rot_pts[1], rot_pts[0], rot_pts[2], rot_pts[3], border_color);
     }
-    draw_list->AddQuad(fr, fl, bl, br, border_color);
   }
   updated = false;
 }
@@ -535,13 +532,13 @@ std::vector<ImVec2> PathEditorPage::calc_curve_points() const {
   std::vector<ImVec2> res;
 
   for (CurvePointTable::const_iterator it = project->points.cbegin(); it + 1 != project->points.cend(); ++it) {
-    std::size_t i = it - project->points.cbegin();
-    float len = cached_curve_lengths.at(i);
+    std::size_t i(it - project->points.cbegin());
+    float len(cached_curve_lengths.at(i));
 
-    std::size_t samples = len * CURVE_RESOLUTION_FACTOR;
+    std::size_t samples(len * CURVE_RESOLUTION_FACTOR);
 
     for (std::size_t j = 0; j < samples; ++j) {
-      float t = j / static_cast<float>(samples);
+      float t(j / static_cast<float>(samples));
       res.push_back(calc_curve_point(it, t));
     }
   }
@@ -551,10 +548,10 @@ std::vector<ImVec2> PathEditorPage::calc_curve_points() const {
 
 ImVec2 PathEditorPage::calc_curve_point(CurvePointTable::const_iterator it, float t) const {
   // The points and the slopes of the tangents.
-  float px0 = it->px,
-        py0 = it->py,
-        px1 = (it + 1)->px,
-        py1 = (it + 1)->py;
+  float px0(it->px),
+        py0(it->py),
+        px1((it + 1)->px),
+        py1((it + 1)->py);
 
   // The interpolated point on the spline.
 
@@ -563,8 +560,8 @@ ImVec2 PathEditorPage::calc_curve_point(CurvePointTable::const_iterator it, floa
       auto [c0x, c0y] = it->get_tangent_pt(true);
       auto [c1x, c1y] = (it + 1)->get_tangent_pt(true);
 
-      float m0 = (c0y - py0) / (c0x - px0),
-            m1 = (c1y - py1) / (c1x - px1);
+      float m0((c0y - py0) / (c0x - px0)),
+            m1((c1y - py1) / (c1x - px1));
 
     // The hermite base functions.
 
@@ -586,8 +583,8 @@ ImVec2 PathEditorPage::calc_curve_point(CurvePointTable::const_iterator it, floa
     };
 
     // p(t) = h00(t)pk + h10(t)(xk+1 - xk)mk + h01(t)pk+1 + h11(t)(xk+1 - xk)mk+1
-    float pt_y = (py0 * h00(t)) + (py1 * h01(t)) + (m0 * h10(t) * (px1 - px0)) + (m1 * h11(t) * (px1 - px0));
-    float pt_x = (t * (px1 - px0)) + px0;
+    float pt_y((py0 * h00(t)) + (py1 * h01(t)) + (m0 * h10(t) * (px1 - px0)) + (m1 * h11(t) * (px1 - px0)));
+    float pt_x((t * (px1 - px0)) + px0);
 
     if (pt_y > 0.01f && pt_y < 0.99f) {
       return ImVec2(pt_x, pt_y);
@@ -595,8 +592,8 @@ ImVec2 PathEditorPage::calc_curve_point(CurvePointTable::const_iterator it, floa
   // Cubic bezier curve.
   }
   else {
-      auto [c0x, c0y] = it->get_tangent_pt(true);
-      auto [c1x, c1y] = (it + 1)->get_tangent_pt(false);
+    auto [c0x, c0y] = it->get_tangent_pt(true);
+    auto [c1x, c1y] = (it + 1)->get_tangent_pt(false);
 
     // (1 - t)^3
     auto b0 = [](float t) -> float {
@@ -618,18 +615,19 @@ ImVec2 PathEditorPage::calc_curve_point(CurvePointTable::const_iterator it, floa
       return std::powf(t, 3);
     };
 
-    float pt_y = (py0 * b0(t)) + (c0y * b1(t)) + (c1y * b2(t)) + (py1 * b3(t));
-    float pt_x = (px0 * b0(t)) + (c0x * b1(t)) + (c1x * b2(t)) + (px1 * b3(t));
+    float pt_y((py0 * b0(t)) + (c0y * b1(t)) + (c1y * b2(t)) + (py1 * b3(t)));
+    float pt_x((px0 * b0(t)) + (c0x * b1(t)) + (c1x * b2(t)) + (px1 * b3(t)));
 
     return ImVec2(pt_x, pt_y);
   }
+
   return ImVec2(0, 0);
 }
 
 std::vector<float> PathEditorPage::calc_curve_lengths() const {
   std::vector<float> lengths;
 
-  for (CurvePointTable::const_iterator it = project->points.cbegin(); it + 1 != project->points.cend(); ++it) {
+  for (CurvePointTable::const_iterator it(project->points.cbegin()); it + 1 != project->points.cend(); ++it) {
     lengths.push_back(calc_curve_part_length(it));
   }
 
@@ -637,14 +635,14 @@ std::vector<float> PathEditorPage::calc_curve_lengths() const {
 }
 
 float PathEditorPage::calc_curve_part_length(CurvePointTable::const_iterator it) const {
-  float len = 0.0f;
+  float len(0.0f);
   
-  for (float t = 0.0f; t < 1.0f - INTEGRAL_PRECISION; t += INTEGRAL_PRECISION) {
-    ImVec2 p0 = calc_curve_point(it, t),
-           p1 = calc_curve_point(it, t + INTEGRAL_PRECISION);
+  for (float t(0.0f); t < 1.0f - INTEGRAL_PRECISION; t += INTEGRAL_PRECISION) {
+    ImVec2 p0(calc_curve_point(it, t)),
+           p1(calc_curve_point(it, t + INTEGRAL_PRECISION));
 
-    float dy = (p1.y - p0.y) * FIELD_X,
-          dx = (p1.x - p0.x) * FIELD_Y;
+    float dy((p1.y - p0.y) * FIELD_X),
+          dx((p1.x - p0.x) * FIELD_Y);
 
     // My friend pythagoras.
     len += std::sqrtf(dy * dy + dx * dx);
@@ -656,36 +654,36 @@ float PathEditorPage::calc_curve_part_length(CurvePointTable::const_iterator it)
 std::vector<float> PathEditorPage::calc_curvature() const {
   std::vector<float> curvatures;
 
-  for (std::vector<ImVec2>::const_iterator it = cached_curve_points.cbegin(); it != cached_curve_points.cend(); ++it) {
+  for (decltype(cached_curve_points)::const_iterator it(cached_curve_points.cbegin()); it != cached_curve_points.cend(); ++it) {
     if (it == cached_curve_points.cbegin() || it == cached_curve_points.cend() - 1) {
       curvatures.push_back(0.0f);
       continue;
     }
 
-    ImVec2 p0 = *(it - 1),
-           p1 = *it,
-           p2 = *(it + 1);
+    ImVec2 p0(*(it - 1)),
+           p1(*it),
+           p2(*(it + 1));
 
-    float dx0 = p1.x - p2.x,
-          dy0 = p1.y - p2.y,
-          dx1 = p0.x - p2.x,
-          dy1 = p0.y - p2.y,
-          dx2 = p0.x - p1.x,
-          dy2 = p0.y - p1.y;
+    float dx0(p1.x - p2.x),
+          dy0(p1.y - p2.y),
+          dx1(p0.x - p2.x),
+          dy1(p0.y - p2.y),
+          dx2(p0.x - p1.x),
+          dy2(p0.y - p1.y);
 
     // Side lengths.
-    float a = std::hypotf(dx0, dy0),
-          b = std::hypotf(dx1, dy1),
-          c = std::hypotf(dx2, dy2);
+    float a(std::hypotf(dx0, dy0)),
+          b(std::hypotf(dx1, dy1)),
+          c(std::hypotf(dx2, dy2));
 
     // Semi-perimeter.
-    float s = (a + b + c) / 2.0f;
+    float s((a + b + c) / 2.0f);
 
     // Heron's formula.
-    float A = std::sqrtf(s * (s - a) * (s - b) * (s - c));
+    float A(std::sqrtf(s * (s - a) * (s - b) * (s - c)));
     
     // Menger's curvature formula.
-    float curv = (4 * A) / (a * b * c);
+    float curv((4 * A) / (a * b * c));
 
     // Idk why it happens, but it does.
     if (std::isnan(curv)) {
@@ -721,13 +719,13 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
   std::vector<std::pair<float, float>> clamped_intervals;
 
   {
-    float d_traveled = 0.0f;
+    float d_traveled(0.0f);
 
-    float start = 0.0f;
-    bool in_clamped_interval = false;
+    float start(0.0f);
+    bool in_clamped_interval(false);
 
     // Find intervals in which the curvature is greater than the threshold.
-    for (decltype(cached_curvatures)::const_iterator it = cached_curvatures.cbegin(); it != cached_curvatures.cend(); ++it) {
+    for (decltype(cached_curvatures)::const_iterator it(cached_curvatures.cbegin()); it != cached_curvatures.cend(); ++it) {
       if (it != cached_curvatures.cend() - 1 && *it >= CURVATURE_THRESHOLD) {
         if (!in_clamped_interval) {
           // The beginning of the interval.
@@ -742,9 +740,9 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
       }
 
       if (it != cached_curvatures.cbegin()) {
-        std::size_t i = it - cached_curvatures.cbegin();
-        float dx = (cached_curve_points.at(i).x - cached_curve_points.at(i - 1).x) * FIELD_X,
-              dy = (cached_curve_points.at(i).y - cached_curve_points.at(i - 1).y) * FIELD_Y;
+        std::size_t i(it - cached_curvatures.cbegin());
+        float dx((cached_curve_points.at(i).x - cached_curve_points.at(i - 1).x) * FIELD_X),
+              dy((cached_curve_points.at(i).y - cached_curve_points.at(i - 1).y) * FIELD_Y);
 
         d_traveled += std::hypotf(dx, dy);
       }
@@ -754,28 +752,28 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
   std::vector<float> velocities, times;
 
   {
-    float d_total = 0.0f;
-    for (std::size_t i = 0; i < cached_curve_points.size(); ++i) {
-      if (i != 0) {
-        float dx = (cached_curve_points.at(i).x - cached_curve_points.at(i - 1).x) * FIELD_X,
-              dy = (cached_curve_points.at(i).y - cached_curve_points.at(i - 1).y) * FIELD_Y;
+    // Calculate the total distance of the path.
+    float d_total(0.0f);
+    for (decltype(cached_curve_points)::const_iterator it(cached_curve_points.cbegin()); it != cached_curve_points.cend(); ++it) {
+      if (it == cached_curve_points.cbegin()) continue;
 
+      float dx((it->x - (it - 1)->x) * FIELD_X),
+            dy((it->y - (it - 1)->y) * FIELD_Y);
 
-        d_total += std::hypotf(dx, dy);
-      }
+      d_total += std::hypotf(dx, dy);
     }
 
-    float d_traveled = 0.0f;
-    float t_elapsed = 0.0f;
+    float d_traveled(0.0f);
+    float t_elapsed(0.0f);
 
-    for (std::size_t i = 0; i < cached_curve_points.size(); ++i) {
-      const float last_vel = (i == 0) ? 0.0f : velocities.back();
+    for (decltype(cached_curve_points)::const_iterator it(cached_curve_points.cbegin()); it != cached_curve_points.cend(); ++it) {
+      const float last_vel((it == cached_curve_points.cbegin()) ? 0.0f : velocities.back());
 
       // Calculate the change in distance.
-      float d_delta = 0.0f;
-      if (i != 0) {
-        float dx = (cached_curve_points.at(i).x - cached_curve_points.at(i - 1).x) * FIELD_X,
-              dy = (cached_curve_points.at(i).y - cached_curve_points.at(i - 1).y) * FIELD_Y;
+      float d_delta(0.0f);
+      if (it != cached_curve_points.cbegin()) {
+        float dx((it->x - (it - 1)->x) * FIELD_X),
+              dy((it->y - (it - 1)->y) * FIELD_Y);
         
         d_delta = std::hypotf(dx, dy);
 
@@ -783,19 +781,19 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
       }
 
       // Distance required to decelerate to a stop.
-      float d_to_stop = (-std::powf(last_vel, 2.0f)) / (2.0f * -project->settings.max_accel);
+      float d_to_stop((-std::powf(last_vel, 2.0f)) / (2.0f * -project->settings.max_accel));
       if (d_traveled >= d_total - d_to_stop) {
         // Decelerate to a stop.
-        float vel = std::sqrtf(std::powf(last_vel, 2.0f) + (2.0f * -project->settings.max_accel * d_delta));
+        float vel(std::sqrtf(std::powf(last_vel, 2.0f) + (2.0f * -project->settings.max_accel * d_delta)));
         if (std::isnan(vel)) vel = 0.0f;
         velocities.push_back(vel);
         t_elapsed += (vel - last_vel) / (-project->settings.max_accel);
       }
       else {
-        bool in_clamped_interval = false;
-        decltype(clamped_intervals)::const_iterator clamped_interval_it = clamped_intervals.cend();
+        bool in_clamped_interval(false);
+        decltype(clamped_intervals)::const_iterator clamped_interval_it(clamped_intervals.cend());
 
-        for (decltype(clamped_intervals)::const_iterator it = clamped_intervals.cbegin(); it != clamped_intervals.cend(); ++it) {
+        for (decltype(clamped_intervals)::const_iterator it(clamped_intervals.cbegin()); it != clamped_intervals.cend(); ++it) {
           if (it->first <= d_traveled && it->second > d_traveled) {
             in_clamped_interval = true;
             clamped_interval_it = it;
@@ -819,20 +817,20 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
           }
           else {
             // Accelerate to slow speed.
-            float vel = std::sqrtf(std::powf(last_vel, 2.0f) + 2.0f * project->settings.max_accel * d_delta);
+            float vel(std::sqrtf(std::powf(last_vel, 2.0f) + 2.0f * project->settings.max_accel * d_delta));
             if (std::isnan(vel) || vel < SLOW_CRUISE_VELOCITY) vel = SLOW_CRUISE_VELOCITY;
             velocities.push_back(vel);
             t_elapsed += (vel - last_vel) / project->settings.max_accel;
           }
         }
         else {
-          bool accel_or_decel = last_vel < SLOW_CRUISE_VELOCITY;
+          bool accel_or_decel(last_vel < SLOW_CRUISE_VELOCITY);
 
-          float d_to_slow_cruise = (std::powf(SLOW_CRUISE_VELOCITY, 2.0f) - std::powf(last_vel, 2.0f)) / (2.0f * project->settings.max_accel * (last_vel < SLOW_CRUISE_VELOCITY ? +1 : -1));
+          float d_to_slow_cruise((std::powf(SLOW_CRUISE_VELOCITY, 2.0f) - std::powf(last_vel, 2.0f)) / (2.0f * project->settings.max_accel * (last_vel < SLOW_CRUISE_VELOCITY ? +1 : -1)));
 
           if (clamped_interval_it != clamped_intervals.cend() && d_traveled >= clamped_interval_it->first - d_to_slow_cruise) {
             // Accelerate / decelerate to slow speed.
-            float vel = std::sqrtf(std::powf(last_vel, 2.0f) + 2.0f * project->settings.max_accel * (last_vel < SLOW_CRUISE_VELOCITY ? +1 : -1) * d_delta);
+            float vel(std::sqrtf(std::powf(last_vel, 2.0f) + 2.0f * project->settings.max_accel * (last_vel < SLOW_CRUISE_VELOCITY ? +1 : -1) * d_delta));
             velocities.push_back(vel);
             t_elapsed += (vel - last_vel) / (project->settings.max_accel * (last_vel < SLOW_CRUISE_VELOCITY ? +1 : -1));
           }
@@ -844,7 +842,7 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
           }
           else {
             // Accelerate to max speed.
-            float vel = std::sqrtf(std::powf(last_vel, 2.0f) + 2.0f * project->settings.max_accel * d_delta);
+            float vel(std::sqrtf(std::powf(last_vel, 2.0f) + 2.0f * project->settings.max_accel * d_delta));
             velocities.push_back(vel);
             t_elapsed += (vel - last_vel) / project->settings.max_accel;
           }
@@ -858,15 +856,15 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
   return std::make_pair(velocities, times);
 }
 
-std::pair<PathEditorPage::CurvePointTable::const_iterator, float> PathEditorPage::find_curve_point(float x, float y) const {
-  for (CurvePointTable::const_iterator it = project->points.cbegin(); it + 1 != project->points.cend(); ++it) {
-    std::size_t i = it - project->points.cbegin();
-    float len = cached_curve_lengths.at(i);
+std::pair<PathEditorPage::CurvePointTable::const_iterator, float> PathEditorPage::find_curve_part_point(float x, float y) const {
+  for (CurvePointTable::const_iterator it(project->points.cbegin()); it + 1 != project->points.cend(); ++it) {
+    std::size_t i(it - project->points.cbegin());
+    float len(cached_curve_lengths.at(i));
 
-    std::size_t samples = len * 64.0f;
-    for (std::size_t j = 0; j < samples; ++j) {
-      float t = j / static_cast<float>(samples);
-      ImVec2 p = calc_curve_point(it, t);
+    std::size_t samples(len * 64.0f);
+    for (std::size_t j(0); j < samples; ++j) {
+      float t(j / static_cast<float>(samples));
+      ImVec2 p(calc_curve_point(it, t));
 
       if (std::hypotf(p.x - x, p.y - y) < 0.02f) {
         return std::make_pair(it, t);
@@ -876,15 +874,20 @@ std::pair<PathEditorPage::CurvePointTable::const_iterator, float> PathEditorPage
   return std::make_pair(project->points.cend(), 0.0f);
 }
 
-PathEditorPage::ExportCurvePointTable PathEditorPage::calc_export_curve_points() const {
-  ExportCurvePointTable points;
+std::vector<ImVec2>::const_iterator PathEditorPage::find_curve_point(float x, float y) const {
+  return std::find_if(cached_curve_points.cbegin(), cached_curve_points.cend(), [&](const ImVec2& pt) {
+    ImVec2 new_pt(to_draw_coord(pt));
+    return std::hypotf(x - new_pt.x, y - new_pt.y) < POINT_RADIUS;
+  });
+}
 
-  float vel = 0.0f;
-  for (CurvePointTable::const_iterator it = project->points.cbegin(); it + 1 != project->points.cend(); ++it) {
-
-  }
-
-  return points;
+void PathEditorPage::cache_values() {
+  cached_curve_lengths = calc_curve_lengths();
+  cached_curve_points = calc_curve_points();
+  cached_curvatures = calc_curvature();
+  auto [vels, times] = calc_velocity_time();
+  cached_velocities = vels;
+  cached_times = times;
 }
 
 PathEditorPage PathEditorPage::instance {};

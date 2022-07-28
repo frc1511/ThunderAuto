@@ -210,6 +210,64 @@ void PropertiesPage::present(bool* running) {
 
     ImGui::Separator();
 
+    // --- Curve Style ---
+
+    static PathEditorPage::CurveStyle curve_style = PathEditorPage::CurveStyle::VELOCITY;
+
+    const char* curve_style_names[] = {
+      "Velocity",
+      "Curvature",
+    };
+
+    ImGui::PushID("Curve Style");
+    ImGui::Columns(2, nullptr, false);
+    ImGui::SetColumnWidth(0, COL_WIDTH);
+    ImGui::Text("Curve Style");
+    ImGui::NextColumn();
+
+    if (ImGui::Combo("##Curve Style", (int*)&curve_style, curve_style_names, 2)) {
+      PathEditorPage::get()->set_curve_style(curve_style);
+    }
+
+    ImGui::Columns(1);
+    ImGui::PopID();
+
+    // --- Show Tangents ---
+
+    static bool show_tangents = true;
+
+    ImGui::PushID("Show Tangents");
+    ImGui::Columns(2, nullptr, false);
+    ImGui::SetColumnWidth(0, COL_WIDTH);
+    ImGui::Text("Show Tangents");
+    ImGui::NextColumn();
+
+    ImGui::Checkbox("##Show Tangents", &show_tangents);
+
+    ImGui::Columns(1);
+    ImGui::PopID();
+
+    PathEditorPage::get()->set_show_tangents(show_tangents);
+
+    // --- Show Rotation ---
+
+    static bool show_rotation = true;
+
+    ImGui::PushID("Show Rotation");
+    ImGui::Columns(2, nullptr, false);
+    ImGui::SetColumnWidth(0, COL_WIDTH);
+    ImGui::Text("Show Rotation");
+    ImGui::NextColumn();
+
+    ImGui::Checkbox("##Show Rotation", &show_rotation);
+
+    ImGui::Columns(1);
+    ImGui::PopID();
+
+    PathEditorPage::get()->set_show_rotation(show_rotation);
+
+    ImGui::Separator();
+
     // --- Curve Kind ---
 
     static PathEditorPage::CurveKind curve_kind = PathEditorPage::CurveKind::CUBIC_BEZIER;
@@ -236,23 +294,6 @@ void PropertiesPage::present(bool* running) {
       PathEditorPage::get()->set_curve_kind(curve_kind);
       PathEditorPage::get()->update();
     }
-
-    static bool show_tangents = true;
-
-    // --- Show Tangents ---
-
-    ImGui::PushID("Show Tangents");
-    ImGui::Columns(2, nullptr, false);
-    ImGui::SetColumnWidth(0, COL_WIDTH);
-    ImGui::Text("Show Tangents");
-    ImGui::NextColumn();
-
-    ImGui::Checkbox("##Show Tangents", &show_tangents);
-
-    ImGui::Columns(1);
-    ImGui::PopID();
-
-    PathEditorPage::get()->set_show_tangents(show_tangents);
   }
   
   ImGui::End();
