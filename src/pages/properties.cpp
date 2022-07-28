@@ -80,7 +80,7 @@ void PropertiesPage::present(bool* running) {
 
     static float weights[2] { 0.0f, 0.0f };
     float new_weights[2] { weights[0], weights[1] };
-    ImGui::DragFloat2("##Weights", new_weights, 1.0f, 0.00f, 0.0f, "%.2f");
+    ImGui::DragFloat2("##Weights", new_weights, 1.0f, 0.00f, 0.0f, "%.2f m");
 
     ImGui::Columns(1);
     ImGui::PopID();
@@ -96,8 +96,8 @@ void PropertiesPage::present(bool* running) {
     adjust_angle(new_rotation);
 
     auto find_values = [&]() {
-      pos[0] = selected_pt->px * FIELD_X;
-      pos[1] = selected_pt->py * FIELD_Y;
+      pos[0] = selected_pt->px;
+      pos[1] = selected_pt->py;
       rotation = selected_pt->rotation * RAD_2_DEG;
       heading = selected_pt->heading * RAD_2_DEG;
       weights[0] = selected_pt->w0;
@@ -108,7 +108,7 @@ void PropertiesPage::present(bool* running) {
 
     if (focused) {
       if (new_pos[0] != pos[0] || new_pos[1] != pos[1]) {
-        selected_pt->translate((new_pos[0] - pos[0]) / FIELD_X, (new_pos[1] - pos[1]) / FIELD_Y);
+        selected_pt->translate(new_pos[0] - pos[0], new_pos[1] - pos[1]);
         PathEditorPage::get()->update();
         pos[0] = new_pos[0];
         pos[1] = new_pos[1];
