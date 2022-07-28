@@ -25,6 +25,7 @@
 #include <limits>
 #include <utility>
 #include <filesystem>
+#include <numeric>
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
