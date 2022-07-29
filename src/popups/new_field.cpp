@@ -9,7 +9,8 @@ NewFieldPopup::NewFieldPopup() { }
 NewFieldPopup::~NewFieldPopup() { }
 
 void NewFieldPopup::present(bool* running) {
-  if (!ImGui::BeginPopupModal(name.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+  ImGui::SetNextWindowSize(ImVec2(370, 250), ImGuiCond_FirstUseEver);
+  if (!ImGui::BeginPopupModal(name.c_str(), nullptr, ImGuiWindowFlags_None)) {
     return;
   }
   
@@ -66,7 +67,7 @@ void NewFieldPopup::present(bool* running) {
         stbi_image_free(img_data);
         field_aspect_ratio = static_cast<float>(width) / static_cast<float>(height);
 
-        field = { img_path_buf, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f) };
+        field = Field(img_path_buf, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
       }
       else {
         img_load_failed = true;
@@ -96,14 +97,17 @@ void NewFieldPopup::present_field_setup() {
   ImGuiWindow* win = ImGui::GetCurrentWindow();
   if (win->SkipItems) return;
 
-  float dim_x = 500.0f,
-        dim_y = 500.0f;
+  ImVec2 win_size(ImGui::GetWindowSize());
 
-  if (field_aspect_ratio > 1.0f) {
-    dim_y = 500.0f / field_aspect_ratio;
+  float dim_x(win_size.x - ImGui::GetStyle().ScrollbarSize),
+        dim_y(win_size.y * 0.8f);
+
+  // Fit within the window size while maintaining aspect ratio.
+  if ((dim_x / dim_y) > field_aspect_ratio) {
+    dim_x = dim_y * field_aspect_ratio;
   }
   else {
-    dim_x = 500.0f * field_aspect_ratio;
+    dim_y = dim_x / field_aspect_ratio;
   }
   
   ImVec2 canvas(dim_x, dim_y);
@@ -111,8 +115,6 @@ void NewFieldPopup::present_field_setup() {
   ImRect bb(win->DC.CursorPos, win->DC.CursorPos + canvas);
   ImGui::ItemSize(bb);
   if (!ImGui::ItemAdd(bb, 0)) return;
-
-  const ImGuiID id = win->GetID("Field Setup");
 
   draw_list->AddImage(reinterpret_cast<void*>(static_cast<intptr_t>(field_tex)), bb.Min, bb.Max);
 

@@ -28,7 +28,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 #else
 int main(int argc, char** argv) {
 #endif
-    int exit_code = 0;
+  int exit_code = 0;
   
   // --- Initialize GLFW ---
   
@@ -185,6 +185,11 @@ int main(int argc, char** argv) {
   return exit_code;
 }
 
+#include <Roboto_Regular_ttf.h>
+#include <Roboto_Bold_ttf.h>
+#include <Ubuntu_Regular_ttf.h>
+#include <Ubuntu_Bold_ttf.h>
+
 static void set_imgui_style() {
   ImGui::StyleColorsDark();
   ImGuiStyle& style = ImGui::GetStyle();
@@ -258,15 +263,14 @@ static void set_imgui_style() {
   
   ImGuiIO* io = &ImGui::GetIO();
   
-  // Fonts.
-  //io->Fonts->AddFontFromFileTTF("Roboto-Regular.ttf", 15.0f);
-  //io->Fonts->AddFontFromFileTTF("Roboto-Regular.ttf", 16.0f);
-  //ImFont* default_font = io->Fonts->AddFontFromFileTTF("Roboto-Bold.ttf", 15.0f);
-  //io->FontDefault = default_font;
-  //io->Fonts->AddFontFromFileTTF("Roboto-Bold.ttf", 16.0f);
-  
-  ImFont* default_font = io->Fonts->AddFontFromFileTTF("Comic Sans MS.ttf", 16.0f);
-  //io->Fonts->AddFontFromFileTTF("Comic Sans MS Bold.ttf", 16.0f);
+  // Tell ImGui not to free fonts from memory.
+  ImFontConfig font_cfg;
+  font_cfg.FontDataOwnedByAtlas = false;
+
+  io->Fonts->AddFontFromMemoryTTF(reinterpret_cast<void*>(Ubuntu_Regular_ttf), Ubuntu_Regular_ttf_size, 15.0f, &font_cfg);
+  io->Fonts->AddFontFromMemoryTTF(reinterpret_cast<void*>(Ubuntu_Bold_ttf), Ubuntu_Bold_ttf_size, 15.0f, &font_cfg);
+  io->Fonts->AddFontFromMemoryTTF(reinterpret_cast<void*>(Roboto_Regular_ttf), Roboto_Regular_ttf_size, 15.0f, &font_cfg);
+  io->Fonts->AddFontFromMemoryTTF(reinterpret_cast<void*>(Roboto_Bold_ttf), Roboto_Bold_ttf_size, 15.0f, &font_cfg);
 
   io->ConfigWindowsMoveFromTitleBarOnly = true;
 }

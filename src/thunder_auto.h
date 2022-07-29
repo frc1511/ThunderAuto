@@ -4,12 +4,12 @@
 
 // Windows missed this one D:
 #ifndef M_PI
-#define M_PI 3.14159265359
+#define M_PI 3.14159265359f
 #endif
 
 // Windows also missed this one D:
 #ifndef M_PI_2
-#define M_PI_2 1.57079632679
+#define M_PI_2 1.57079632679f
 #endif
 
 #define DEG_2_RAD (M_PI / 180.0f)
@@ -26,6 +26,7 @@
 #include <utility>
 #include <filesystem>
 #include <numeric>
+#include <variant>
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>

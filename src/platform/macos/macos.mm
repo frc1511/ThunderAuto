@@ -31,7 +31,7 @@ std::string PlatformMacOS::open_file_dialog(FileType type, const char* ext_str) 
   if ([open_dialog runModal] == NSModalResponseOK) {
     NSArray* urls = [open_dialog URLs];
    
-    for(int i = 0; i < [urls count]; i++) {
+    for(NSUInteger i = 0; i < [urls count]; i++) {
       NSString* path = [[urls objectAtIndex:i] path];
       
       return [path UTF8String];

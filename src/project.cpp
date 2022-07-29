@@ -9,9 +9,8 @@ ProjectManager::~ProjectManager() { }
 void ProjectManager::new_project(ProjectSettings _settings) {
   project.settings = _settings;
   project.points = PathEditorPage::CurvePointTable({
-    { 0.9f, 0.5f, -M_PI_2, 50.0f, 50.0f, 0.0f },
-    { 0.5f, 0.3f, +M_PI_2, 50.0f, 50.0f, 0.0f },
-    { 0.1f, 0.4f, +M_PI_2, 50.0f, 50.0f, 0.0f },
+    { 8.124f, 1.78f, 4.73853f, 1.44372f, 1.70807f, 4.73853 },
+    { 4.0f,   1.5f,  2.0944f,  2.0f,     2.0f,     2.0944  },
   });
 
   working_project = true;
@@ -34,8 +33,8 @@ void ProjectManager::open_project(std::string path) {
 
   std::string::const_iterator file_iter = file_str.cbegin();
 
-  auto count = [&]() -> std::size_t {
-    std::size_t n = 0;
+  auto count = [&]() -> std::ptrdiff_t {
+    std::ptrdiff_t n = 0;
     while (file_iter != file_str.end() && *file_iter != '\n' && *file_iter != ',' && *file_iter != '}') {
       n++;
       file_iter++;
@@ -45,11 +44,18 @@ void ProjectManager::open_project(std::string path) {
 
   auto get_str = [&]() -> std::string {
     std::string::const_iterator start = file_iter;
-    std::size_t n = count();
+    std::ptrdiff_t n = count();
     return std::string(start, start + n);
   };
 
-  project.settings.field.img_path = get_str(); ++file_iter;
+  project.settings.field.img_type = static_cast<Field::ImageType>(std::stoi(get_str())); ++file_iter;
+  if (project.settings.field.img_type == Field::ImageType::CUSTOM) {
+    project.settings.field.img = std::filesystem::path(get_str());
+  }
+  else {
+    project.settings.field.img = static_cast<Field::BuiltinImage>(std::stoi(get_str()));
+  }
+  ++file_iter;
   project.settings.field.min.x = std::stof(get_str()); ++file_iter;
   project.settings.field.min.y = std::stof(get_str()); ++file_iter;
   project.settings.field.max.x = std::stof(get_str()); ++file_iter;
@@ -57,6 +63,8 @@ void ProjectManager::open_project(std::string path) {
   project.settings.drive_ctrl = static_cast<DriveController>(std::stoi(get_str())); ++file_iter;
   project.settings.max_accel = std::stof(get_str()); ++file_iter;
   project.settings.max_vel = std::stof(get_str()); ++file_iter;
+  project.settings.robot_length = std::stof(get_str()); ++file_iter;
+  project.settings.robot_width = std::stof(get_str()); ++file_iter;
 
   project.points.clear();
   while (file_iter != file_str.cend() && *file_iter == '{') {
@@ -82,10 +90,19 @@ void ProjectManager::save_project() {
 
   std::ofstream file(project.settings.path);
 
-  file << field.img_path << ',' << field.min.x << ',' << field.min.y << ',' << field.max.x << ',' << field.max.y << '\n';
-  file << static_cast<int>(settings.drive_ctrl) << ',';
+  file << static_cast<std::size_t>(settings.field.img_type) << ',';
+  if (field.img_type == Field::ImageType::CUSTOM) {
+    file << std::get<std::filesystem::path>(field.img).c_str() << ',';
+  }
+  else {
+    file << static_cast<std::size_t>(std::get<Field::BuiltinImage>(field.img)) << ',';
+  }
+  file << field.min.x << ',' << field.min.y << ',' << field.max.x << ',' << field.max.y << '\n';
+  file << static_cast<std::size_t>(settings.drive_ctrl) << ',';
   file << settings.max_accel << ',';
   file << settings.max_vel << '\n';
+  file << settings.robot_length << ',';
+  file << settings.robot_width << '\n';
   
   for (const PathEditorPage::CurvePoint& pt : project.points) {
     file << '{' << pt.px << "," << pt.py << "," << pt.heading << "," << pt.w0 << "," << pt.w1 << "," << pt.rotation << '}';

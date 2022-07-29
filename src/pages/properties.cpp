@@ -124,11 +124,11 @@ void PropertiesPage::present(bool* running) {
         PathEditorPage::get()->update();
       }
       else if (new_weights[0] != weights[0] || new_weights[1] != weights[1]) {
-        if (new_weights[0] < 0.03f) {
-          new_weights[0] = 0.03f;
+        if (new_weights[0] < 0.5f) {
+          new_weights[0] = 0.5f;
         }
-        if (new_weights[1] < 0.03f) {
-          new_weights[1] = 0.03f;
+        if (new_weights[1] < 0.5f) {
+          new_weights[1] = 0.5f;
         }
         selected_pt->w0 = new_weights[0];
         selected_pt->w1 = new_weights[1];

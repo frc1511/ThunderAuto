@@ -74,7 +74,7 @@ void App::present() {
         ImGui::MenuItem("Copy",       CTRL_STR "C", &item_copy);
         ImGui::MenuItem("Paste",      CTRL_STR "V", &item_paste);
         ImGui::MenuItem("Select All", CTRL_STR "A", &item_select_all);
-        ImGui::MenuItem("Delete",     "Delete", &item_delete);
+        // ImGui::MenuItem("Delete",     "Delete", &item_delete);
         
         ImGui::EndMenu();
       }
@@ -335,7 +335,7 @@ void App::handle_keyboard(int key, int scancode, int action, int mods) {
     else if (GET_CTRL_KEY(GLFW_KEY_A)) {
       menu_select_all();
     }
-    else if (key == GLFW_KEY_DELETE || key == GLFW_KEY_BACKSPACE) {
+    else if ((key == GLFW_KEY_DELETE || key == GLFW_KEY_BACKSPACE) && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
       menu_delete(false);
     }
   }

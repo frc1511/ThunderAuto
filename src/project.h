@@ -4,7 +4,7 @@
 #include <field.h>
 #include <pages/path_editor.h>
 
-enum class DriveController {
+enum class DriveController : std::size_t {
   RAMSETE,
   HOLONOMIC,
 };
@@ -16,8 +16,14 @@ struct ProjectSettings {
   
   DriveController drive_ctrl;
   
-  double max_accel; // m/s2
-  double max_vel; // m/s
+  float max_accel; // m/s2
+  float max_vel; // m/s
+
+  float robot_length; // m
+  float robot_width; // m
+
+  ProjectSettings() = default;
+  ~ProjectSettings() = default;
 };
 
 struct Project {

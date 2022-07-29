@@ -12,9 +12,6 @@
 
 #define CTRL_POINT_IMPACT 1.0f
 
-#define ROBOT_LENGTH 0.9f // m
-#define ROBOT_WIDTH 0.7f // m
-
 // The threshold for the curvature of a curve to slow down the robot.
 #define CURVATURE_THRESHOLD 15.0f
 // The maximum velocity of the robot when the curvature is above the threshold.
@@ -43,8 +40,8 @@ ImVec2 PathEditorPage::CurvePoint::get_rot_pt(bool reverse) const {
 
   ImVec2 pt(px, py);
 
-  pt.x += std::cos(rotation + M_PI * v) * (ROBOT_LENGTH / 2) * v;
-  pt.y += std::sin(rotation + M_PI * v) * (ROBOT_LENGTH / 2) * v;
+  pt.x += std::cos(rotation + M_PI * v) * (project->settings.robot_length / 2) * v;
+  pt.y += std::sin(rotation + M_PI * v) * (project->settings.robot_length / 2) * v;
 
   return pt;
 }
@@ -58,8 +55,8 @@ ImVec2 PathEditorPage::CurvePoint::get_rot_corner_pt(int index) const {
 
   float v((2 * index) - 1);
 
-  float dx(std::cos(rotation + M_PI_2 * v) * (ROBOT_WIDTH / 2)),
-        dy(std::sin(rotation + M_PI_2 * v) * (ROBOT_WIDTH / 2));
+  float dx(std::cos(rotation + M_PI_2 * v) * (project->settings.robot_width / 2)),
+        dy(std::sin(rotation + M_PI_2 * v) * (project->settings.robot_width / 2));
 
   ImVec2 pt(get_rot_pt(reverse));
 
@@ -141,9 +138,18 @@ std::optional<PathEditorPage::CurvePointTable::iterator> PathEditorPage::get_sel
 
 void PathEditorPage::delete_point() {
     if (selected_pt != project->points.end() && project->points.size() > 1) {
-        project->points.erase(selected_pt);
-        selected_pt = project->points.end();
-        updated = true;
+      bool is_end = selected_pt == project->points.end() - 1,
+           is_begin = selected_pt == project->points.begin();
+
+      project->points.erase(selected_pt);
+
+      if (is_begin) {
+        selected_pt = project->points.begin();
+      }
+      else {
+        selected_pt = project->points.end() - is_end;
+      }
+      updated = true;
     }
 }
 
@@ -165,12 +171,30 @@ void PathEditorPage::present(bool* running) {
   ImGui::End();
 }
 
+#include <field_2022_png.h>
+
 void PathEditorPage::set_project(Project* _project) {
   project = _project;
   selected_pt = project->points.end();
 
   int width, height, nr_channels;
-  unsigned char* img_data(stbi_load(project->settings.field.img_path.c_str(), &width, &height, &nr_channels, 0));
+  unsigned char* img_data;
+  if (project->settings.field.img_type == Field::ImageType::CUSTOM) {
+    img_data = stbi_load(std::get<std::filesystem::path>(project->settings.field.img).c_str(), &width, &height, &nr_channels, 0);
+  }
+  else {
+    const unsigned char* img_data_buf = nullptr;
+    std::size_t img_data_size = 0;
+    switch (std::get<Field::BuiltinImage>(project->settings.field.img)) {
+      case Field::BuiltinImage::FIELD_2022:
+        img_data_buf = field_2022_png;
+        img_data_size = field_2022_png_size;
+        break;
+    }
+
+    img_data = stbi_load_from_memory(img_data_buf, img_data_size, &width, &height, &nr_channels, 0);
+  }
+
   if (img_data) {
     int tex_channels(nr_channels == 3 ? GL_RGB : GL_RGBA);
 
@@ -247,8 +271,6 @@ void PathEditorPage::present_curve_editor() {
   bb = ImRect(win->DC.CursorPos, win->DC.CursorPos + canvas);
   ImGui::ItemSize(bb);
   if (!ImGui::ItemAdd(bb, 0)) return;
-
-  const ImGuiID id(win->GetID("Path Editor"));
 
   draw_list->AddImage(reinterpret_cast<void*>(static_cast<intptr_t>(field_tex)), bb.Min, bb.Max);
 
@@ -355,7 +377,7 @@ void PathEditorPage::present_curve_editor() {
           auto check_dist = [&](float px, float py) -> bool {
             ImVec2 pos(to_draw_coord(ImVec2(px, py)));
             float dist(std::hypotf(pos.x - mouse.x, pos.y - mouse.y));
-            return dist < POINT_RADIUS * 4;
+            return dist < POINT_RADIUS * 2.0f;
           };
 
           auto [c0x, c0y] = it->get_tangent_pt(true);
@@ -410,10 +432,7 @@ void PathEditorPage::present_curve_editor() {
 
       ImVec2 new_pt = to_field_coord(mouse);
 
-      bool dir(true);
       auto& [pt, dist] = closest_point;
-
-      float neighbor_dist(std::numeric_limits<float>::max());
 
       bool pt_added(false);
       if (pt == project->points.cbegin()) {
@@ -422,7 +441,7 @@ void PathEditorPage::present_curve_editor() {
 
         if (get_dist(x_mid, y_mid) > dist) {
           // Insert the point at the start of the list.
-          selected_pt = project->points.insert(project->points.cbegin(), { new_pt.x, new_pt.y, M_PI_2, 50.0f, 50.0f, 0.0f });
+          selected_pt = project->points.insert(project->points.cbegin(), { new_pt.x, new_pt.y, M_PI_2, 1.0f, 1.0f, 0.0f });
           updated = true;
           pt_added = true;
         }
@@ -439,7 +458,7 @@ void PathEditorPage::present_curve_editor() {
 
           float angle(std::atan2(dy, dx));
 
-          selected_pt = project->points.insert(p + 1, { new_pt.x, new_pt.y, angle, 50.0f, 50.0f, 0.0f });
+          selected_pt = project->points.insert(p + 1, { new_pt.x, new_pt.y, angle, 1.0f, 1.0f, 0.0f });
           updated = true;
           pt_added = true;
         }
@@ -447,7 +466,7 @@ void PathEditorPage::present_curve_editor() {
 
       if (!pt_added) {
         // To the end of the list!
-        selected_pt = project->points.insert(project->points.cend(), { new_pt.x, new_pt.y, M_PI_2, 50.0f, 50.0f, 0.0f });
+        selected_pt = project->points.insert(project->points.cend(), { new_pt.x, new_pt.y, M_PI_2, 1.0f, 1.0f, 0.0f });
         updated = true;
       }
     }
@@ -459,7 +478,6 @@ void PathEditorPage::present_curve_editor() {
     cache_values();
   }
 
-  static float highest_curve(0);
   // Draw lines connecting the points of the spline.
   for (std::vector<ImVec2>::const_iterator it = cached_curve_points.cbegin(); it != cached_curve_points.cend(); ++it) {
     if (it + 1 == cached_curve_points.cend()) break;
@@ -841,8 +859,6 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
           }
         }
         else {
-          bool accel_or_decel(last_vel < SLOW_CRUISE_VELOCITY);
-
           float d_to_slow_cruise((std::powf(SLOW_CRUISE_VELOCITY, 2.0f) - std::powf(last_vel, 2.0f)) / (2.0f * project->settings.max_accel * (last_vel < SLOW_CRUISE_VELOCITY ? +1 : -1)));
 
           if (clamped_interval_it != clamped_intervals.cend() && d_traveled >= clamped_interval_it->first - d_to_slow_cruise) {
@@ -885,7 +901,7 @@ std::pair<PathEditorPage::CurvePointTable::const_iterator, float> PathEditorPage
       float t(j / static_cast<float>(samples));
       ImVec2 p(calc_curve_point(it, t));
 
-      if (std::hypotf(p.x - x, p.y - y) < 0.02f) {
+      if (std::hypotf(p.x - x, p.y - y) < 0.2f) {
         return std::make_pair(it, t);
       }
     }

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>CFBundleExecutable</key>
+	<string>${PROJECT_NAME}</string>
+	<key>CFBundleIconFile</key>
+	<string>${THUNDER_AUTO_BUNDLE_ICON_FILE}</string>
+	<key>CFBundleIdentifier</key>
+	<string>${THUNDER_AUTO_BUNDLE_IDENTIFIER}</string>
+	<key>LSApplicationCategoryType</key>
+	<string>${THUNDER_AUTO_APP_CATEGORY}</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleLongVersionString</key>
+	<string>${THUNDER_AUTO_LONG_VERSION_STRING}</string>
+	<key>CFBundleName</key>
+	<string>${THUNDER_AUTO_BUNDLE_NAME}</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>${THUNDER_AUTO_SHORT_VERSION_STRING}</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>${THUNDER_AUTO_VERSION}</string>
+	<key>CSResourcesFileMapped</key>
+	<true/>
+	<key>NSHumanReadableCopyright</key>
+	<string>${THUNDER_AUTO_COPYRIGHT}</string>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIcons</key>
+			<dict>
+				<key>UTTypeIconText</key>
+				<string>${THUNDER_AUTO_PROJECT_EXTENSION}</string>
+				<key>UTTypeIconFile</key>
+				<string>${THUNDER_AUTO_PROJECT_ICON_FILE}</string>
+			</dict>
+			<key>UTTypeDescription</key>
+			<string>${THUNDER_AUTO_PROJECT_DECRIPTION}</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>${THUNDER_AUTO_PROJECT_TYPE}</string>
+			</array>
+			<key>UTTypeIdentifier</key>
+			<string>${THUNDER_AUTO_PROJECT_IDENTIFIER}</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>${THUNDER_AUTO_PROJECT_EXTENSION}</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+</dict>
+</plist>
