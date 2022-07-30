@@ -103,17 +103,16 @@ add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/glad")
 if(THUNDER_AUTO_WINDOWS)
   add_executable(${PROJECT_NAME} WIN32 ${THUNDER_AUTO_SRC})
 elseif(THUNDER_AUTO_MACOS)
-  # list(APPEND THUNDER_AUTO_RESOURCES "${THUNDER_AUTO_RES_DIR}/macos_bundle_icon.icns")
-  # list(APPEND THUNDER_AUTO_RESOURCES "${THUNDER_AUTO_RES_DIR}/macos_project_icon.icns")
+  list(APPEND THUNDER_AUTO_RESOURCES "${THUNDER_AUTO_RES_DIR}/macos/Assets.xcassets")
 
   set(THUNDER_AUTO_BUNDLE_IDENTIFIER    "io.github.petelilley.thunderauto")
-  set(THUNDER_AUTO_BUNDLE_NAME          "Thunder Auto")
+  set(THUNDER_AUTO_BUNDLE_NAME          "ThunderAuto")
   set(THUNDER_AUTO_VERSION              "${THUNDER_AUTO_VERSION}")
   set(THUNDER_AUTO_LONG_VERSION_STRING  "${THUNDER_AUTO_VERSION}")
   set(THUNDER_AUTO_SHORT_VERSION_STRING "${THUNDER_AUTO_VERSION_SHORT}")
-  set(THUNDER_AUTO_COPYRIGHT            "Copyright © ${THUNDER_AUTO_YEAR} Peter Lilley. All rights reserved.")
+  set(THUNDER_AUTO_COPYRIGHT            "Copyright © ${THUNDER_AUTO_YEAR} Peter P Lilley III. All rights reserved.")
   set(THUNDER_AUTO_APP_CATEGORY         "public.app-category.developer-tools")
-  set(THUNDER_AUTO_BUNDLE_ICON_FILE     "")
+  set(THUNDER_AUTO_BUNDLE_ICON_FILE     "bundle_icon.icns")
   set(THUNDER_AUTO_PROJECT_EXTENSION    "thunderauto")
   set(THUNDER_AUTO_PROJECT_DECRIPTION   "Thunder Auto Project")
   set(THUNDER_AUTO_PROJECT_TYPE         "public.data")
@@ -122,7 +121,7 @@ elseif(THUNDER_AUTO_MACOS)
 
   add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${THUNDER_AUTO_SRC} ${THUNDER_AUTO_RESOURCES})
   set_target_properties(${PROJECT_NAME} PROPERTIES
-    MACOSX_BUNDLE_INFO_PLIST          "${THUNDER_AUTO_RES_DIR}/MacOSXBundleInfo.plist.in"
+    MACOSX_BUNDLE_INFO_PLIST          "${THUNDER_AUTO_RES_DIR}/macos/Info.plist.in"
     RESOURCE                          "${THUNDER_AUTO_RESOURCES}"
   )
 elseif(THUNDER_AUTO_LINUX)
