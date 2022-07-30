@@ -3,7 +3,7 @@
 #include <stb_image.h>
 #include <glad/glad.h>
 
-#define CURVE_RESOLUTION_FACTOR 16.0f
+#define CURVE_RESOLUTION_FACTOR 32.0f
 #define CURVE_THICKNESS 2.0f
 #define TANGENT_THICKNESS 1.0f
 #define POINT_RADIUS 5.0f
@@ -387,7 +387,7 @@ void PathEditorPage::present_curve_editor() {
     };
 
     auto move_curve_point = [&](CurvePointTable::iterator it) {
-      auto [x, y, head, w0, w1, rot] = *it;
+      auto [x, y, head, w0, w1, rot, stop] = *it;
 
       float prev_x(x),
             prev_y(y);
@@ -402,7 +402,7 @@ void PathEditorPage::present_curve_editor() {
     };
 
     auto move_rot_point = [&](CurvePointTable::iterator it) {
-      auto& [x, y, head, w0, w1, rot] = *it;
+      auto& [x, y, head, w0, w1, rot, stop] = *it;
 
       auto [ax, ay] = it->get_rot_pt();
       float prev_x(ax),
@@ -422,7 +422,7 @@ void PathEditorPage::present_curve_editor() {
     };
 
     auto move_tangent_point = [&](CurvePointTable::iterator it, bool first) {
-      auto& [x, y, head, w0, w1, rot] = *it;
+      auto& [x, y, head, w0, w1, rot, stop] = *it;
 
       auto [x0, y0] = it->get_tangent_pt(first);
 
@@ -464,7 +464,7 @@ void PathEditorPage::present_curve_editor() {
 
       if (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0)) {
         for (CurvePointTable::iterator it = project->points.begin(); it != project->points.end(); ++it) {
-          auto& [x, y, head, w0, w1, rot] = *it;
+          auto& [x, y, head, w0, w1, rot, stop] = *it;
 
           // Checks the from the mouse to a point.
           auto check_dist = [&](float px, float py) -> bool {
@@ -513,7 +513,7 @@ void PathEditorPage::present_curve_editor() {
 
       // Find the closest point to the mouse.
       for (CurvePointTable::const_iterator it = project->points.cbegin(); it != project->points.cend(); ++it) {
-        const auto [x, y, head, w0, w1, rot] = *it;
+        const auto [x, y, head, w0, w1, rot, stop] = *it;
 
         // Checks the distance from the mouse to a point.
         float dist(get_dist(x, y));
@@ -534,7 +534,7 @@ void PathEditorPage::present_curve_editor() {
 
         if (get_dist(x_mid, y_mid) > dist) {
           // Insert the point at the start of the list.
-          selected_pt = project->points.insert(project->points.cbegin(), { new_pt.x, new_pt.y, M_PI_2, 1.0f, 1.0f, 0.0f });
+          selected_pt = project->points.insert(project->points.cbegin(), { new_pt.x, new_pt.y, M_PI_2, 1.0f, 1.0f, 0.0f, false });
           updated = true;
           pt_added = true;
         }
@@ -551,7 +551,7 @@ void PathEditorPage::present_curve_editor() {
 
           float angle(std::atan2(dy, dx));
 
-          selected_pt = project->points.insert(p + 1, { new_pt.x, new_pt.y, angle, 1.0f, 1.0f, 0.0f });
+          selected_pt = project->points.insert(p + 1, { new_pt.x, new_pt.y, angle, 1.0f, 1.0f, 0.0f, false });
           updated = true;
           pt_added = true;
         }
@@ -559,7 +559,7 @@ void PathEditorPage::present_curve_editor() {
 
       if (!pt_added) {
         // To the end of the list!
-        selected_pt = project->points.insert(project->points.cend(), { new_pt.x, new_pt.y, M_PI_2, 1.0f, 1.0f, 0.0f });
+        selected_pt = project->points.insert(project->points.cend(), { new_pt.x, new_pt.y, M_PI_2, 1.0f, 1.0f, 0.0f, false });
         updated = true;
       }
     }
@@ -607,7 +607,7 @@ void PathEditorPage::present_curve_editor() {
 
   // Draw the curve waypoints and tangent lines.
   for (CurvePointTable::const_iterator it(project->points.cbegin()); it != project->points.cend(); ++it) {
-    const auto& [x, y, head, w0, w1, rot] = *it;
+    const auto& [x, y, head, w0, w1, rot, stop] = *it;
 
     auto [c0x, c0y] = it->get_tangent_pt(true);
     auto [c1x, c1y] = it->get_tangent_pt(false);
@@ -717,9 +717,7 @@ ImVec2 PathEditorPage::calc_curve_point(CurvePointTable::const_iterator it, floa
     float pt_y((py0 * h00(t)) + (py1 * h01(t)) + (m0 * h10(t) * (px1 - px0)) + (m1 * h11(t) * (px1 - px0)));
     float pt_x((t * (px1 - px0)) + px0);
 
-    if (pt_y > 0.01f && pt_y < 0.99f) {
-      return ImVec2(pt_x, pt_y);
-    }
+    return ImVec2(pt_x, pt_y);
   // Cubic bezier curve.
   }
   else {
@@ -879,6 +877,15 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
   std::vector<float> velocities, times;
 
   {
+    std::vector<CurvePointTable::const_iterator> stop_point_its;
+
+    // Get points to stop at.
+    for (CurvePointTable::const_iterator it(project->points.cbegin()); it != project->points.cend(); ++it) {
+      if (it->stop) stop_point_its.push_back(it);
+    }
+
+    std::vector<float> stop_points;
+
     // Calculate the total distance of the path.
     float d_total(0.0f);
     for (decltype(cached_curve_points)::const_iterator it(cached_curve_points.cbegin()); it != cached_curve_points.cend(); ++it) {
@@ -888,7 +895,20 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
             dy((it->y - (it - 1)->y));
 
       d_total += std::hypotf(dx, dy);
+
+      // See if we should stop at this distance.
+      for (decltype(stop_point_its)::const_iterator stop_it(stop_point_its.cbegin()); stop_it != stop_point_its.cend(); ++stop_it) {
+        if ((*stop_it)->px == it->x && (*stop_it)->py == it->y) {
+          stop_points.push_back(d_total);
+          break;
+        }
+      }
     }
+
+    // Stop at end of the path.
+    stop_points.push_back(d_total);
+
+    decltype(stop_points)::const_iterator stop_it(stop_points.cbegin());
 
     float d_traveled(0.0f);
     float t_elapsed(0.0f);
@@ -907,9 +927,13 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
         d_traveled += d_delta;
       }
 
+      if (d_traveled > *stop_it) {
+        ++stop_it;
+      }
+
       // Distance required to decelerate to a stop.
       float d_to_stop((-std::powf(last_vel, 2.0f)) / (2.0f * -project->settings.max_accel));
-      if (d_traveled >= d_total - d_to_stop) {
+      if (d_traveled >= *stop_it - d_to_stop) {
         // Decelerate to a stop.
         float vel(std::sqrtf(std::powf(last_vel, 2.0f) + (2.0f * -project->settings.max_accel * d_delta)));
         if (std::isnan(vel)) vel = 0.0f;

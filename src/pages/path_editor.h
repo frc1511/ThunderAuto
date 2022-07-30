@@ -50,6 +50,8 @@ public:
     // The rotation of the robot at the point.
     float rotation;
 
+    bool stop;
+
     /**
      * @brief Returns the coordinates of a tangent control point.
      *

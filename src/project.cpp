@@ -1,6 +1,7 @@
 #include <project.h>
 #include <pages/path_editor.h>
 #include <pages/path_manager.h>
+#include <pages/properties.h>
 
 ProjectManager::ProjectManager() { }
 
@@ -9,14 +10,15 @@ ProjectManager::~ProjectManager() { }
 void ProjectManager::new_project(ProjectSettings _settings) {
   project.settings = _settings;
   project.points = PathEditorPage::CurvePointTable({
-    { 8.124f, 1.78f, 4.73853f, 1.44372f, 1.70807f, 4.73853 },
-    { 4.0f,   1.5f,  2.0944f,  2.0f,     2.0f,     2.0944  },
+    { 8.124f, 1.78f, 4.73853f, 1.44372f, 1.70807f, 4.73853, false },
+    { 4.0f,   1.5f,  2.0944f,  2.0f,     2.0f,     2.0944,  false },
   });
 
   working_project = true;
   unsaved = false;
 
   PathEditorPage::get()->set_project(&project);
+  PropertiesPage::get()->set_project(&project);
 
   save_project();
 }
@@ -76,11 +78,13 @@ void ProjectManager::open_project(std::string path) {
       point.w0 = std::stof(get_str()); ++file_iter;
       point.w1 = std::stof(get_str()); ++file_iter;
       point.rotation = std::stof(get_str()); ++file_iter;
+      point.stop = static_cast<bool>(std::stoi(get_str())); ++file_iter;
 
       project.points.push_back(point);
   }
 
   PathEditorPage::get()->set_project(&project);
+  PropertiesPage::get()->set_project(&project);
   working_project = true;
 }
 
@@ -105,7 +109,7 @@ void ProjectManager::save_project() {
   file << settings.robot_width << '\n';
   
   for (const PathEditorPage::CurvePoint& pt : project.points) {
-    file << '{' << pt.px << "," << pt.py << "," << pt.heading << "," << pt.w0 << "," << pt.w1 << "," << pt.rotation << '}';
+    file << '{' << pt.px << ',' << pt.py << ',' << pt.heading << ',' << pt.w0 << ',' << pt.w1 << ',' << pt.rotation << ',' << static_cast<std::size_t>(pt.stop) << '}';
   }
   file << '\n';
 }
