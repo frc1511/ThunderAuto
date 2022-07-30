@@ -80,7 +80,7 @@ void PropertiesPage::present(bool* running) {
 
     static float weights[2] { 0.0f, 0.0f };
     float new_weights[2] { weights[0], weights[1] };
-    ImGui::DragFloat2("##Weights", new_weights, 1.0f, 0.00f, 0.0f, "%.2f m");
+    ImGui::DragFloat2("##Weights", new_weights, 0.3f, 0.00f, 0.0f, "%.2f m");
 
     ImGui::Columns(1);
     ImGui::PopID();
@@ -124,12 +124,6 @@ void PropertiesPage::present(bool* running) {
         PathEditorPage::get()->update();
       }
       else if (new_weights[0] != weights[0] || new_weights[1] != weights[1]) {
-        if (new_weights[0] < 0.5f) {
-          new_weights[0] = 0.5f;
-        }
-        if (new_weights[1] < 0.5f) {
-          new_weights[1] = 0.5f;
-        }
         selected_pt->w0 = new_weights[0];
         selected_pt->w1 = new_weights[1];
         weights[0] = new_weights[0];

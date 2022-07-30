@@ -262,28 +262,31 @@ private:
   // The OpenGL texture ID of the field image.
   unsigned int field_tex;
 
+  ImVec2 field_offset;
+  float field_scale = 1.0f;
+
   /**
    * @brief Converts a screen coordinate to a field coordinate.
    */
-  static ImVec2 to_field_coord(ImVec2 pt);
+  ImVec2 to_field_coord(ImVec2 pt, bool apply_offset = true) const;
 
   /**
    * @brief Converts a field coordinate to a screen coordinate.
    */
-  static ImVec2 to_draw_coord(ImVec2 pt);
+  ImVec2 to_draw_coord(ImVec2 pt, bool apply_offset = true) const;
 
   /**
    * @brief Adjusts a field coordinate to fit the defined field bounds.
    */
-  static ImVec2 adjust_field_coord(ImVec2 pt);
+  ImVec2 adjust_field_coord(ImVec2 pt) const;
 
   /**
    * @brief Unadjusts a field coordinate from the defined field bounds to the texture bounds.
    */
-  static ImVec2 un_adjust_field_coord(ImVec2 pt);
+  ImVec2 un_adjust_field_coord(ImVec2 pt) const;
   
   // The widget's bounding box.
-  inline static ImRect bb;
+  ImRect bb;
   
   static PathEditorPage instance;
 };

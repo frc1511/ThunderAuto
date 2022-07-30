@@ -79,21 +79,43 @@ PathEditorPage::PathEditorPage() { }
 
 PathEditorPage::~PathEditorPage() { }
 
-ImVec2 PathEditorPage::to_field_coord(ImVec2 pt) {
+ImVec2 PathEditorPage::to_field_coord(ImVec2 pt, bool apply_offset) const {
+  if (apply_offset) {
+    pt /= field_scale;
+  }
+
   pt = ImVec2((pt.x - bb.Min.x) / (bb.Max.x - bb.Min.x), 1 - (pt.y - bb.Min.y) / (bb.Max.y - bb.Min.y));
   pt.x *= FIELD_X;
   pt.y *= FIELD_Y;
-  return un_adjust_field_coord(pt);
+
+  pt = un_adjust_field_coord(pt);
+
+  if (apply_offset) {
+    pt -= field_offset;
+  }
+
+  return pt;
 }
 
-ImVec2 PathEditorPage::to_draw_coord(ImVec2 pt) {
+ImVec2 PathEditorPage::to_draw_coord(ImVec2 pt, bool apply_offset) const {
+  if (apply_offset) {
+    pt += field_offset;
+  }
+
   pt = adjust_field_coord(pt);
+
   pt.x /= FIELD_X;
   pt.y /= FIELD_Y;
-  return ImVec2(pt.x, 1 - pt.y) * (bb.Max - bb.Min) + bb.Min;
+  pt = ImVec2(pt.x, 1 - pt.y) * (bb.Max - bb.Min) + bb.Min;
+
+  if (apply_offset) {
+    pt *= field_scale;
+  }
+
+  return pt;
 }
 
-ImVec2 PathEditorPage::adjust_field_coord(ImVec2 pt) {
+ImVec2 PathEditorPage::adjust_field_coord(ImVec2 pt) const {
   const Field& field(project->settings.field);
 
   pt.x /= FIELD_X;
@@ -111,7 +133,7 @@ ImVec2 PathEditorPage::adjust_field_coord(ImVec2 pt) {
   return pt;
 }
 
-ImVec2 PathEditorPage::un_adjust_field_coord(ImVec2 pt) {
+ImVec2 PathEditorPage::un_adjust_field_coord(ImVec2 pt) const {
   const Field& field(project->settings.field);
 
   pt.x /= FIELD_X;
@@ -157,6 +179,8 @@ void PathEditorPage::present(bool* running) {
   ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
   if (!ImGui::Begin("Path Editor", running,
                 ImGuiWindowFlags_NoCollapse
+              | ImGuiWindowFlags_NoScrollbar
+              | ImGuiWindowFlags_NoScrollWithMouse
               | ImGuiWindowFlags_UnsavedDocument * ProjectManager::get()->is_unsaved())) {
     ImGui::End();
     return;
@@ -214,6 +238,10 @@ void PathEditorPage::set_project(Project* _project) {
     std::cout << "Failed to load texture" << std::endl;
   }
 
+  // Reset stuff.
+  field_offset = ImVec2(0.0f, 0.0f);
+  field_scale = 1.0f;
+
   updated = true;
 }
 
@@ -250,6 +278,9 @@ void PathEditorPage::present_curve_editor() {
   ImGuiWindow* win(ImGui::GetCurrentWindow());
   if (win->SkipItems) return;
 
+  ImGui::SetScrollX(0);
+  ImGui::SetScrollY(0);
+
   // --- Setup the canvas ---
 
   // Fit the canvas to the window.
@@ -269,10 +300,72 @@ void PathEditorPage::present_curve_editor() {
   ImVec2 canvas(dim_x, dim_y);
 
   bb = ImRect(win->DC.CursorPos, win->DC.CursorPos + canvas);
+
   ImGui::ItemSize(bb);
   if (!ImGui::ItemAdd(bb, 0)) return;
 
-  draw_list->AddImage(reinterpret_cast<void*>(static_cast<intptr_t>(field_tex)), bb.Min, bb.Max);
+  // --- Panning and Zooming ---
+
+  {
+    // Panning.
+    static ImVec2 last_mouse_pos(0.0f, 0.0f);
+    ImVec2 mouse_pos(io.MousePos);
+
+    if (ImGui::IsMouseDragging(2)) {
+      ImVec2 delta(to_field_coord(mouse_pos, false) - to_field_coord(last_mouse_pos, false));
+
+      field_offset.x += delta.x / field_scale;
+      field_offset.y += delta.y / field_scale;
+    }
+
+    last_mouse_pos = io.MousePos;
+
+    static float last_field_scale = 1.0f;
+
+    // Zooming.
+    ImVec2 mouse_pos_pre_zoom(to_field_coord(mouse_pos));
+
+    field_scale += io.MouseWheel * 0.05f;
+    if (field_scale < 1.0f) {
+      field_scale = 1.0f;
+    }
+    else if (field_scale > 4.0f) {
+      field_scale = 4.0f;
+    }
+
+    ImVec2 mouse_pos_post_zoom(to_field_coord(mouse_pos));
+
+    if (last_field_scale != field_scale) {
+      float dx = (mouse_pos_post_zoom.x - mouse_pos_pre_zoom.x);
+      float dy = (mouse_pos_post_zoom.y - mouse_pos_pre_zoom.y);
+      
+      field_offset.x += dx;
+      field_offset.y += dy;
+    }
+
+    last_field_scale = field_scale;
+  }
+
+  // --- Draw the field image ---
+
+  ImVec2 img_offset(field_offset);
+  {
+    img_offset.x /= FIELD_X;
+    img_offset.y /= FIELD_Y;
+
+    img_offset.x *= (project->settings.field.max.x - project->settings.field.min.x);
+    img_offset.y *= (project->settings.field.max.y - project->settings.field.min.y);
+
+    img_offset = ImVec2(img_offset.x, img_offset.y) * (bb.Max - bb.Min);
+  }
+
+  ImVec2 img_min = ImVec2(bb.Min.x + img_offset.x, bb.Min.y - img_offset.y);
+  ImVec2 img_max = ImVec2(bb.Max.x + img_offset.x, bb.Max.y - img_offset.y);
+
+  img_min *= field_scale;
+  img_max *= field_scale;
+
+  draw_list->AddImage(reinterpret_cast<void*>(static_cast<intptr_t>(field_tex)), img_min, img_max);
 
   // --- Curve tooltip ---
 
