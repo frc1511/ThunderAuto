@@ -54,16 +54,43 @@ void PropertiesPage::present(bool* running) {
 
     // --- Heading ---
 
-    ImGui::PushID("Heading");
+    const char* headings_id = selected_pt->stop ? "Headings" : "Heading";
+
+    ImGui::PushID(headings_id);
     ImGui::Columns(2, nullptr, false);
     ImGui::SetColumnWidth(0, COL_WIDTH);
-    ImGui::Text("Heading");
+    ImGui::Text("%s", headings_id);
     ImGui::NextColumn();
 
-    static float heading = 0.0f;
-    if (ImGui::DragFloat("##Heading", &heading, 1.0f, 0.0f, 0.0f, "%.2f deg")) {
-      adjust_angle(heading);
-      selected_pt->heading = heading * DEG_2_RAD;
+    static float headings[2] { 0.0f, 0.0f };
+    
+    bool cond = false;
+
+    std::size_t i = 0;
+    if (selected_pt->end) {
+      i = 1;
+    }
+
+    if (selected_pt->stop) {
+      cond = ImGui::DragFloat2("##Heading", headings, 0.3f, 0.0f, 0.0f, "%.2f°");
+    }
+    else {
+      cond = ImGui::DragFloat("##Heading", &headings[i], 1.0f, 0.0f, 0.0f, "%.2f°");
+    }
+
+    if (cond) {
+      adjust_angle(headings[i]);
+
+      selected_pt->h0 = headings[i] * DEG_2_RAD;
+
+      if (selected_pt->stop || selected_pt->end) {
+        adjust_angle(headings[!i]);
+        selected_pt->h1 = (headings[!i] * DEG_2_RAD) + M_PI;
+      }
+      else {
+        selected_pt->h1 = headings[i] * DEG_2_RAD;
+      }
+
       PathEditorPage::get()->update();
     }
 
@@ -79,7 +106,7 @@ void PropertiesPage::present(bool* running) {
     ImGui::NextColumn();
 
     static float rotation = 0.0f;
-    if (ImGui::DragFloat("##Rotation", &rotation, 1.0f, 0.0f, 0.0f, "%.2f deg")) {
+    if (ImGui::DragFloat("##Rotation", &rotation, 1.0f, 0.0f, 0.0f, "%.2f°")) {
       adjust_angle(rotation);
       selected_pt->rotation = rotation * DEG_2_RAD;
       PathEditorPage::get()->update();
@@ -101,7 +128,7 @@ void PropertiesPage::present(bool* running) {
       ImGui::Text("%s", weights_id);
       ImGui::NextColumn();
 
-      bool cond = false;
+      cond = false;
       if (selected_pt->begin) {
         cond = ImGui::DragFloat("##Begin", &weights[0], 0.3f, 0.0f, 0.0f, "%.2f m");
       }
@@ -130,6 +157,7 @@ void PropertiesPage::present(bool* running) {
 
     // --- Stop ---
 
+    bool stop = selected_pt->stop;
     if (selected_pt != (project->points.cend() - 1) && selected_pt != project->points.cbegin()) {
       ImGui::PushID("Stop");
       ImGui::Columns(2, nullptr, false);
@@ -137,13 +165,11 @@ void PropertiesPage::present(bool* running) {
       ImGui::Text("Stop");
       ImGui::NextColumn();
 
-      bool stop = selected_pt->stop;
       if (ImGui::Checkbox("##Stop", &stop)) {
         selected_pt->stop = stop;
+        selected_pt->h1 = selected_pt->h0;
         PathEditorPage::get()->update();
       }
-
-      stop = selected_pt->stop;
 
       ImGui::Columns(1);
       ImGui::PopID();
@@ -152,11 +178,14 @@ void PropertiesPage::present(bool* running) {
     // Update values from the path editor.
     pos[0] = selected_pt->px;
     pos[1] = selected_pt->py;
+    stop = selected_pt->stop;
+    headings[0] = selected_pt->h0 * RAD_2_DEG;
+    headings[1] = (selected_pt->h1 - M_PI * (stop || selected_pt->end)) * RAD_2_DEG;
     rotation = selected_pt->rotation * RAD_2_DEG;
-    heading = selected_pt->heading * RAD_2_DEG;
     weights[0] = selected_pt->w0;
     weights[1] = selected_pt->w1;
-    adjust_angle(heading);
+    adjust_angle(headings[0]);
+    adjust_angle(headings[1]);
     adjust_angle(rotation);
   }
 

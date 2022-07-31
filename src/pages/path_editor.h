@@ -44,15 +44,18 @@ public:
     float px;
     float py;
     // The heading at the point.
-    float heading;
+    float h0;
+    float h1;
+    // The weigths of the two heading constraints.
     float w0;
     float w1;
     // The rotation of the robot at the point.
     float rotation;
-
+    // Whether the robot should stop at this point.
     bool stop;
-
+    // Whether this is the starting point of the path.
     bool begin;
+    // Whether this is the ending point of the path.
     bool end;
 
     /**

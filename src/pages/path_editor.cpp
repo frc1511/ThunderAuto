@@ -22,8 +22,8 @@ std::optional<ImVec2> PathEditorPage::CurvePoint::get_tangent_pt(bool first) con
     return std::nullopt;
   }
 
-  float dx = std::cos(heading + (M_PI * !first)) * (first ? w0 : w1),
-        dy = std::sin(heading + (M_PI * !first)) * (first ? w0 : w1);
+  float dx = std::cos((first ? h0 : h1) + (M_PI * !first)) * (first ? w0 : w1),
+        dy = std::sin((first ? h0 : h1) + (M_PI * !first)) * (first ? w0 : w1);
 
   return ImVec2(px + dx, py + dy);
 }
@@ -32,9 +32,15 @@ void PathEditorPage::CurvePoint::set_tangent_pt(bool first, float x, float y) {
   float dx(x - px),
         dy(y - py);
 
-  heading = std::atan2(dy, dx) + (M_PI * !first);
+  float &_h0 = (first ? h0 : h1),
+        &_h1 = (first ? h1 : h0),
+        &w = (first ? w0 : w1);
 
-  float& w(first ? w0 : w1);
+  _h0 = std::atan2(dy, dx) + (M_PI * !first);
+
+  if (!stop) {
+    _h1 = _h0;
+  }
 
   w = std::hypotf(dx, dy);
 }
@@ -177,6 +183,10 @@ void PathEditorPage::delete_point() {
         selected_pt = project->points.end() - is_end;
         selected_pt->end = true;
       }
+
+      selected_pt->stop = false;
+      selected_pt->h1 = selected_pt->h0;
+
       updated = true;
     }
 }
@@ -425,11 +435,11 @@ void PathEditorPage::present_curve_editor() {
         rot += M_PI * 2.0f;
       }
 
-      ImGui::SetTooltip("%.2f degrees", rot * RAD_2_DEG);
+      ImGui::SetTooltip("%.2f°", rot * RAD_2_DEG);
     };
 
     auto move_tangent_point = [&](CurvePointTable::iterator it, bool first) {
-      auto& head = it->heading;
+      auto& head = first ? it->h0 : it->h1;
 
       auto [x0, y0] = *it->get_tangent_pt(first);
 
@@ -444,9 +454,17 @@ void PathEditorPage::present_curve_editor() {
       
       if (head < 0.0f) {
         head += M_PI * 2.0f;
+
+        if (!it->stop) {
+          (first ? it->h1 : it->h0) = head;
+        }
       }
 
-      ImGui::SetTooltip("%.2f degrees", head * RAD_2_DEG);
+      float tooltip = head - M_PI * (!first && (it->stop || it->end));
+      if (tooltip < 0.0f) {
+        tooltip += M_PI * 2.0f;
+      }
+      ImGui::SetTooltip("%.2f°", tooltip * RAD_2_DEG);
     };
 
     static CurvePointTable::iterator drag_pt = project->points.end();
@@ -547,7 +565,7 @@ void PathEditorPage::present_curve_editor() {
 
         if (get_dist(x_mid, y_mid) > dist) {
           // Insert the point at the start of the list.
-          selected_pt = project->points.insert(project->points.cbegin(), { new_pt.x, new_pt.y, M_PI_2, 1.0f, 1.0f, 0.0f, false, true, false });
+          selected_pt = project->points.insert(project->points.cbegin(), { new_pt.x, new_pt.y, M_PI_2, M_PI_2, 1.0f, 1.0f, 0.0f, false, true, false });
           (selected_pt + 1)->begin = false;
           updated = true;
           pt_added = true;
@@ -565,7 +583,7 @@ void PathEditorPage::present_curve_editor() {
 
           float angle(std::atan2(dy, dx));
 
-          selected_pt = project->points.insert(p + 1, { new_pt.x, new_pt.y, angle, 1.0f, 1.0f, 0.0f, false, false, false });
+          selected_pt = project->points.insert(p + 1, { new_pt.x, new_pt.y, angle, angle, 1.0f, 1.0f, 0.0f, false, false, false });
           updated = true;
           pt_added = true;
         }
@@ -573,7 +591,7 @@ void PathEditorPage::present_curve_editor() {
 
       if (!pt_added) {
         // To the end of the list!
-        selected_pt = project->points.insert(project->points.cend(), { new_pt.x, new_pt.y, M_PI_2, 1.0f, 1.0f, 0.0f, false, false, true });
+        selected_pt = project->points.insert(project->points.cend(), { new_pt.x, new_pt.y, M_PI_2, M_PI_2, 1.0f, 1.0f, 0.0f, false, false, true });
         (selected_pt - 1)->end = false;
         updated = true;
       }

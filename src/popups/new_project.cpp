@@ -94,12 +94,12 @@ void NewProjectPopup::present(bool* running) {
   ImGui::Text("Controller Type");
   ImGui::NextColumn();
   
-  const char* controllers[] = { "Ramsete", "Holonomic" };
+  const char* controllers[] = { "Holonomic", "Ramsete" };
   static int current_controller = 0;
   
   if (ImGui::BeginCombo("##Controller Type", controllers[current_controller])) {
     for (int i = 0; i < 2; i++) {
-      if (ImGui::Selectable(controllers[i], current_controller == i)) {
+      if (ImGui::Selectable(controllers[i], current_controller == i, ImGuiSelectableFlags_Disabled * (i == 1))) {
         current_controller = i;
       }
     }
@@ -118,7 +118,7 @@ void NewProjectPopup::present(bool* running) {
   ImGui::NextColumn();
 
   static float max_accel = 3.0f;
-  ImGui::DragFloat("##Max Acceleration", &max_accel, 0.1f, 0.0f, 0.0f, "%.1f m/s^2");
+  ImGui::DragFloat("##Max Acceleration", &max_accel, 0.1f, 0.0f, 0.0f, "%.1f m/s²");
 
   if (max_accel < 0.0f) {
     max_accel = 0.0f;
