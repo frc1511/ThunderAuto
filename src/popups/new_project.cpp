@@ -31,16 +31,16 @@ void NewProjectPopup::present(bool* running) {
   static char deploy_path_buf[256] = "";
   
   ImGui::InputText("##Path", deploy_path_buf, 256, ImGuiInputTextFlags_None);
-  std::string deploy_path = deploy_path_buf;
+  std::string deploy_path_str = deploy_path_buf;
   
   ImGui::SameLine();
   
   if (ImGui::Button("Browse")) {
-    deploy_path = Platform::get_current()->save_file_dialog(FILE_EXTENSION);
-    strncpy(deploy_path_buf, deploy_path.c_str(), deploy_path.length());
+    deploy_path_str = Platform::get_current()->save_file_dialog(FILE_EXTENSION);
+    strncpy(deploy_path_buf, deploy_path_str.c_str(), deploy_path_str.length());
   }
   
-  bool has_deploy_path = !deploy_path.empty();
+  bool has_deploy_path = !deploy_path_str.empty();
 
   ImGui::Columns(1);
   ImGui::PopID();
@@ -229,8 +229,24 @@ void NewProjectPopup::present(bool* running) {
     has_project = true;
     
     DriveController drivetrain = current_controller == 0 ? DriveController::RAMSETE : DriveController::HOLONOMIC;
+
+    if (field.value().img_type == Field::ImageType::CUSTOM) {
+      std::filesystem::path deploy_path = deploy_path_str;
+      deploy_path = deploy_path.parent_path();
+
+      std::string img_path_str = std::get<std::filesystem::path>(field.value().img).string();
+
+      std::size_t pos = img_path_str.find(deploy_path.string());
+      if (pos != std::string::npos) {
+        img_path_str.replace(pos, deploy_path.string().length(), "${PROJECT_DIR}");
+      }
+
+      std::cout << "image path " << img_path_str << std::endl;
+
+      field.value().img = img_path_str;
+    }
     
-    project = { deploy_path, field.value(), drivetrain, max_accel, max_vel, robot_length, robot_width };
+    project = { deploy_path_str, field.value(), drivetrain, max_accel, max_vel, robot_length, robot_width };
     
     goto close;
   }

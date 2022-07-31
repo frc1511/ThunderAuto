@@ -18,6 +18,13 @@
 // The maximum velocity of the robot when the curvature is above the threshold.
 #define SLOW_CRUISE_VELOCITY 0.5f // m/s
 
+static void replace_macro(std::string& str, std::string macro, std::string value) {
+  std::size_t pos;
+  while (pos = str.find("${" + macro + "}"), pos != std::string::npos) {
+    str.replace(pos, macro.length() + 3, value);
+  }
+}
+
 std::optional<ImVec2> PathEditorPage::CurvePoint::get_tangent_pt(bool first) const {
   if ((!first && begin) || (first && end)) {
     return std::nullopt;
@@ -221,7 +228,9 @@ void PathEditorPage::set_project(Project* _project) {
   int width, height, nr_channels;
   unsigned char* img_data;
   if (project->settings.field.img_type == Field::ImageType::CUSTOM) {
-    img_data = stbi_load(std::get<std::filesystem::path>(project->settings.field.img).c_str(), &width, &height, &nr_channels, 0);
+    std::string img_path(std::get<std::filesystem::path>(project->settings.field.img));
+    replace_macro(img_path, "PROJECT_DIR", project->settings.path.parent_path().string());
+    img_data = stbi_load(img_path.c_str(), &width, &height, &nr_channels, 0);
   }
   else {
     const unsigned char* img_data_buf = nullptr;
@@ -266,15 +275,8 @@ void PathEditorPage::export_path(std::string path) {
   // Update the values.
   cache_values();
 
-  auto replace_macro = [&](std::string macro, std::string value) {
-    std::size_t pos;
-    while (pos = path.find("${" + macro + "}"), pos != std::string::npos) {
-      path.replace(pos, macro.length() + 3, value);
-    }
-  };
-
-  replace_macro("PROJECT_DIR", project->settings.path.parent_path().string());
-  replace_macro("PATH_NAME", "the_path");
+  replace_macro(path, "PROJECT_DIR", project->settings.path.parent_path().string());
+  replace_macro(path, "PATH_NAME", "the_path");
 
   std::cout << "Exporting path to " << path << std::endl;
 

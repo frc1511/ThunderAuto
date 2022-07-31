@@ -37,7 +37,19 @@ void ProjectManager::open_project(std::string path) {
 
   auto count = [&]() -> std::ptrdiff_t {
     std::ptrdiff_t n = 0;
-    while (file_iter != file_str.end() && *file_iter != '\n' && *file_iter != ',' && *file_iter != '}') {
+
+    bool quoted = *file_iter == '"';
+    if (quoted) {
+      ++n;
+      ++file_iter;
+    }
+
+    auto cond = [&]() {
+      if (quoted) return *file_iter != '"';
+      return *file_iter != '\n' && *file_iter != ',' && *file_iter != '}';
+    };
+
+    while (file_iter != file_str.end() && cond()) {
       n++;
       file_iter++;
     }
@@ -51,13 +63,14 @@ void ProjectManager::open_project(std::string path) {
   };
 
   project.settings.field.img_type = static_cast<Field::ImageType>(std::stoi(get_str())); ++file_iter;
+  std::string img_str = get_str(); file_iter += 2;
+  img_str.erase(img_str.cbegin());
   if (project.settings.field.img_type == Field::ImageType::CUSTOM) {
-    project.settings.field.img = std::filesystem::path(get_str());
+    project.settings.field.img = std::filesystem::path(img_str);
   }
   else {
-    project.settings.field.img = static_cast<Field::BuiltinImage>(std::stoi(get_str()));
+    project.settings.field.img = static_cast<Field::BuiltinImage>(std::stoi(img_str));
   }
-  ++file_iter;
   project.settings.field.min.x = std::stof(get_str()); ++file_iter;
   project.settings.field.min.y = std::stof(get_str()); ++file_iter;
   project.settings.field.max.x = std::stof(get_str()); ++file_iter;
@@ -99,7 +112,7 @@ void ProjectManager::save_project() {
 
   file << static_cast<std::size_t>(settings.field.img_type) << ',';
   if (field.img_type == Field::ImageType::CUSTOM) {
-    file << std::get<std::filesystem::path>(field.img).c_str() << ',';
+    file << '"' << std::get<std::filesystem::path>(field.img).c_str() << '"' << ',';
   }
   else {
     file << static_cast<std::size_t>(std::get<Field::BuiltinImage>(field.img)) << ',';
