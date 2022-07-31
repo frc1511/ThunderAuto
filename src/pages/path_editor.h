@@ -52,13 +52,16 @@ public:
 
     bool stop;
 
+    bool begin;
+    bool end;
+
     /**
      * @brief Returns the coordinates of a tangent control point.
      *
      * @param first Whether it return the first or second control point.
-     * @return The coordinates of the tangent control point.
+     * @return The coordinates of the tangent control point, or std::nullopt if there is no control point.
      */
-    ImVec2 get_tangent_pt(bool first) const;
+    std::optional<ImVec2> get_tangent_pt(bool first) const;
 
     /**
      * @brief Sets the coordinates of a tangent control point.
@@ -145,18 +148,6 @@ public:
    * @param style The style of the curve.
    */
   constexpr void set_curve_style(CurveStyle style) { curve_style = style; }
-
-  enum class CurveKind : std::size_t {
-    CUBIC_BEZIER = 0,
-    CUBIC_HERMITE = 1,
-  };
-
-  /**
-   * @brief Sets the kind of curve to use for the path.
-   *
-   * @param kind The kind of curve to use (cubic bezier is recommended).
-   */
-  constexpr void set_curve_kind(CurveKind kind) { curve_kind = kind; }
   
 private:
   PathEditorPage();
@@ -247,9 +238,6 @@ private:
 
   // The style of the curve.
   CurveStyle curve_style = CurveStyle::VELOCITY;
-
-  // The kind of the curve.
-  CurveKind curve_kind = CurveKind::CUBIC_BEZIER;
 
   // Whether the path editor should update its values on the next frame.
   bool updated = true;

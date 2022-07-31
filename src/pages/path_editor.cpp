@@ -17,7 +17,11 @@
 // The maximum velocity of the robot when the curvature is above the threshold.
 #define SLOW_CRUISE_VELOCITY 0.5f // m/s
 
-ImVec2 PathEditorPage::CurvePoint::get_tangent_pt(bool first) const {
+std::optional<ImVec2> PathEditorPage::CurvePoint::get_tangent_pt(bool first) const {
+  if ((!first && begin) || (first && end)) {
+    return std::nullopt;
+  }
+
   float dx = std::cos(heading + (M_PI * !first)) * (first ? w0 : w1),
         dy = std::sin(heading + (M_PI * !first)) * (first ? w0 : w1);
 
@@ -167,9 +171,11 @@ void PathEditorPage::delete_point() {
 
       if (is_begin) {
         selected_pt = project->points.begin();
+        selected_pt->begin = true;
       }
       else {
         selected_pt = project->points.end() - is_end;
+        selected_pt->end = true;
       }
       updated = true;
     }
@@ -387,7 +393,8 @@ void PathEditorPage::present_curve_editor() {
     };
 
     auto move_curve_point = [&](CurvePointTable::iterator it) {
-      auto [x, y, head, w0, w1, rot, stop] = *it;
+      float x = it->px,
+            y = it->py;
 
       float prev_x(x),
             prev_y(y);
@@ -402,7 +409,7 @@ void PathEditorPage::present_curve_editor() {
     };
 
     auto move_rot_point = [&](CurvePointTable::iterator it) {
-      auto& [x, y, head, w0, w1, rot, stop] = *it;
+      auto& rot = it->rotation;
 
       auto [ax, ay] = it->get_rot_pt();
       float prev_x(ax),
@@ -422,9 +429,9 @@ void PathEditorPage::present_curve_editor() {
     };
 
     auto move_tangent_point = [&](CurvePointTable::iterator it, bool first) {
-      auto& [x, y, head, w0, w1, rot, stop] = *it;
+      auto& head = it->heading;
 
-      auto [x0, y0] = it->get_tangent_pt(first);
+      auto [x0, y0] = *it->get_tangent_pt(first);
 
       float prev_x(x0),
             prev_y(y0);
@@ -464,7 +471,8 @@ void PathEditorPage::present_curve_editor() {
 
       if (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0)) {
         for (CurvePointTable::iterator it = project->points.begin(); it != project->points.end(); ++it) {
-          auto& [x, y, head, w0, w1, rot, stop] = *it;
+          auto& x = it->px,
+              & y = it->py;
 
           // Checks the from the mouse to a point.
           auto check_dist = [&](float px, float py) -> bool {
@@ -473,14 +481,18 @@ void PathEditorPage::present_curve_editor() {
             return dist < POINT_RADIUS * 2.0f;
           };
 
-          auto [c0x, c0y] = it->get_tangent_pt(true);
-          auto [c1x, c1y] = it->get_tangent_pt(false);
+          std::optional<ImVec2> c0 = it->get_tangent_pt(true);
+          std::optional<ImVec2> c1 = it->get_tangent_pt(false);
           auto [ax, ay] = it->get_rot_pt();
 
           drag_pt_type |= check_dist(x, y) * DRAG_PT;
           if (show_tangents) {
-            drag_pt_type |= check_dist(c0x, c0y) * DRAG_TAN_0;
-            drag_pt_type |= check_dist(c1x, c1y) * DRAG_TAN_1;
+            if (c0) {
+              drag_pt_type |= check_dist(c0->x, c0->y) * DRAG_TAN_0;
+            }
+            if (c1) {
+              drag_pt_type |= check_dist(c1->x, c1->y) * DRAG_TAN_1;
+            }
           }
           if (show_rotation) {
             drag_pt_type |= check_dist(ax, ay) * DRAG_ANG;
@@ -513,7 +525,8 @@ void PathEditorPage::present_curve_editor() {
 
       // Find the closest point to the mouse.
       for (CurvePointTable::const_iterator it = project->points.cbegin(); it != project->points.cend(); ++it) {
-        const auto [x, y, head, w0, w1, rot, stop] = *it;
+        auto x = it->px,
+             y = it->py;
 
         // Checks the distance from the mouse to a point.
         float dist(get_dist(x, y));
@@ -534,7 +547,8 @@ void PathEditorPage::present_curve_editor() {
 
         if (get_dist(x_mid, y_mid) > dist) {
           // Insert the point at the start of the list.
-          selected_pt = project->points.insert(project->points.cbegin(), { new_pt.x, new_pt.y, M_PI_2, 1.0f, 1.0f, 0.0f, false });
+          selected_pt = project->points.insert(project->points.cbegin(), { new_pt.x, new_pt.y, M_PI_2, 1.0f, 1.0f, 0.0f, false, true, false });
+          (selected_pt + 1)->begin = false;
           updated = true;
           pt_added = true;
         }
@@ -551,7 +565,7 @@ void PathEditorPage::present_curve_editor() {
 
           float angle(std::atan2(dy, dx));
 
-          selected_pt = project->points.insert(p + 1, { new_pt.x, new_pt.y, angle, 1.0f, 1.0f, 0.0f, false });
+          selected_pt = project->points.insert(p + 1, { new_pt.x, new_pt.y, angle, 1.0f, 1.0f, 0.0f, false, false, false });
           updated = true;
           pt_added = true;
         }
@@ -559,7 +573,8 @@ void PathEditorPage::present_curve_editor() {
 
       if (!pt_added) {
         // To the end of the list!
-        selected_pt = project->points.insert(project->points.cend(), { new_pt.x, new_pt.y, M_PI_2, 1.0f, 1.0f, 0.0f, false });
+        selected_pt = project->points.insert(project->points.cend(), { new_pt.x, new_pt.y, M_PI_2, 1.0f, 1.0f, 0.0f, false, false, true });
+        (selected_pt - 1)->end = false;
         updated = true;
       }
     }
@@ -607,15 +622,14 @@ void PathEditorPage::present_curve_editor() {
 
   // Draw the curve waypoints and tangent lines.
   for (CurvePointTable::const_iterator it(project->points.cbegin()); it != project->points.cend(); ++it) {
-    const auto& [x, y, head, w0, w1, rot, stop] = *it;
+    auto x = it->px,
+         y = it->py;
 
-    auto [c0x, c0y] = it->get_tangent_pt(true);
-    auto [c1x, c1y] = it->get_tangent_pt(false);
+    std::optional<ImVec2> c0 = it->get_tangent_pt(true);
+    std::optional<ImVec2> c1 = it->get_tangent_pt(false);
     auto [ax, ay] = it->get_rot_pt();
 
     ImVec2 p(to_draw_coord(ImVec2(x, y)));
-    ImVec2 c0(to_draw_coord(ImVec2(c0x, c0y)));
-    ImVec2 c1(to_draw_coord(ImVec2(c1x, c1y)));
     ImVec2 r(to_draw_coord(ImVec2(ax, ay)));
 
     ImColor pt_color,
@@ -638,10 +652,14 @@ void PathEditorPage::present_curve_editor() {
     }
 
     if (show_tangents) {
-      draw_list->AddLine(p, c0, ImColor(235, 64, 52, 255), TANGENT_THICKNESS);
-      draw_list->AddLine(p, c1, ImColor(235, 64, 52, 255), TANGENT_THICKNESS);
-      draw_list->AddCircle(c0, POINT_RADIUS, ImColor(252, 186, 3, 255), 0, POINT_BORDER_THICKNESS);
-      draw_list->AddCircle(c1, POINT_RADIUS, ImColor(252, 186, 3, 255), 0, POINT_BORDER_THICKNESS);
+      if (c0) {
+        draw_list->AddLine(p, to_draw_coord(*c0), ImColor(235, 64, 52, 255), TANGENT_THICKNESS);
+        draw_list->AddCircle(to_draw_coord(*c0), POINT_RADIUS, ImColor(252, 186, 3, 255), 0, POINT_BORDER_THICKNESS);
+      }
+      if (c1) {
+        draw_list->AddLine(p, to_draw_coord(*c1), ImColor(235, 64, 52, 255), TANGENT_THICKNESS);
+        draw_list->AddCircle(to_draw_coord(*c1), POINT_RADIUS, ImColor(252, 186, 3, 255), 0, POINT_BORDER_THICKNESS);
+      }
     }
 
     draw_list->AddCircleFilled(p, POINT_RADIUS, pt_color);
@@ -686,71 +704,45 @@ ImVec2 PathEditorPage::calc_curve_point(CurvePointTable::const_iterator it, floa
 
   // The interpolated point on the spline.
 
-  // Cubic hermite spline.
-  if (curve_kind == CurveKind::CUBIC_HERMITE) {
-      auto [c0x, c0y] = it->get_tangent_pt(true);
-      auto [c1x, c1y] = (it + 1)->get_tangent_pt(true);
+  std::optional<ImVec2> c0 = it->get_tangent_pt(true),
+                        c1 = (it + 1)->get_tangent_pt(false);
+  float c0x = 0.0f, c0y = 0.0f,
+        c1x = 0.0f, c1y = 0.0f;
 
-      float m0((c0y - py0) / (c0x - px0)),
-            m1((c1y - py1) / (c1x - px1));
-
-    // The hermite base functions.
-
-    // h00(t) = 2t^3 - 3t^2 + 1
-    auto h00 = [](float t) -> float {
-      return 2.0f * std::powf(t, 3) - 3.0f * std::powf(t, 2) + 1.0f;
-    };
-    // h10(t) = t^3 - 2t^2 + t
-    auto h10 = [](float t) -> float {
-      return std::powf(t, 3) - 2.0f * (std::powf(t, 2)) + t;
-    };
-    // h01(t) = -2t^3 + 3t^2
-    auto h01 = [](float t) -> float {
-      return -2.0f * std::powf(t, 3) + 3.0f * std::powf(t, 2);
-    };
-    // h11(t) = t^3 - t^2
-    auto h11 = [](float t) -> float {
-      return std::powf(t, 3) - std::powf(t, 2);
-    };
-
-    // p(t) = h00(t)pk + h10(t)(xk+1 - xk)mk + h01(t)pk+1 + h11(t)(xk+1 - xk)mk+1
-    float pt_y((py0 * h00(t)) + (py1 * h01(t)) + (m0 * h10(t) * (px1 - px0)) + (m1 * h11(t) * (px1 - px0)));
-    float pt_x((t * (px1 - px0)) + px0);
-
-    return ImVec2(pt_x, pt_y);
-  // Cubic bezier curve.
+  if (c0) {
+    c0x = c0->x;
+    c0y = c0->y;
   }
-  else {
-    auto [c0x, c0y] = it->get_tangent_pt(true);
-    auto [c1x, c1y] = (it + 1)->get_tangent_pt(false);
-
-    // (1 - t)^3
-    auto b0 = [](float t) -> float {
-      return std::powf(1 - t, 3);
-    };
-
-    // 3(1 - t)^2t
-    auto b1 = [](float t) -> float {
-      return 3 * std::powf(1 - t, 2) * t;
-    };
-
-    // 3(1 - t)t^2
-    auto b2 = [](float t) -> float {
-      return 3 * (1 - t) * std::powf(t, 2);
-    };
-
-    // t^3
-    auto b3 = [](float t) -> float {
-      return std::powf(t, 3);
-    };
-
-    float pt_y((py0 * b0(t)) + CTRL_POINT_IMPACT * (c0y * b1(t)) + CTRL_POINT_IMPACT * (c1y * b2(t)) + (py1 * b3(t)));
-    float pt_x((px0 * b0(t)) + CTRL_POINT_IMPACT * (c0x * b1(t)) + CTRL_POINT_IMPACT * (c1x * b2(t)) + (px1 * b3(t)));
-
-    return ImVec2(pt_x, pt_y);
+  if (c1) {
+    c1x = c1->x;
+    c1y = c1->y;
   }
 
-  return ImVec2(0, 0);
+  // (1 - t)^3
+  auto b0 = [](float t) -> float {
+    return std::powf(1 - t, 3);
+  };
+
+  // 3(1 - t)^2t
+  auto b1 = [](float t) -> float {
+    return 3 * std::powf(1 - t, 2) * t;
+  };
+
+  // 3(1 - t)t^2
+  auto b2 = [](float t) -> float {
+    return 3 * (1 - t) * std::powf(t, 2);
+  };
+
+  // t^3
+  auto b3 = [](float t) -> float {
+    return std::powf(t, 3);
+  };
+
+  // Bezier curve equation.
+  float pt_y((py0 * b0(t)) + CTRL_POINT_IMPACT * (c0y * b1(t)) + CTRL_POINT_IMPACT * (c1y * b2(t)) + (py1 * b3(t)));
+  float pt_x((px0 * b0(t)) + CTRL_POINT_IMPACT * (c0x * b1(t)) + CTRL_POINT_IMPACT * (c1x * b2(t)) + (px1 * b3(t)));
+
+  return ImVec2(pt_x, pt_y);
 }
 
 std::vector<float> PathEditorPage::calc_curve_lengths() const {

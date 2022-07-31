@@ -90,27 +90,43 @@ void PropertiesPage::present(bool* running) {
 
     // --- Weights ---
 
-    ImGui::PushID("Weights");
-    ImGui::Columns(2, nullptr, false);
-    ImGui::SetColumnWidth(0, COL_WIDTH);
-    ImGui::Text("Weights");
-    ImGui::NextColumn();
-
     static float weights[2] { 0.0f, 0.0f };
-    if (ImGui::DragFloat2("##Weights", weights, 0.3f, 0.00f, 0.0f, "%.2f m")) {
-      if (weights[0] < 0.0f) {
-        weights[0] = 0.0f;
-      }
-      if (weights[1] < 0.0f) {
-        weights[1] = 0.0f;
-      }
-      selected_pt->w0 = weights[0];
-      selected_pt->w1 = weights[1];
-      PathEditorPage::get()->update();
-    }
 
-    ImGui::Columns(1);
-    ImGui::PopID();
+    if (!(selected_pt->begin && selected_pt->end)) {
+      const char* weights_id = selected_pt->begin || selected_pt->end ? "Weight" : "Weights";
+
+      ImGui::PushID(weights_id);
+      ImGui::Columns(2, nullptr, false);
+      ImGui::SetColumnWidth(0, COL_WIDTH);
+      ImGui::Text("%s", weights_id);
+      ImGui::NextColumn();
+
+      bool cond = false;
+      if (selected_pt->begin) {
+        cond = ImGui::DragFloat("##Begin", &weights[0], 0.3f, 0.0f, 0.0f, "%.2f m");
+      }
+      else if (selected_pt->end) {
+        cond = ImGui::DragFloat("##End", &weights[1], 0.3f, 0.0f, 0.0f, "%.2f m");
+      }
+      else {
+        cond = ImGui::DragFloat2("##Weights", weights, 0.3f, 0.0f, 0.0f, "%.2f m");
+      }
+
+      if (cond) {
+        if (weights[0] < 0.0f) {
+          weights[0] = 0.0f;
+        }
+        if (weights[1] < 0.0f) {
+          weights[1] = 0.0f;
+        }
+        selected_pt->w0 = weights[0];
+        selected_pt->w1 = weights[1];
+        PathEditorPage::get()->update();
+      }
+
+      ImGui::Columns(1);
+      ImGui::PopID();
+    }
 
     // --- Stop ---
 
@@ -260,31 +276,6 @@ void PropertiesPage::present(bool* running) {
 
     if (ImGui::Checkbox("##Show Rotation", &show_rotation)) {
       PathEditorPage::get()->set_show_rotation(show_rotation);
-    }
-
-    ImGui::Columns(1);
-    ImGui::PopID();
-
-    ImGui::Separator();
-
-    // --- Curve Kind ---
-
-    ImGui::PushID("Curve Kind");
-    ImGui::Columns(2, nullptr, false);
-    ImGui::SetColumnWidth(0, COL_WIDTH);
-    ImGui::Text("Curve Kind");
-    ImGui::NextColumn();
-
-    static PathEditorPage::CurveKind curve_kind = PathEditorPage::CurveKind::CUBIC_BEZIER;
-
-    const char* curve_kind_names[] = {
-      "Cubic Bezier",
-      "Cubic Hermite",
-    };
-
-    if (ImGui::Combo("##Curve Kind", (int*)&curve_kind, curve_kind_names, 2)) {
-      PathEditorPage::get()->set_curve_kind(curve_kind);
-      PathEditorPage::get()->update();
     }
 
     ImGui::Columns(1);
