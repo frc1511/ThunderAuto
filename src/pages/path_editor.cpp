@@ -2,6 +2,7 @@
 #include <project.h>
 #include <stb_image.h>
 #include <glad/glad.h>
+#include <IconsFontAwesome5.h>
 
 #define CURVE_RESOLUTION_FACTOR 32.0f
 #define CURVE_THICKNESS 2.0f
@@ -387,7 +388,7 @@ void PathEditorPage::present_curve_editor() {
 
   decltype(cached_curve_points)::const_iterator it(find_curve_point(io.MousePos.x, io.MousePos.y));
   if (it != cached_curve_points.cend()) {
-    ImGui::SetTooltip("%f s, %f m/s", cached_times.at(it - cached_curve_points.cbegin()), cached_velocities.at(it - cached_curve_points.cbegin()));
+    ImGui::SetTooltip(ICON_FA_CLOCK "  %f s\n" ICON_FA_RUNNING "  %f m/s", cached_times.at(it - cached_curve_points.cbegin()), cached_velocities.at(it - cached_curve_points.cbegin()));
   }
 
   // --- Point movement ---

@@ -6,6 +6,12 @@ set(THUNDER_AUTO_VERSION_PATCH "0")
 set(THUNDER_AUTO_VERSION "${THUNDER_AUTO_VERSION_MAJOR}.${THUNDER_AUTO_VERSION_MINOR}.${THUNDER_AUTO_VERSION_PATCH}")
 set(THUNDER_AUTO_VERSION_SHORT "${THUNDER_AUTO_VERSION_MAJOR}.${THUNDER_AUTO_VERSION_MINOR}")
 
+list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_VERSION=${THUNDER_AUTO_VERSION_SHORT}")
+list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_VERSION_MAJOR=${THUNDER_AUTO_VERSION_MAJOR}")
+list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_VERSION_MINOR=${THUNDER_AUTO_VERSION_MINOR}")
+list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_VERSION_PATCH=${THUNDER_AUTO_VERSION_PATCH}")
+list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_VERSION_STR=\"${THUNDER_AUTO_VERSION}\"")
+
 set(THUNDER_AUTO_YEAR 2022)
 set(THUNDER_AUTO_PROJECT_EXTENSION "thunderauto")
 
@@ -86,6 +92,8 @@ build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/fonts/Roboto/Roboto-Regular
 build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/fonts/Roboto/Roboto-Bold.ttf"    "Roboto_Bold_ttf")
 build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/fonts/Ubuntu/Ubuntu-Regular.ttf" "Ubuntu_Regular_ttf")
 build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/fonts/Ubuntu/Ubuntu-Bold.ttf"    "Ubuntu_Bold_ttf")
+build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/fonts/Font-Awesome/fa-regular-400.ttf" "FontAwesome_Regular_ttf")
+build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/fonts/Font-Awesome/fa-solid-900.ttf" "FontAwesome_Solid_ttf")
 
 # --- Thirdparty ---
 
@@ -97,6 +105,7 @@ add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/glfw")
 add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/imgui")
 add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/stb_image")
 add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/glad")
+add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/IconFontCppHeaders")
 
 # --- Build ---
 
@@ -135,6 +144,7 @@ target_link_libraries(${PROJECT_NAME} glfw)
 target_link_libraries(${PROJECT_NAME} imgui)
 target_link_libraries(${PROJECT_NAME} stb_image)
 target_link_libraries(${PROJECT_NAME} glad)
+target_link_libraries(${PROJECT_NAME} icons_font_awesome)
 
 if(THUNDER_AUTO_MACOS)
   target_link_libraries(${PROJECT_NAME} "-framework Foundation -framework AppKit -framework UniformTypeIdentifiers")

@@ -2,8 +2,9 @@
 #include <thunder_auto.h>
 #include <imgui_internal.h>
 #include <popups/new_field.h>
+#include <IconsFontAwesome5.h>
 
-#define COL_WIDTH 100.0f
+#define COL_WIDTH 150.0f
 
 NewProjectPopup::NewProjectPopup() { }
 
@@ -24,7 +25,7 @@ void NewProjectPopup::present(bool* running) {
   ImGui::PushID("Path");
   ImGui::Columns(2, nullptr, false);
   ImGui::SetColumnWidth(0, COL_WIDTH);
-  ImGui::Text("Path");
+  ImGui::Text(ICON_FA_FILE "  Path");
   ImGui::NextColumn();
 
   static char deploy_path_buf[256] = "";
@@ -49,7 +50,7 @@ void NewProjectPopup::present(bool* running) {
   ImGui::PushID("Field");
   ImGui::Columns(2, nullptr, false);
   ImGui::SetColumnWidth(0, COL_WIDTH);
-  ImGui::Text("Field");
+  ImGui::Text(ICON_FA_SWIMMING_POOL "  Field");
   ImGui::NextColumn();
 
   static std::optional<Field> field;
@@ -91,7 +92,7 @@ void NewProjectPopup::present(bool* running) {
   ImGui::PushID("Controller Type");
   ImGui::Columns(2, nullptr, false);
   ImGui::SetColumnWidth(0, COL_WIDTH);
-  ImGui::Text("Controller Type");
+  ImGui::Text(ICON_FA_CAR "  Controller Type");
   ImGui::NextColumn();
   
   const char* controllers[] = { "Holonomic", "Ramsete" };
@@ -114,7 +115,7 @@ void NewProjectPopup::present(bool* running) {
   ImGui::PushID("Max Acceleration");
   ImGui::Columns(2, nullptr, false);
   ImGui::SetColumnWidth(0, COL_WIDTH);
-  ImGui::Text("Max Acceleration");
+  ImGui::Text(ICON_FA_SKIING "  Max Acceleration");
   ImGui::NextColumn();
 
   static float max_accel = 3.0f;
@@ -132,7 +133,7 @@ void NewProjectPopup::present(bool* running) {
   ImGui::PushID("Max Velocity");
   ImGui::Columns(2, nullptr, false);
   ImGui::SetColumnWidth(0, COL_WIDTH);
-  ImGui::Text("Max Velocity");
+  ImGui::Text(ICON_FA_SKIING_NORDIC "  Max Velocity");
   ImGui::NextColumn();
   
   static float max_vel = 4.0f;
@@ -152,7 +153,7 @@ void NewProjectPopup::present(bool* running) {
   ImGui::PushID("Robot Length");
   ImGui::Columns(2, nullptr, false);
   ImGui::SetColumnWidth(0, COL_WIDTH);
-  ImGui::Text("Robot Length");
+  ImGui::Text(" " ICON_FA_RULER_VERTICAL "   Robot Length");
   ImGui::NextColumn();
 
   static float robot_length = 0.80645f;
@@ -170,7 +171,7 @@ void NewProjectPopup::present(bool* running) {
   ImGui::PushID("Robot Width");
   ImGui::Columns(2, nullptr, false);
   ImGui::SetColumnWidth(0, COL_WIDTH);
-  ImGui::Text("Robot Width");
+  ImGui::Text(ICON_FA_RULER_HORIZONTAL "  Robot Width");
   ImGui::NextColumn();
 
   static float robot_width = 0.7112f;

@@ -31,7 +31,6 @@ public:
   void menu_cut();
   void menu_copy();
   void menu_paste();
-  void menu_select_all();
   void menu_delete(bool from_menu);
   
   void close();
@@ -44,11 +43,13 @@ private:
   App();
   ~App();
 
+  void welcome();
   void new_project();
   void open_project();
 
   enum class EventState {
     NONE = 0,
+    WELCOME,
     NEW_PROJECT,
     NEW_PROJECT_UNSAVED_OPENED,
     OPEN_PROJECT,
@@ -61,7 +62,7 @@ private:
 
   void unsaved(EventState next);
 
-  EventState event_state = EventState::NONE;
+  EventState event_state = EventState::WELCOME;
   
   bool running = true;
   

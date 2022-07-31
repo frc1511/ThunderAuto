@@ -1,5 +1,6 @@
 #include <app.h>
 #include <imgui_internal.h>
+#include <IconsFontAwesome5.h>
 
 #include <pages/path_editor.h>
 #include <pages/path_manager.h>
@@ -7,6 +8,7 @@
 #include <popups/new_project.h>
 #include <popups/unsaved.h>
 #include <popups/new_field.h>
+#include <popups/welcome.h>
 
 App::App() {
 }
@@ -28,7 +30,6 @@ void App::present() {
        item_cut = false,
        item_copy = false,
        item_paste = false,
-       item_select_all = false,
        item_delete = false;
 
   static bool show_path_editor = true,
@@ -45,17 +46,17 @@ void App::present() {
   
   if (ImGui::BeginMenuBar()) {
     if (ImGui::BeginMenu("File")) {
-      ImGui::MenuItem("New",     CTRL_STR "N",       &item_new);
-      ImGui::MenuItem("Open",    CTRL_STR "O",       &item_open);
+      ImGui::MenuItem(ICON_FA_FILE "  New",     CTRL_STR "N",       &item_new);
+      ImGui::MenuItem(ICON_FA_FOLDER_OPEN "  Open",    CTRL_STR "O",       &item_open);
       
       if (!ProjectManager::get()->has_project()) {
         ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
         ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
       }
       
-      ImGui::MenuItem("Save",    CTRL_STR "S",       &item_save);
-      ImGui::MenuItem("Save As", CTRL_SHIFT_STR "S", &item_save_as);
-      ImGui::MenuItem("Close",   CTRL_STR "W",       &item_close);
+      ImGui::MenuItem(ICON_FA_SAVE "  Save",    CTRL_STR "S",       &item_save);
+      ImGui::MenuItem(ICON_FA_SAVE "  Save As", CTRL_SHIFT_STR "S", &item_save_as);
+      ImGui::MenuItem(ICON_FA_WINDOW_CLOSE "  Close",   CTRL_STR "W",       &item_close);
       
       if (!ProjectManager::get()->has_project()) {
         ImGui::PopItemFlag();
@@ -67,22 +68,21 @@ void App::present() {
     
     if (ProjectManager::get()->has_project()) {
       if (ImGui::BeginMenu("Edit")) {
-        ImGui::MenuItem("Undo",       CTRL_STR "Z",       &item_undo);
-        ImGui::MenuItem("Redo",       CTRL_SHIFT_STR "Z", &item_redo);
+        ImGui::MenuItem(ICON_FA_UNDO "  Undo",       CTRL_STR "Z",       &item_undo);
+        ImGui::MenuItem(ICON_FA_REDO "  Redo",       CTRL_SHIFT_STR "Z", &item_redo);
         ImGui::Separator();
-        ImGui::MenuItem("Cut",        CTRL_STR "X", &item_cut);
-        ImGui::MenuItem("Copy",       CTRL_STR "C", &item_copy);
-        ImGui::MenuItem("Paste",      CTRL_STR "V", &item_paste);
-        ImGui::MenuItem("Select All", CTRL_STR "A", &item_select_all);
-        // ImGui::MenuItem("Delete",     "Delete", &item_delete);
+        ImGui::MenuItem(ICON_FA_CUT "  Cut",        CTRL_STR "X", &item_cut);
+        ImGui::MenuItem(ICON_FA_COPY "  Copy",       CTRL_STR "C", &item_copy);
+        ImGui::MenuItem(ICON_FA_PASTE "  Paste",      CTRL_STR "V", &item_paste);
+        ImGui::MenuItem(ICON_FA_TRASH "  Delete",     "Delete", &item_delete);
         
         ImGui::EndMenu();
       }
 
       if (ImGui::BeginMenu("Tools")) {
-        ImGui::MenuItem("Editor", nullptr, &show_path_editor);
-        ImGui::MenuItem("Paths", nullptr, &show_path_manager);
-        ImGui::MenuItem("Properties", nullptr, &show_properties);
+        ImGui::MenuItem(ICON_FA_LIST "  Paths", nullptr, &show_path_manager);
+        ImGui::MenuItem(ICON_FA_BEZIER_CURVE "  Editor", nullptr, &show_path_editor);
+        ImGui::MenuItem(ICON_FA_SLIDERS_H "  Properties", nullptr, &show_properties);
         
         ImGui::EndMenu();
       }
@@ -102,7 +102,6 @@ void App::present() {
   if (item_cut)        menu_cut();
   if (item_copy)       menu_copy();
   if (item_paste)      menu_paste();
-  if (item_select_all) menu_select_all();
   if (item_delete)     menu_delete(true);
   
 
@@ -114,6 +113,9 @@ void App::present() {
 
   switch (event_state) {
     case EventState::NONE:
+      break;
+    case EventState::WELCOME:
+      welcome();
       break;
     case EventState::NEW_PROJECT:
       new_project();
@@ -129,7 +131,7 @@ void App::present() {
       break;
     case EventState::CLOSE_PROJECT:
       ProjectManager::get()->close_project();
-      event_state = EventState::NONE;
+      event_state = EventState::WELCOME;
       break;
     case EventState::CLOSE_PROJECT_UNSAVED:
       unsaved(EventState::CLOSE_PROJECT);
@@ -143,9 +145,46 @@ void App::present() {
   }
 }
 
-void App::new_project() {
-
+void App::welcome() {
   bool showing_popup = true;
+
+  if (WelcomePopup::get()->is_showing_new_project_popup()) {
+    new_project();
+
+    if (event_state == EventState::NONE) {
+      if (ProjectManager::get()->has_project()) {
+        showing_popup = false;
+      }
+      else {
+        event_state = EventState::WELCOME;
+      }
+      WelcomePopup::get()->set_showing_new_project_popup(false);
+    }
+  }
+  else if (WelcomePopup::get()->is_opening_project()) {
+    open_project();
+    if (ProjectManager::get()->has_project()) {
+      showing_popup = false;
+    }
+    else {
+      event_state = EventState::WELCOME;
+    }
+    WelcomePopup::get()->set_opening_project(false);
+  }
+  else {
+    ImGui::OpenPopup(WelcomePopup::get()->get_name().c_str());
+
+    WelcomePopup::get()->present(&showing_popup);
+
+    if (!showing_popup) {
+      event_state = EventState::NONE;
+    }
+  }
+}
+
+void App::new_project() {
+  bool showing_popup = true;
+
   if (NewProjectPopup::get()->is_showing_new_field_popup()) {
     ImGui::OpenPopup(NewFieldPopup::get()->get_name().c_str());
 
@@ -208,7 +247,10 @@ void App::unsaved(EventState next) {
 }
 
 void App::menu_new() {
-  if (event_state == EventState::NONE) {
+  if (event_state == EventState::WELCOME) {
+    WelcomePopup::get()->set_showing_new_project_popup(true);
+  }
+  else if (event_state == EventState::NONE) {
     std::cout << "new\n";
     if (ProjectManager::get()->is_unsaved()) {
       event_state = EventState::NEW_PROJECT_UNSAVED_OPENED;
@@ -220,7 +262,10 @@ void App::menu_new() {
 }
 
 void App::menu_open() {
-  if (event_state == EventState::NONE) {
+  if (event_state == EventState::WELCOME) {
+    WelcomePopup::get()->set_opening_project(true);
+  }
+  else if (event_state == EventState::NONE) {
     std::cout << "open\n";
     if (ProjectManager::get()->is_unsaved()) {
       event_state = EventState::OPEN_PROJECT_UNSAVED_OPENED;
@@ -270,10 +315,6 @@ void App::menu_copy() {
 
 void App::menu_paste() {
   std::cout << "paste\n";
-}
-
-void App::menu_select_all() {
-  std::cout << "select all\n";
 }
 
 void App::menu_delete(bool from_menu) {
@@ -331,9 +372,6 @@ void App::handle_keyboard(int key, int scancode, int action, int mods) {
     }
     else if (GET_CTRL_KEY(GLFW_KEY_V)) {
       menu_paste();
-    }
-    else if (GET_CTRL_KEY(GLFW_KEY_A)) {
-      menu_select_all();
     }
     else if ((key == GLFW_KEY_DELETE || key == GLFW_KEY_BACKSPACE) && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
       menu_delete(false);

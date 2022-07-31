@@ -4,6 +4,9 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
+#include <font_manager.h>
+FontManager FontManager::instance;
+
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 700
 
@@ -185,10 +188,14 @@ int main(int argc, char** argv) {
   return exit_code;
 }
 
-#include <Roboto_Regular_ttf.h>
-#include <Roboto_Bold_ttf.h>
 #include <Ubuntu_Regular_ttf.h>
 #include <Ubuntu_Bold_ttf.h>
+// #include <Roboto_Regular_ttf.h>
+// #include <Roboto_Bold_ttf.h>
+#include <FontAwesome_Regular_ttf.h>
+#include <FontAwesome_Solid_ttf.h>
+
+#include <IconsFontAwesome5.h>
 
 static void set_imgui_style() {
   ImGui::StyleColorsDark();
@@ -267,10 +274,21 @@ static void set_imgui_style() {
   ImFontConfig font_cfg;
   font_cfg.FontDataOwnedByAtlas = false;
 
-  io->Fonts->AddFontFromMemoryTTF(reinterpret_cast<void*>(Ubuntu_Regular_ttf), Ubuntu_Regular_ttf_size, 15.0f, &font_cfg);
-  io->Fonts->AddFontFromMemoryTTF(reinterpret_cast<void*>(Ubuntu_Bold_ttf), Ubuntu_Bold_ttf_size, 15.0f, &font_cfg);
-  io->Fonts->AddFontFromMemoryTTF(reinterpret_cast<void*>(Roboto_Regular_ttf), Roboto_Regular_ttf_size, 15.0f, &font_cfg);
-  io->Fonts->AddFontFromMemoryTTF(reinterpret_cast<void*>(Roboto_Bold_ttf), Roboto_Bold_ttf_size, 15.0f, &font_cfg);
+  static const ImWchar* ranges = io->Fonts->GetGlyphRangesDefault();
+
+  FontManager::get()->regular = io->Fonts->AddFontFromMemoryTTF(reinterpret_cast<void*>(Ubuntu_Regular_ttf), Ubuntu_Regular_ttf_size, 15.0f, &font_cfg, ranges);
+
+  font_cfg.MergeMode = true;
+
+  static const ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_16_FA, 0 };
+  font_cfg.PixelSnapH = true;
+  io->Fonts->AddFontFromMemoryTTF(FontAwesome_Regular_ttf, FontAwesome_Regular_ttf_size, 15.0f, &font_cfg, icon_ranges);
+  io->Fonts->AddFontFromMemoryTTF(FontAwesome_Solid_ttf, FontAwesome_Solid_ttf_size, 15.0f, &font_cfg, icon_ranges);
+
+  font_cfg.MergeMode = false;
+  font_cfg.PixelSnapH = false;
+
+  FontManager::get()->big = io->Fonts->AddFontFromMemoryTTF(reinterpret_cast<void*>(Ubuntu_Bold_ttf), Ubuntu_Bold_ttf_size, 30.0f, &font_cfg, ranges);
 
   io->ConfigWindowsMoveFromTitleBarOnly = true;
 }

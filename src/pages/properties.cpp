@@ -3,8 +3,9 @@
 #include <pages/path_editor.h>
 #include <platform/platform.h>
 #include <project.h>
+#include <IconsFontAwesome5.h>
 
-#define COL_WIDTH 100.0f
+#define COL_WIDTH 110.0f
 
 PropertiesPage::PropertiesPage() { }
 
@@ -30,7 +31,7 @@ void PropertiesPage::present(bool* running) {
   
   // --- Point Properties ---
 
-  if (_selected_pt && ImGui::CollapsingHeader("Point")) {
+  if (_selected_pt && ImGui::CollapsingHeader(ICON_FA_CIRCLE "  Point")) {
     PathEditorPage::CurvePointTable::iterator selected_pt = _selected_pt.value();
 
     // --- Position ---
@@ -191,7 +192,7 @@ void PropertiesPage::present(bool* running) {
 
   // --- Path Properties ---
 
-  if (ImGui::CollapsingHeader("Path")) {
+  if (ImGui::CollapsingHeader(ICON_FA_BEZIER_CURVE "  Path")) {
     // --- Export Path ---
 
     ImGui::PushID("Export Path");
