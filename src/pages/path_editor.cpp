@@ -5,12 +5,12 @@
 #include <glad/glad.h>
 #include <IconsFontAwesome5.h>
 
-#define CURVE_RESOLUTION_FACTOR 32.0f
+#define CURVE_RESOLUTION_FACTOR 64.0f
 #define CURVE_THICKNESS 2.0f
 #define TANGENT_THICKNESS 1.0f
 #define POINT_RADIUS 5.0f
 #define POINT_BORDER_THICKNESS 2.0f
-#define INTEGRAL_PRECISION 0.01f
+#define INTEGRAL_PRECISION 0.001f
 
 #define CTRL_POINT_IMPACT 1.0f
 
@@ -286,11 +286,11 @@ void PathEditorPage::export_path() {
 
   std::ofstream file(path);
 
-  file << "time, x_pos, y_pos, velocity\n";
+  file << "time,x_pos,y_pos,velocity,rotation\n";
   for (std::size_t i = 0; i < cached_curve_points.size(); i-=-1) {
       file << cached_times.at(i) << ','
-      << (cached_curve_points.at(i).x) << ',' << (cached_curve_points.at(i).y * FIELD_Y) << ','
-      << cached_velocities.at(i) << '\n';
+      << cached_curve_points.at(i).x << ',' << cached_curve_points.at(i).y << ','
+      << cached_velocities.at(i) << ',' << cached_rotations.at(i) << '\n';
   }
 }
 
@@ -799,7 +799,7 @@ float PathEditorPage::calc_curve_part_length(CurvePointTable::const_iterator it)
           dx(p1.x - p0.x);
 
     // My friend pythagoras.
-    len += std::sqrtf(dy * dy + dx * dx);
+    len += std::hypotf(dy, dx);
   }
 
   return len;
@@ -865,7 +865,7 @@ struct PathInterval {
   : start(start), end(end), type(type) { }
 };
 
-std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_time() const {
+std::tuple<std::vector<float>, std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_time() const {
   std::vector<std::pair<float, float>> clamped_intervals;
 
   {
@@ -899,17 +899,11 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
     }
   }
 
-  std::vector<float> velocities, times;
+  std::vector<float> velocities, times, rotations;
 
   {
-    std::vector<CurvePointTable::const_iterator> stop_point_its;
-
-    // Get points to stop at.
-    for (CurvePointTable::const_iterator it(PathManagerPage::get()->get_selected_path().cbegin()); it != PathManagerPage::get()->get_selected_path().cend(); ++it) {
-      if (it->stop) stop_point_its.push_back(it);
-    }
-
-    std::vector<float> stop_points;
+    std::vector<float> stop_point_dists;
+    std::vector<float> point_dists;
 
     // Calculate the total distance of the path.
     float d_total(0.0f);
@@ -921,40 +915,55 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
 
       d_total += std::hypotf(dx, dy);
 
-      // See if we should stop at this distance.
-      for (decltype(stop_point_its)::const_iterator stop_it(stop_point_its.cbegin()); stop_it != stop_point_its.cend(); ++stop_it) {
-        if ((*stop_it)->px == it->x && (*stop_it)->py == it->y) {
-          stop_points.push_back(d_total);
+      for (auto pt_it(PathManagerPage::get()->get_selected_path().cbegin()); pt_it != PathManagerPage::get()->get_selected_path().cend(); ++pt_it) {
+        if (pt_it->px == it->x && pt_it->py == it->y) {
+          point_dists.push_back(d_total);
+          if (pt_it->stop) {
+            stop_point_dists.push_back(d_total);
+          }
           break;
         }
       }
     }
 
-    // Stop at end of the path.
-    stop_points.push_back(d_total);
+    // Include the last point in the path.
+    stop_point_dists.push_back(d_total);
+    point_dists.push_back(d_total);
 
-    decltype(stop_points)::const_iterator stop_it(stop_points.cbegin());
+    decltype(stop_point_dists)::const_iterator stop_it(stop_point_dists.cbegin());
+    decltype(point_dists)::const_iterator rot_it(point_dists.cbegin());
 
     float d_traveled(0.0f);
     float t_elapsed(0.0f);
 
     for (decltype(cached_curve_points)::const_iterator it(cached_curve_points.cbegin()); it != cached_curve_points.cend(); ++it) {
+      if (it == cached_curve_points.cbegin()) {
+        velocities.push_back(0.0f);
+        times.push_back(0.0f);
+        rotations.push_back(PathManagerPage::get()->get_selected_path().front().rotation);
+        continue;
+      }
+
       const float last_vel((it == cached_curve_points.cbegin()) ? 0.0f : velocities.back());
 
       // Calculate the change in distance.
       float d_delta(0.0f);
-      if (it != cached_curve_points.cbegin()) {
-        float dx(it->x - (it - 1)->x),
-              dy(it->y - (it - 1)->y);
-        
-        d_delta = std::hypotf(dx, dy);
+      float dx(it->x - (it - 1)->x),
+            dy(it->y - (it - 1)->y);
+      
+      d_delta = std::hypotf(dx, dy);
 
-        d_traveled += d_delta;
-      }
+      d_traveled += d_delta;
 
       if (d_traveled > *stop_it) {
         ++stop_it;
       }
+      if (d_traveled > *rot_it && rot_it != point_dists.cend() - 1) {
+        ++rot_it;
+      }
+
+      // The next target rotation of the robot at this point.
+      rotations.push_back(PathManagerPage::get()->get_selected_path().at(rot_it - point_dists.cbegin() + 1).rotation);
 
       // Distance required to decelerate to a stop.
       float d_to_stop((-std::powf(last_vel, 2.0f)) / (2.0f * -project->settings.max_accel));
@@ -1025,12 +1034,16 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
           }
         }
       }
-
       times.push_back(t_elapsed);
+
+      if (it == cached_curve_points.cend() - 1) {
+        velocities.back() = 0.0f;
+        continue;
+      }
     }
   }
 
-  return std::make_pair(velocities, times);
+  return std::make_tuple(velocities, times, rotations);
 }
 
 std::pair<PathEditorPage::CurvePointTable::const_iterator, float> PathEditorPage::find_curve_part_point(float x, float y) const {
@@ -1062,9 +1075,10 @@ void PathEditorPage::cache_values() {
   cached_curve_lengths = calc_curve_lengths();
   cached_curve_points = calc_curve_points();
   cached_curvatures = calc_curvature();
-  auto [vels, times] = calc_velocity_time();
-  cached_velocities = vels;
-  cached_times = times;
+  auto [vels, times, rotations] = calc_velocity_time();
+  cached_velocities = std::move(vels);
+  cached_times = std::move(times);
+  cached_rotations = std::move(rotations);
 }
 
 PathEditorPage PathEditorPage::instance {};

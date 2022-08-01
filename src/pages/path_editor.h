@@ -207,7 +207,7 @@ private:
    *
    * @return A list of velocities and times for each point of the path.
    */
-  std::pair<std::vector<float>, std::vector<float>> calc_velocity_time() const;
+  std::tuple<std::vector<float>, std::vector<float>, std::vector<float>> calc_velocity_time() const;
 
   std::pair<CurvePointTable::const_iterator, float> find_curve_part_point(float x, float y) const;
 
@@ -233,6 +233,7 @@ private:
   std::vector<float> cached_curvatures;
   std::vector<float> cached_velocities;
   std::vector<float> cached_times;
+  std::vector<float> cached_rotations;
 
   /**
    * @brief Calculates and caches values for the path editor.
