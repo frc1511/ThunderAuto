@@ -1,4 +1,5 @@
 #include <pages/path_editor.h>
+#include <pages/path_manager.h>
 #include <project.h>
 #include <stb_image.h>
 #include <glad/glad.h>
@@ -170,25 +171,29 @@ ImVec2 PathEditorPage::un_adjust_field_coord(ImVec2 pt) const {
 }
 
 std::optional<PathEditorPage::CurvePointTable::iterator> PathEditorPage::get_selected_point() {
-  if (selected_pt == project->points.end()) {
+  if (selected_pt == PathManagerPage::get()->get_selected_path().cend()) {
     return std::nullopt;
   }
   return selected_pt;
 }
 
-void PathEditorPage::delete_point() {
-    if (selected_pt != project->points.end() && project->points.size() > 1) {
-      bool is_end = selected_pt == project->points.end() - 1,
-           is_begin = selected_pt == project->points.begin();
+void PathEditorPage::reset_selected_point() {
+  selected_pt = PathManagerPage::get()->get_selected_path().end();
+}
 
-      project->points.erase(selected_pt);
+void PathEditorPage::delete_point() {
+    if (selected_pt != PathManagerPage::get()->get_selected_path().end() && PathManagerPage::get()->get_selected_path().size() > 1) {
+      bool is_end = selected_pt == PathManagerPage::get()->get_selected_path().end() - 1,
+           is_begin = selected_pt == PathManagerPage::get()->get_selected_path().begin();
+
+      PathManagerPage::get()->get_selected_path().erase(selected_pt);
 
       if (is_begin) {
-        selected_pt = project->points.begin();
+        selected_pt = PathManagerPage::get()->get_selected_path().begin();
         selected_pt->begin = true;
       }
       else {
-        selected_pt = project->points.end() - is_end;
+        selected_pt = PathManagerPage::get()->get_selected_path().end() - is_end;
         selected_pt->end = true;
       }
 
@@ -223,7 +228,7 @@ void PathEditorPage::present(bool* running) {
 
 void PathEditorPage::set_project(Project* _project) {
   project = _project;
-  selected_pt = project->points.end();
+  selected_pt = PathManagerPage::get()->get_selected_path().end();
 
   int width, height, nr_channels;
   unsigned char* img_data;
@@ -271,12 +276,11 @@ void PathEditorPage::set_project(Project* _project) {
   updated = true;
 }
 
-void PathEditorPage::export_path(std::string path) {
+void PathEditorPage::export_path() {
   // Update the values.
   cache_values();
 
-  replace_macro(path, "PROJECT_DIR", project->settings.path.parent_path().string());
-  replace_macro(path, "PATH_NAME", "the_path");
+  std::filesystem::path path = project->settings.path.parent_path() / (PathManagerPage::get()->get_selected_path_name() + ".csv");
 
   std::cout << "Exporting path to " << path << std::endl;
 
@@ -325,12 +329,13 @@ void PathEditorPage::present_curve_editor() {
 
   // --- Panning and Zooming ---
 
-  {
+  if (focused) {
     // Panning.
     static ImVec2 last_mouse_pos(0.0f, 0.0f);
     ImVec2 mouse_pos(io.MousePos);
 
     if (ImGui::IsMouseDragging(2)) {
+      ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
       ImVec2 delta(to_field_coord(mouse_pos, false) - to_field_coord(last_mouse_pos, false));
 
       field_offset.x += delta.x / field_scale;
@@ -403,6 +408,8 @@ void PathEditorPage::present_curve_editor() {
       y = pt.y;
 
       updated = true;
+
+      ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
     };
 
     auto move_curve_point = [&](CurvePointTable::iterator it) {
@@ -470,11 +477,11 @@ void PathEditorPage::present_curve_editor() {
       ImGui::SetTooltip("%.2f°", tooltip * RAD_2_DEG);
     };
 
-    static CurvePointTable::iterator drag_pt = project->points.end();
+    static CurvePointTable::iterator drag_pt = PathManagerPage::get()->get_selected_path().end();
     enum { DRAG_NONE = 0, DRAG_PT = 1 << 0, DRAG_TAN_0 = 1 << 1, DRAG_TAN_1 = 1 << 2, DRAG_ANG = 1 << 3 };
     static std::size_t drag_pt_type(DRAG_NONE);
 
-    if (drag_pt != project->points.end() && drag_pt_type != DRAG_NONE && (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0))) {
+    if (drag_pt != PathManagerPage::get()->get_selected_path().end() && drag_pt_type != DRAG_NONE && (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0))) {
       if (drag_pt_type & DRAG_PT) {
         move_curve_point(drag_pt);
       }
@@ -487,36 +494,41 @@ void PathEditorPage::present_curve_editor() {
     }
     else {
       // Reset the selection.
-      drag_pt = project->points.end();
+      drag_pt = PathManagerPage::get()->get_selected_path().end();
       drag_pt_type = DRAG_NONE;
 
-      if (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0)) {
-        for (CurvePointTable::iterator it = project->points.begin(); it != project->points.end(); ++it) {
-          auto& x = it->px,
-              & y = it->py;
+      for (CurvePointTable::iterator it = PathManagerPage::get()->get_selected_path().begin(); it != PathManagerPage::get()->get_selected_path().end(); ++it) {
+        auto& x = it->px,
+            & y = it->py;
 
-          // Checks the from the mouse to a point.
-          auto check_dist = [&](float px, float py) -> bool {
-            ImVec2 pos(to_draw_coord(ImVec2(px, py)));
-            float dist(std::hypotf(pos.x - mouse.x, pos.y - mouse.y));
-            return dist < POINT_RADIUS * 2.0f;
-          };
+        // Checks the distance from the mouse to a point.
+        auto check_dist = [&](float px, float py) -> bool {
+          ImVec2 pos(to_draw_coord(ImVec2(px, py)));
+          float dist(std::hypotf(pos.x - mouse.x, pos.y - mouse.y));
+          return dist < POINT_RADIUS * 2.0f;
+        };
 
-          std::optional<ImVec2> c0 = it->get_tangent_pt(true);
-          std::optional<ImVec2> c1 = it->get_tangent_pt(false);
-          auto [ax, ay] = it->get_rot_pt();
+        std::optional<ImVec2> c0 = it->get_tangent_pt(true);
+        std::optional<ImVec2> c1 = it->get_tangent_pt(false);
+        auto [ax, ay] = it->get_rot_pt();
 
-          drag_pt_type |= check_dist(x, y) * DRAG_PT;
+        bool p_dist = check_dist(x, y),
+             c0_dist = c0 ? check_dist(c0->x, c0->y) : false,
+             c1_dist = c1 ? check_dist(c1->x, c1->y) : false,
+             a_dist = check_dist(ax, ay);
+
+        if (p_dist || c0_dist || c1_dist || a_dist) {
+          ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+        }
+
+        if (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0)) {
+          drag_pt_type |= p_dist * DRAG_PT;
           if (show_tangents) {
-            if (c0) {
-              drag_pt_type |= check_dist(c0->x, c0->y) * DRAG_TAN_0;
-            }
-            if (c1) {
-              drag_pt_type |= check_dist(c1->x, c1->y) * DRAG_TAN_1;
-            }
+            drag_pt_type |= c0_dist * DRAG_TAN_0;
+            drag_pt_type |= c1_dist * DRAG_TAN_1;
           }
           if (show_rotation) {
-            drag_pt_type |= check_dist(ax, ay) * DRAG_ANG;
+            drag_pt_type |= a_dist * DRAG_ANG;
           }
 
           // A point is selected.
@@ -528,7 +540,7 @@ void PathEditorPage::present_curve_editor() {
           else if (focused) {
             // Check if the mouse is within the bounding box.
             if (mouse.x >= bb.Min.x && mouse.x <= bb.Max.x && mouse.y >= bb.Min.y && mouse.y <= bb.Max.y) {
-              selected_pt = project->points.end();
+              selected_pt = PathManagerPage::get()->get_selected_path().end();
             }
           }
         }
@@ -536,7 +548,7 @@ void PathEditorPage::present_curve_editor() {
     }
 
     if (ImGui::IsMouseDoubleClicked(0)) {
-      std::pair<CurvePointTable::const_iterator, float> closest_point(project->points.end(), std::numeric_limits<float>::max());
+      std::pair<CurvePointTable::const_iterator, float> closest_point(PathManagerPage::get()->get_selected_path().end(), std::numeric_limits<float>::max());
 
       auto get_dist = [&](float x, float y) -> float {
         // Checks the distance from the mouse to a point.
@@ -545,7 +557,7 @@ void PathEditorPage::present_curve_editor() {
       };
 
       // Find the closest point to the mouse.
-      for (CurvePointTable::const_iterator it = project->points.cbegin(); it != project->points.cend(); ++it) {
+      for (CurvePointTable::const_iterator it = PathManagerPage::get()->get_selected_path().cbegin(); it != PathManagerPage::get()->get_selected_path().cend(); ++it) {
         auto x = it->px,
              y = it->py;
 
@@ -562,13 +574,13 @@ void PathEditorPage::present_curve_editor() {
       auto& [pt, dist] = closest_point;
 
       bool pt_added(false);
-      if (pt == project->points.cbegin()) {
+      if (pt == PathManagerPage::get()->get_selected_path().cbegin()) {
         float x_mid((pt->px + (pt + 1)->px) / 2),
               y_mid((pt->py + (pt + 1)->py) / 2);
 
         if (get_dist(x_mid, y_mid) > dist) {
           // Insert the point at the start of the list.
-          selected_pt = project->points.insert(project->points.cbegin(), { new_pt.x, new_pt.y, M_PI_2, M_PI_2, 1.0f, 1.0f, 0.0f, false, true, false });
+          selected_pt = PathManagerPage::get()->get_selected_path().insert(PathManagerPage::get()->get_selected_path().cbegin(), { new_pt.x, new_pt.y, M_PI_2, M_PI_2, 1.0f, 1.0f, 0.0f, false, true, false });
           (selected_pt + 1)->begin = false;
           updated = true;
           pt_added = true;
@@ -577,7 +589,7 @@ void PathEditorPage::present_curve_editor() {
 
       if (!pt_added) {
         auto [p, t] = find_curve_part_point(new_pt.x, new_pt.y);
-        if (p != project->points.cend()) {
+        if (p != PathManagerPage::get()->get_selected_path().cend()) {
           ImVec2 p0(calc_curve_point(p, t));
           ImVec2 p1(calc_curve_point(p, t + INTEGRAL_PRECISION));
 
@@ -586,7 +598,7 @@ void PathEditorPage::present_curve_editor() {
 
           float angle(std::atan2(dy, dx));
 
-          selected_pt = project->points.insert(p + 1, { new_pt.x, new_pt.y, angle, angle, 1.0f, 1.0f, 0.0f, false, false, false });
+          selected_pt = PathManagerPage::get()->get_selected_path().insert(p + 1, { new_pt.x, new_pt.y, angle, angle, 1.0f, 1.0f, 0.0f, false, false, false });
           updated = true;
           pt_added = true;
         }
@@ -594,7 +606,7 @@ void PathEditorPage::present_curve_editor() {
 
       if (!pt_added) {
         // To the end of the list!
-        selected_pt = project->points.insert(project->points.cend(), { new_pt.x, new_pt.y, M_PI_2, M_PI_2, 1.0f, 1.0f, 0.0f, false, false, true });
+        selected_pt = PathManagerPage::get()->get_selected_path().insert(PathManagerPage::get()->get_selected_path().cend(), { new_pt.x, new_pt.y, M_PI_2, M_PI_2, 1.0f, 1.0f, 0.0f, false, false, true });
         (selected_pt - 1)->end = false;
         updated = true;
       }
@@ -642,7 +654,7 @@ void PathEditorPage::present_curve_editor() {
   }
 
   // Draw the curve waypoints and tangent lines.
-  for (CurvePointTable::const_iterator it(project->points.cbegin()); it != project->points.cend(); ++it) {
+  for (CurvePointTable::const_iterator it(PathManagerPage::get()->get_selected_path().cbegin()); it != PathManagerPage::get()->get_selected_path().cend(); ++it) {
     auto x = it->px,
          y = it->py;
 
@@ -660,11 +672,11 @@ void PathEditorPage::present_curve_editor() {
       pt_color = ImColor(252, 186, 3, 255);
       border_color = pt_color;
     }
-    else if (it == project->points.cbegin()) {
+    else if (it == PathManagerPage::get()->get_selected_path().cbegin()) {
       // Green
       pt_color = ImColor(0, 255, 0, 255);
     }
-    else if (it == project->points.cend() - 1) {
+    else if (it == PathManagerPage::get()->get_selected_path().cend() - 1) {
       // Red
       pt_color = ImColor(255, 0, 0, 255);
     }
@@ -701,8 +713,8 @@ void PathEditorPage::present_curve_editor() {
 std::vector<ImVec2> PathEditorPage::calc_curve_points() const {
   std::vector<ImVec2> res;
 
-  for (CurvePointTable::const_iterator it = project->points.cbegin(); it + 1 != project->points.cend(); ++it) {
-    std::size_t i(it - project->points.cbegin());
+  for (CurvePointTable::const_iterator it = PathManagerPage::get()->get_selected_path().cbegin(); it + 1 != PathManagerPage::get()->get_selected_path().cend(); ++it) {
+    std::size_t i(it - PathManagerPage::get()->get_selected_path().cbegin());
     float len(cached_curve_lengths.at(i));
 
     std::size_t samples(len * CURVE_RESOLUTION_FACTOR);
@@ -769,7 +781,7 @@ ImVec2 PathEditorPage::calc_curve_point(CurvePointTable::const_iterator it, floa
 std::vector<float> PathEditorPage::calc_curve_lengths() const {
   std::vector<float> lengths;
 
-  for (CurvePointTable::const_iterator it(project->points.cbegin()); it + 1 != project->points.cend(); ++it) {
+  for (CurvePointTable::const_iterator it(PathManagerPage::get()->get_selected_path().cbegin()); it + 1 != PathManagerPage::get()->get_selected_path().cend(); ++it) {
     lengths.push_back(calc_curve_part_length(it));
   }
 
@@ -893,7 +905,7 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
     std::vector<CurvePointTable::const_iterator> stop_point_its;
 
     // Get points to stop at.
-    for (CurvePointTable::const_iterator it(project->points.cbegin()); it != project->points.cend(); ++it) {
+    for (CurvePointTable::const_iterator it(PathManagerPage::get()->get_selected_path().cbegin()); it != PathManagerPage::get()->get_selected_path().cend(); ++it) {
       if (it->stop) stop_point_its.push_back(it);
     }
 
@@ -1022,8 +1034,8 @@ std::pair<std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_
 }
 
 std::pair<PathEditorPage::CurvePointTable::const_iterator, float> PathEditorPage::find_curve_part_point(float x, float y) const {
-  for (CurvePointTable::const_iterator it(project->points.cbegin()); it + 1 != project->points.cend(); ++it) {
-    std::size_t i(it - project->points.cbegin());
+  for (CurvePointTable::const_iterator it(PathManagerPage::get()->get_selected_path().cbegin()); it + 1 != PathManagerPage::get()->get_selected_path().cend(); ++it) {
+    std::size_t i(it - PathManagerPage::get()->get_selected_path().cbegin());
     float len(cached_curve_lengths.at(i));
 
     std::size_t samples(len * 64.0f);
@@ -1036,7 +1048,7 @@ std::pair<PathEditorPage::CurvePointTable::const_iterator, float> PathEditorPage
       }
     }
   }
-  return std::make_pair(project->points.cend(), 0.0f);
+  return std::make_pair(PathManagerPage::get()->get_selected_path().cend(), 0.0f);
 }
 
 std::vector<ImVec2>::const_iterator PathEditorPage::find_curve_point(float x, float y) const {

@@ -9,14 +9,16 @@ ProjectManager::~ProjectManager() { }
 
 void ProjectManager::new_project(ProjectSettings _settings) {
   project.settings = _settings;
-  project.points = PathEditorPage::CurvePointTable({
+  project.paths.clear();
+  project.paths.emplace_back("the_path", PathEditorPage::CurvePointTable({
     { 8.124f, 1.78f, 4.73853f, 4.73853f, 1.44372f, 1.70807f, 4.73853, false, true, false },
     { 4.0f,   1.5f,  2.0944f,  2.0944f,  2.0f,     2.0f,     2.0944,  false, false, true },
-  });
+  }));
 
   working_project = true;
   unsaved = false;
 
+  PathManagerPage::get()->set_project(&project);
   PathEditorPage::get()->set_project(&project);
   PropertiesPage::get()->set_project(&project);
 
@@ -81,24 +83,33 @@ void ProjectManager::open_project(std::string path) {
   project.settings.robot_length = std::stof(get_str()); ++file_iter;
   project.settings.robot_width = std::stof(get_str()); ++file_iter;
 
-  project.points.clear();
-  while (file_iter != file_str.cend() && *file_iter == '{') {
-      ++file_iter;
-      PathEditorPage::CurvePoint point;
-      point.px = std::stof(get_str()); ++file_iter;
-      point.py = std::stof(get_str()); ++file_iter;
-      point.h0 = std::stof(get_str()); ++file_iter;
-      point.h1 = std::stof(get_str()); ++file_iter;
-      point.w0 = std::stof(get_str()); ++file_iter;
-      point.w1 = std::stof(get_str()); ++file_iter;
-      point.rotation = std::stof(get_str()); ++file_iter;
-      point.stop = static_cast<bool>(std::stoi(get_str())); ++file_iter;
-      point.begin = static_cast<bool>(std::stoi(get_str())); ++file_iter;
-      point.end = static_cast<bool>(std::stoi(get_str())); ++file_iter;
+  project.paths.clear();
+  do {
+    std::string name(get_str()); ++file_iter;
+    PathEditorPage::CurvePointTable points;
+    while (file_iter != file_str.cend() && *file_iter == '{') {
+        ++file_iter;
+        PathEditorPage::CurvePoint point;
+        point.px = std::stof(get_str()); ++file_iter;
+        point.py = std::stof(get_str()); ++file_iter;
+        point.h0 = std::stof(get_str()); ++file_iter;
+        point.h1 = std::stof(get_str()); ++file_iter;
+        point.w0 = std::stof(get_str()); ++file_iter;
+        point.w1 = std::stof(get_str()); ++file_iter;
+        point.rotation = std::stof(get_str()); ++file_iter;
+        point.stop = static_cast<bool>(std::stoi(get_str())); ++file_iter;
+        point.begin = static_cast<bool>(std::stoi(get_str())); ++file_iter;
+        point.end = static_cast<bool>(std::stoi(get_str())); ++file_iter;
 
-      project.points.push_back(point);
-  }
+        points.push_back(point);
+    }
+    project.paths.emplace_back(name, points);
+    if (*file_iter == '\n') ++file_iter;
+    else break;
 
+  } while (true);
+
+  PathManagerPage::get()->set_project(&project);
   PathEditorPage::get()->set_project(&project);
   PropertiesPage::get()->set_project(&project);
   working_project = true;
@@ -115,7 +126,7 @@ void ProjectManager::save_project() {
     file << '"' << std::get<std::filesystem::path>(field.img).c_str() << '"' << ',';
   }
   else {
-    file << static_cast<std::size_t>(std::get<Field::BuiltinImage>(field.img)) << ',';
+    file << '"' << static_cast<std::size_t>(std::get<Field::BuiltinImage>(field.img)) << '"' << ',';
   }
   file << field.min.x << ',' << field.min.y << ',' << field.max.x << ',' << field.max.y << '\n';
   file << static_cast<std::size_t>(settings.drive_ctrl) << ',';
@@ -123,21 +134,28 @@ void ProjectManager::save_project() {
   file << settings.max_vel << '\n';
   file << settings.robot_length << ',';
   file << settings.robot_width << '\n';
-  
-  for (const PathEditorPage::CurvePoint& pt : project.points) {
-    file << '{'
-         << pt.px << ','
-         << pt.py << ','
-         << pt.h0 << ','
-         << pt.h1 << ','
-         << pt.w0 << ','
-         << pt.w1 << ','
-         << pt.rotation << ','
-         << static_cast<std::size_t>(pt.stop) << ','
-         << static_cast<std::size_t>(pt.begin) << ','
-         << static_cast<std::size_t>(pt.end) << '}';
+
+  for (decltype(project.paths)::const_iterator it(project.paths.cbegin()); it != project.paths.cend(); ++it) {
+    auto [name, points] = *it;
+
+    file << name << ',';
+    for (const PathEditorPage::CurvePoint& pt : points) {
+      file << '{'
+          << pt.px << ','
+          << pt.py << ','
+          << pt.h0 << ','
+          << pt.h1 << ','
+          << pt.w0 << ','
+          << pt.w1 << ','
+          << pt.rotation << ','
+          << static_cast<std::size_t>(pt.stop) << ','
+          << static_cast<std::size_t>(pt.begin) << ','
+          << static_cast<std::size_t>(pt.end) << '}';
+    }
+    if (it != project.paths.cend() - 1) {
+      file << '\n';
+    }
   }
-  file << '\n';
 }
 
 void ProjectManager::save_project_as(std::string path) {

@@ -1,6 +1,7 @@
 #include <pages/properties.h>
 #include <imgui_internal.h>
 #include <pages/path_editor.h>
+#include <pages/path_manager.h>
 #include <platform/platform.h>
 #include <project.h>
 #include <IconsFontAwesome5.h>
@@ -159,7 +160,7 @@ void PropertiesPage::present(bool* running) {
     // --- Stop ---
 
     bool stop = selected_pt->stop;
-    if (selected_pt != (project->points.cend() - 1) && selected_pt != project->points.cbegin()) {
+    if (selected_pt != (PathManagerPage::get()->get_selected_path().cend() - 1) && selected_pt != PathManagerPage::get()->get_selected_path().cbegin()) {
       ImGui::PushID("Stop");
       ImGui::Columns(2, nullptr, false);
       ImGui::SetColumnWidth(0, COL_WIDTH);
@@ -193,27 +194,16 @@ void PropertiesPage::present(bool* running) {
   // --- Path Properties ---
 
   if (ImGui::CollapsingHeader(ICON_FA_BEZIER_CURVE "  Path")) {
-    // --- Export Path ---
+    // --- Export Button ---
 
-    ImGui::PushID("Export Path");
+    ImGui::PushID("Export");
     ImGui::Columns(2, nullptr, false);
     ImGui::SetColumnWidth(0, COL_WIDTH);
-    ImGui::Text("Export Path");
+    ImGui::Text("Export to CSV");
     ImGui::NextColumn();
 
-    static char export_path_dir[256] = "${PROJECT_DIR}/${PATH_NAME}.csv";
-
-    ImGui::InputText("##Export Path", export_path_dir, 256);
-
-    ImGui::SameLine();
-
-    std::string path_dir;
-    if (ImGui::Button("Browse")) {
-      path_dir = Platform::get_current()->save_file_dialog("csv");
-      if (!path_dir.empty()) {
-        memset(export_path_dir, 0, 256);
-        strncpy(export_path_dir, path_dir.c_str(), path_dir.length());
-      }
+    if (ImGui::Button("Export")) {
+      PathEditorPage::get()->export_path();
     }
 
     ImGui::Columns(1);
@@ -221,6 +211,7 @@ void PropertiesPage::present(bool* running) {
 
     // --- Auto Export ---
 
+    /*
     ImGui::PushID("Auto Export");
     ImGui::Columns(2, nullptr, false);
     ImGui::SetColumnWidth(0, COL_WIDTH);
@@ -230,28 +221,13 @@ void PropertiesPage::present(bool* running) {
     static bool auto_export = false;
     if (ImGui::Checkbox("##Auto Export", &auto_export)) {
       if (auto_export) {
-        PathEditorPage::get()->export_path(export_path_dir);
+        PathEditorPage::get()->export_path();
       }
     }
 
     ImGui::Columns(1);
     ImGui::PopID();
-
-    // --- Export Button ---
-
-    if (auto_export) {
-      ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-      ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-    }
-
-    if (ImGui::Button("Export")) {
-      PathEditorPage::get()->export_path(export_path_dir);
-    }
-
-    if (auto_export) {
-      ImGui::PopItemFlag();
-      ImGui::PopStyleVar();
-    }
+    */
 
     ImGui::Separator();
 

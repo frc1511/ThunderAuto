@@ -30,11 +30,9 @@ public:
   void set_project(Project* project);
 
   /**
-   * @brief Exports the current path to a specified file.
-   *
-   * @param filename The file to export to.
+   * @brief Exports the current path to a CSV file.
    */
-  void export_path(std::string filename);
+  void export_path();
 
   /**
    * @brief Represents a user-defined point on a path.
@@ -115,6 +113,11 @@ public:
    * @return The currently selected point, or std::nullopt if no point is selected.
    */
   std::optional<CurvePointTable::iterator> get_selected_point();
+
+  /**
+   * @brief Resets the selection.
+   */
+  void reset_selected_point();
 
   /**
    * @brief Deletes the currently selected point.

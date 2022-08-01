@@ -28,7 +28,7 @@ struct ProjectSettings {
 
 struct Project {
   ProjectSettings settings;
-  PathEditorPage::CurvePointTable points;
+  std::vector<std::pair<std::string, PathEditorPage::CurvePointTable>> paths;
 };
 
 class ProjectManager {
