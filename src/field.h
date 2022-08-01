@@ -7,7 +7,7 @@ struct Field {
     FIELD_2022,
   };
 
-  std::variant<std::filesystem::path, BuiltinImage> img;
+  std::variant<std::string, BuiltinImage> img;
 
   enum class ImageType {
     CUSTOM,
@@ -20,7 +20,7 @@ struct Field {
 
   Field() = default;
 
-  inline Field(std::filesystem::path img_path, ImVec2 min, ImVec2 max)
+  inline Field(std::string img_path, ImVec2 min, ImVec2 max)
   : img(img_path), img_type(ImageType::CUSTOM), min(min), max(max) { }
 
   inline Field(BuiltinImage builtin_img, ImVec2 min, ImVec2 max)

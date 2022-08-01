@@ -68,7 +68,7 @@ void ProjectManager::open_project(std::string path) {
   std::string img_str = get_str(); file_iter += 2;
   img_str.erase(img_str.cbegin());
   if (project.settings.field.img_type == Field::ImageType::CUSTOM) {
-    project.settings.field.img = std::filesystem::path(img_str);
+    project.settings.field.img = img_str;
   }
   else {
     project.settings.field.img = static_cast<Field::BuiltinImage>(std::stoi(img_str));
@@ -123,7 +123,7 @@ void ProjectManager::save_project() {
 
   file << static_cast<std::size_t>(settings.field.img_type) << ',';
   if (field.img_type == Field::ImageType::CUSTOM) {
-    file << '"' << std::get<std::filesystem::path>(field.img).c_str() << '"' << ',';
+    file << '"' << std::get<std::string>(field.img).c_str() << '"' << ',';
   }
   else {
     file << '"' << static_cast<std::size_t>(std::get<Field::BuiltinImage>(field.img)) << '"' << ',';

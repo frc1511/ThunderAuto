@@ -68,7 +68,7 @@ void NewProjectPopup::present(bool* running) {
     field = field_constants[current_field];
   }
 
-  const char* field_str = current_field == 1 ? std::get<std::filesystem::path>(field->img).c_str() : fields[current_field];
+  const char* field_str = current_field == 1 ? std::get<std::string>(field->img).c_str() : fields[current_field];
 
   if (ImGui::BeginCombo("##Field", field_str)) {
     for (int i = 0; i < 2; i++) {
@@ -234,7 +234,7 @@ void NewProjectPopup::present(bool* running) {
       std::filesystem::path deploy_path = deploy_path_str;
       deploy_path = deploy_path.parent_path();
 
-      std::string img_path_str = std::get<std::filesystem::path>(field.value().img).string();
+      std::string img_path_str = std::get<std::string>(field.value().img);
 
       std::size_t pos = img_path_str.find(deploy_path.string());
       if (pos != std::string::npos) {
