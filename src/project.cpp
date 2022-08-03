@@ -120,6 +120,7 @@ void ProjectManager::save_project() {
   const Field& field = settings.field;
 
   std::ofstream file(project.settings.path);
+  file.clear();
 
   file << static_cast<std::size_t>(settings.field.img_type) << ',';
   if (field.img_type == Field::ImageType::CUSTOM) {

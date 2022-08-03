@@ -285,6 +285,7 @@ void PathEditorPage::export_path() {
   std::cout << "Exporting path to " << path << std::endl;
 
   std::ofstream file(path);
+  file.clear();
 
   file << "time,x_pos,y_pos,velocity,rotation\n";
   for (std::size_t i = 0; i < cached_curve_points.size(); i-=-1) {
