@@ -12,8 +12,8 @@ void ProjectManager::new_project(ProjectSettings _settings) {
   project.settings = _settings;
   project.paths.clear();
   project.paths.emplace_back("the_path", PathEditorPage::CurvePointTable({
-    { 8.124f, 1.78f, 4.73853f, 4.73853f, 1.44372f, 1.70807f, 4.73853, false, true, false },
-    { 4.0f,   1.5f,  2.0944f,  2.0944f,  2.0f,     2.0f,     2.0944,  false, false, true },
+    { 8.124f, 1.78f, 4.73853f, 4.73853f, 1.44372f, 1.70807f, 4.73853, false, true, false, 0 },
+    { 4.0f,   1.5f,  2.0944f,  2.0944f,  2.0f,     2.0f,     2.0944,  false, false, true, 0 },
   }));
 
   working_project = true;
@@ -85,6 +85,16 @@ void ProjectManager::open_project(std::string path) {
   project.settings.robot_length = std::stof(get_str()); ++file_iter;
   project.settings.robot_width = std::stof(get_str()); ++file_iter;
 
+  std::vector<std::string> action_names;
+
+  while (*file_iter != '\n') {
+    std::string action = get_str(); ++file_iter;
+    action_names.push_back(action);
+  }
+  ++file_iter;
+
+  PropertiesPage::get()->set_action_names(action_names);
+
   project.paths.clear();
   do {
     std::string name(get_str()); ++file_iter;
@@ -102,6 +112,7 @@ void ProjectManager::open_project(std::string path) {
         point.stop = static_cast<bool>(std::stoi(get_str())); ++file_iter;
         point.begin = static_cast<bool>(std::stoi(get_str())); ++file_iter;
         point.end = static_cast<bool>(std::stoi(get_str())); ++file_iter;
+        point.actions = std::stoul(get_str()); ++file_iter;
 
         points.push_back(point);
     }
@@ -122,7 +133,6 @@ void ProjectManager::save_project() {
   const ProjectSettings& settings = project.settings;
   const Field& field = settings.field;
 
-std::cout << project.settings.path << '\n';
   std::ofstream file(project.settings.path);
   file.clear();
 
@@ -140,6 +150,16 @@ std::cout << project.settings.path << '\n';
   file << settings.robot_length << ',';
   file << settings.robot_width << '\n';
 
+  auto action_names(PropertiesPage::get()->get_action_names());
+
+  for (auto it(action_names.cbegin()); it != action_names.cend(); ++it) {
+    file << it->c_str();
+    // if (it != action_names.cend() - 1) {
+      file << ',';
+    // }
+  }
+  file << '\n';
+
   for (decltype(project.paths)::const_iterator it(project.paths.cbegin()); it != project.paths.cend(); ++it) {
     auto [name, points] = *it;
 
@@ -155,7 +175,8 @@ std::cout << project.settings.path << '\n';
           << pt.rotation << ','
           << static_cast<std::size_t>(pt.stop) << ','
           << static_cast<std::size_t>(pt.begin) << ','
-          << static_cast<std::size_t>(pt.end) << '}';
+          << static_cast<std::size_t>(pt.end) << ','
+          << pt.actions << '}';
     }
     if (it != project.paths.cend() - 1) {
       file << '\n';

@@ -581,7 +581,7 @@ void PathEditorPage::present_curve_editor() {
 
         if (get_dist(x_mid, y_mid) > dist) {
           // Insert the point at the start of the list.
-          selected_pt = PathManagerPage::get()->get_selected_path().insert(PathManagerPage::get()->get_selected_path().cbegin(), { new_pt.x, new_pt.y, M_PI_2, M_PI_2, 1.0f, 1.0f, 0.0f, false, true, false });
+          selected_pt = PathManagerPage::get()->get_selected_path().insert(PathManagerPage::get()->get_selected_path().cbegin(), { new_pt.x, new_pt.y, M_PI_2, M_PI_2, 1.0f, 1.0f, 0.0f, false, true, false, 0 });
           (selected_pt + 1)->begin = false;
           updated = true;
           pt_added = true;
@@ -599,7 +599,7 @@ void PathEditorPage::present_curve_editor() {
 
           float angle(std::atan2(dy, dx));
 
-          selected_pt = PathManagerPage::get()->get_selected_path().insert(p + 1, { new_pt.x, new_pt.y, angle, angle, 1.0f, 1.0f, 0.0f, false, false, false });
+          selected_pt = PathManagerPage::get()->get_selected_path().insert(p + 1, { new_pt.x, new_pt.y, angle, angle, 1.0f, 1.0f, 0.0f, false, false, false, 0 });
           updated = true;
           pt_added = true;
         }
@@ -607,7 +607,7 @@ void PathEditorPage::present_curve_editor() {
 
       if (!pt_added) {
         // To the end of the list!
-        selected_pt = PathManagerPage::get()->get_selected_path().insert(PathManagerPage::get()->get_selected_path().cend(), { new_pt.x, new_pt.y, M_PI_2, M_PI_2, 1.0f, 1.0f, 0.0f, false, false, true });
+        selected_pt = PathManagerPage::get()->get_selected_path().insert(PathManagerPage::get()->get_selected_path().cend(), { new_pt.x, new_pt.y, M_PI_2, M_PI_2, 1.0f, 1.0f, 0.0f, false, false, true, 0 });
         (selected_pt - 1)->end = false;
         updated = true;
       }
@@ -866,7 +866,7 @@ struct PathInterval {
   : start(start), end(end), type(type) { }
 };
 
-std::tuple<std::vector<float>, std::vector<float>, std::vector<float>> PathEditorPage::calc_velocity_time() const {
+std::tuple<std::vector<float>, std::vector<float>, std::vector<float>, std::vector<unsigned>> PathEditorPage::calc_velocity_time() const {
   std::vector<std::pair<float, float>> clamped_intervals;
 
   {
@@ -901,6 +901,7 @@ std::tuple<std::vector<float>, std::vector<float>, std::vector<float>> PathEdito
   }
 
   std::vector<float> velocities, times, rotations;
+  std::vector<unsigned> action_flags;
 
   {
     std::vector<float> stop_point_dists;
@@ -932,7 +933,8 @@ std::tuple<std::vector<float>, std::vector<float>, std::vector<float>> PathEdito
     point_dists.push_back(d_total);
 
     decltype(stop_point_dists)::const_iterator stop_it(stop_point_dists.cbegin());
-    decltype(point_dists)::const_iterator rot_it(point_dists.cbegin());
+    decltype(point_dists)::const_iterator rot_it(point_dists.cbegin()),
+                                          pt_it(point_dists.cbegin());
 
     float d_traveled(0.0f);
     float t_elapsed(0.0f);
@@ -942,6 +944,7 @@ std::tuple<std::vector<float>, std::vector<float>, std::vector<float>> PathEdito
         velocities.push_back(0.0f);
         times.push_back(0.0f);
         rotations.push_back(PathManagerPage::get()->get_selected_path().front().rotation);
+        action_flags.push_back(PathManagerPage::get()->get_selected_path().front().actions);
         continue;
       }
 
@@ -961,6 +964,13 @@ std::tuple<std::vector<float>, std::vector<float>, std::vector<float>> PathEdito
       }
       if (d_traveled > *rot_it && rot_it != point_dists.cend() - 1) {
         ++rot_it;
+      }
+      if (d_traveled >= *pt_it && pt_it != point_dists.cend() - 1) {
+        action_flags.push_back(PathManagerPage::get()->get_selected_path().at(pt_it - point_dists.cbegin()).actions);
+        ++pt_it;
+      }
+      else {
+        action_flags.push_back(0);
       }
 
       // The next target rotation of the robot at this point.
@@ -1044,7 +1054,7 @@ std::tuple<std::vector<float>, std::vector<float>, std::vector<float>> PathEdito
     }
   }
 
-  return std::make_tuple(velocities, times, rotations);
+  return std::make_tuple(velocities, times, rotations, action_flags);
 }
 
 std::pair<PathEditorPage::CurvePointTable::const_iterator, float> PathEditorPage::find_curve_part_point(float x, float y) const {
@@ -1076,10 +1086,11 @@ void PathEditorPage::cache_values() {
   cached_curve_lengths = calc_curve_lengths();
   cached_curve_points = calc_curve_points();
   cached_curvatures = calc_curvature();
-  auto [vels, times, rotations] = calc_velocity_time();
+  auto [vels, times, rotations, action_flags] = calc_velocity_time();
   cached_velocities = std::move(vels);
   cached_times = std::move(times);
   cached_rotations = std::move(rotations);
+  cached_action_flags = std::move(action_flags);
 }
 
 PathEditorPage PathEditorPage::instance {};

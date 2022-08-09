@@ -177,6 +177,84 @@ void PropertiesPage::present(bool* running) {
       ImGui::PopID();
     }
 
+    // --- Actions ---
+    if (ImGui::TreeNode("Actions")) {
+      for (std::size_t i = 0; i < actions.size(); ++i) {
+        std::string& name = actions.at(i);
+
+        bool selected = selected_pt->actions & (1 << i);
+
+        if (ImGui::Checkbox(("##action_" + std::to_string(i)).c_str(), &selected)) {
+          if (selected) {
+            selected_pt->actions |= (1 << i);
+          }
+          else {
+            selected_pt->actions &= ~(1 << i);
+          }
+        }
+
+        ImGui::SameLine();
+
+        float width = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x - 20.0f;
+
+        ImGui::PushItemWidth(width * 0.4f);
+
+        char buf[256];
+        strncpy(buf, name.c_str(), name.length());
+        buf[name.length()] = '\0';
+
+        if (ImGui::InputText(("##action_name_" + std::to_string(i)).c_str(), buf, 256)) {
+          name = buf;
+        }
+
+        ImGui::PopItemWidth();
+
+        ImGui::SameLine();
+        ImGui::Text("1 << %lu", i);
+        ImGui::SameLine();
+
+        ImGui::PushID((void*)(intptr_t)i);
+
+        if (ImGui::Button(ICON_FA_TRASH)) {
+          unsigned before_actions = selected_pt->actions;
+          selected_pt->actions = 0;
+          std::size_t l = 0;
+          for (std::size_t j = 0; j < actions.size(); ++j) {
+            if (i == j) {
+              continue;
+            }
+
+            if (before_actions & (1 << j)) {
+              selected_pt->actions |= (1 << l);
+            }
+            l++;
+          }
+
+          actions.erase(actions.begin() + i);
+        }
+
+        ImGui::PopID();
+      }
+
+      bool add_action_disabled = actions.size() >= 32;
+
+      if (add_action_disabled) {
+        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+      }
+
+      if (ImGui::Selectable("+ New Action", false)) {
+        actions.push_back("Action");
+      }
+
+      if (add_action_disabled) {
+        ImGui::PopItemFlag();
+        ImGui::PopStyleVar();
+      }
+
+      ImGui::TreePop();
+    }
+
     // Update values from the path editor.
     pos[0] = selected_pt->px;
     pos[1] = selected_pt->py;

@@ -54,6 +54,8 @@ public:
     bool begin;
     // Whether this is the ending point of the path.
     bool end;
+    // The actions to perform at this point.
+    unsigned actions;
 
     /**
      * @brief Returns the coordinates of a tangent control point.
@@ -206,7 +208,7 @@ private:
    *
    * @return A list of velocities and times for each point of the path.
    */
-  std::tuple<std::vector<float>, std::vector<float>, std::vector<float>> calc_velocity_time() const;
+  std::tuple<std::vector<float>, std::vector<float>, std::vector<float>, std::vector<unsigned>> calc_velocity_time() const;
 
   std::pair<CurvePointTable::const_iterator, float> find_curve_part_point(float x, float y) const;
 
@@ -233,6 +235,7 @@ private:
   std::vector<float> cached_velocities;
   std::vector<float> cached_times;
   std::vector<float> cached_rotations;
+  std::vector<unsigned> cached_action_flags;
 
   /**
    * @brief Calculates and caches values for the path editor.
