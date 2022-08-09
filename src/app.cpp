@@ -5,6 +5,7 @@
 #include <pages/path_editor.h>
 #include <pages/path_manager.h>
 #include <pages/properties.h>
+#include <pages/settings.h>
 #include <popups/new_project.h>
 #include <popups/unsaved.h>
 #include <popups/new_field.h>
@@ -35,6 +36,8 @@ void App::present() {
   static bool show_path_editor = true,
               show_path_manager = true,
               show_properties = true;
+
+  static bool show_settings = false;
 
 #ifdef THUNDER_AUTO_MACOS
 # define CTRL_STR "Cmd+"
@@ -83,6 +86,9 @@ void App::present() {
         ImGui::MenuItem(ICON_FA_LIST "  Paths", nullptr, &show_path_manager);
         ImGui::MenuItem(ICON_FA_BEZIER_CURVE "  Editor", nullptr, &show_path_editor);
         ImGui::MenuItem(ICON_FA_SLIDERS_H "  Properties", nullptr, &show_properties);
+        if (ImGui::MenuItem(ICON_FA_COG "  Settings", nullptr, &show_settings)) {
+          SettingsPage::get()->reset();
+        }
         
         ImGui::EndMenu();
       }
@@ -104,11 +110,11 @@ void App::present() {
   if (item_paste)      menu_paste();
   if (item_delete)     menu_delete(true);
   
-
   if (ProjectManager::get()->has_project()) {
     if (show_path_editor) PathEditorPage::get()->present(&show_path_editor);
     if (show_path_manager) PathManagerPage::get()->present(&show_path_manager);
     if (show_properties) PropertiesPage::get()->present(&show_properties);
+    if (show_settings) SettingsPage::get()->present(&show_settings);
   }
 
   switch (event_state) {

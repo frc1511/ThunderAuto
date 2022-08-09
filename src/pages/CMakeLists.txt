@@ -4,4 +4,5 @@ add_thunder_auto_sources(
   "${THUNDER_AUTO_PAGES_DIR}/path_editor.cpp"
   "${THUNDER_AUTO_PAGES_DIR}/path_manager.cpp"
   "${THUNDER_AUTO_PAGES_DIR}/properties.cpp"
+  "${THUNDER_AUTO_PAGES_DIR}/settings.cpp"
 )

@@ -6,7 +6,7 @@
 
 struct Project;
 
-class PathManagerPage: public Page {
+class PathManagerPage: public ProjectPage {
 public:
   static PathManagerPage* get() {
     return &instance;
@@ -16,14 +16,13 @@ public:
   PathManagerPage& operator=(PathManagerPage const&) = delete;
   
   void present(bool* running) override;
-  bool is_focused() override { return focused; }
 
   /**
    * @brief Sets the working project.
    *
    * @param project The project to work with.
    */
-  void set_project(Project* project);
+  void set_project(Project* project) override;
 
   PathEditorPage::CurvePointTable& get_selected_path() const;
 
@@ -33,8 +32,6 @@ private:
   PathManagerPage();
   ~PathManagerPage();
   
-  bool focused = false;
-
   std::size_t selected = 0;
 
   Project* project = nullptr;

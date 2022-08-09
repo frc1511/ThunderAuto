@@ -2,6 +2,7 @@
 #include <pages/path_editor.h>
 #include <pages/path_manager.h>
 #include <pages/properties.h>
+#include <pages/settings.h>
 
 ProjectManager::ProjectManager() { }
 
@@ -21,6 +22,7 @@ void ProjectManager::new_project(ProjectSettings _settings) {
   PathManagerPage::get()->set_project(&project);
   PathEditorPage::get()->set_project(&project);
   PropertiesPage::get()->set_project(&project);
+  SettingsPage::get()->set_project(&project);
 
   save_project();
 }
@@ -112,6 +114,7 @@ void ProjectManager::open_project(std::string path) {
   PathManagerPage::get()->set_project(&project);
   PathEditorPage::get()->set_project(&project);
   PropertiesPage::get()->set_project(&project);
+  SettingsPage::get()->set_project(&project);
   working_project = true;
 }
 
@@ -119,6 +122,7 @@ void ProjectManager::save_project() {
   const ProjectSettings& settings = project.settings;
   const Field& field = settings.field;
 
+std::cout << project.settings.path << '\n';
   std::ofstream file(project.settings.path);
   file.clear();
 

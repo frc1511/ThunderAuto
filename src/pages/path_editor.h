@@ -10,7 +10,7 @@
 
 struct Project;
 
-class PathEditorPage : public Page {
+class PathEditorPage : public ProjectPage {
 public:
   static PathEditorPage* get() {
     return &instance;
@@ -20,14 +20,13 @@ public:
   PathEditorPage& operator=(PathEditorPage const&) = delete;
   
   void present(bool* running) override;
-  bool is_focused() override { return focused; }
 
   /**
    * @brief Sets the working project.
    *
    * @param project The project to work with.
    */
-  void set_project(Project* project);
+  void set_project(Project* project) override;
 
   /**
    * @brief Exports the current path to a CSV file.
@@ -248,8 +247,6 @@ private:
 
   // Whether the path editor should update its values on the next frame.
   bool updated = true;
-
-  bool focused = false;
 
   bool show_tangents = true;
   bool show_rotation = true;

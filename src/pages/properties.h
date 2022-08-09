@@ -5,7 +5,7 @@
 
 struct Project;
 
-class PropertiesPage: public Page {
+class PropertiesPage: public ProjectPage {
 public:
   static PropertiesPage* get() {
     return &instance;
@@ -15,21 +15,18 @@ public:
   PropertiesPage& operator=(PropertiesPage const&) = delete;
   
   void present(bool* running) override;
-  bool is_focused() override { return focused; }
 
   /**
    * @brief Sets the working project.
    *
    * @param project The project to work with.
    */
-  void set_project(Project* project);
+  void set_project(Project* project) override;
   
 private:
   PropertiesPage();
   ~PropertiesPage();
   
-  bool focused = false;
-
   Project* project = nullptr;
   
   static PropertiesPage instance;
