@@ -287,11 +287,12 @@ void PathEditorPage::export_path() {
   std::ofstream file(path);
   file.clear();
 
-  file << "time,x_pos,y_pos,velocity,rotation\n";
+  file << "time,x_pos,y_pos,velocity,rotation,action\n";
   for (std::size_t i = 0; i < cached_curve_points.size(); i-=-1) {
       file << cached_times.at(i) << ','
       << cached_curve_points.at(i).x << ',' << cached_curve_points.at(i).y << ','
-      << cached_velocities.at(i) << ',' << cached_rotations.at(i) << '\n';
+      << cached_velocities.at(i) << ',' << cached_rotations.at(i) << ','
+      << cached_action_flags.at(i) << '\n';
   }
 }
 
@@ -932,6 +933,11 @@ std::tuple<std::vector<float>, std::vector<float>, std::vector<float>, std::vect
     stop_point_dists.push_back(d_total);
     point_dists.push_back(d_total);
 
+    std::cout << "point dists " << point_dists.size() << '\n';
+    for (int i = 0; i < point_dists.size(); ++i) {
+        std::cout << "dist " << point_dists.at(i) << '\n';
+    }
+
     decltype(stop_point_dists)::const_iterator stop_it(stop_point_dists.cbegin());
     decltype(point_dists)::const_iterator rot_it(point_dists.cbegin()),
                                           pt_it(point_dists.cbegin());
@@ -966,8 +972,11 @@ std::tuple<std::vector<float>, std::vector<float>, std::vector<float>, std::vect
         ++rot_it;
       }
       if (d_traveled >= *pt_it && pt_it != point_dists.cend() - 1) {
-        action_flags.push_back(PathManagerPage::get()->get_selected_path().at(pt_it - point_dists.cbegin()).actions);
+        action_flags.push_back(PathManagerPage::get()->get_selected_path().at(pt_it - point_dists.cbegin() - 1).actions);
         ++pt_it;
+      }
+      else if (it == cached_curve_points.cend() - 1) {
+          action_flags.push_back(PathManagerPage::get()->get_selected_path().back().actions);
       }
       else {
         action_flags.push_back(0);
