@@ -933,11 +933,6 @@ std::tuple<std::vector<float>, std::vector<float>, std::vector<float>, std::vect
     stop_point_dists.push_back(d_total);
     point_dists.push_back(d_total);
 
-    std::cout << "point dists " << point_dists.size() << '\n';
-    for (int i = 0; i < point_dists.size(); ++i) {
-        std::cout << "dist " << point_dists.at(i) << '\n';
-    }
-
     decltype(stop_point_dists)::const_iterator stop_it(stop_point_dists.cbegin());
     decltype(point_dists)::const_iterator rot_it(point_dists.cbegin()),
                                           pt_it(point_dists.cbegin());
@@ -972,7 +967,7 @@ std::tuple<std::vector<float>, std::vector<float>, std::vector<float>, std::vect
         ++rot_it;
       }
       if (d_traveled >= *pt_it && pt_it != point_dists.cend() - 1) {
-        action_flags.push_back(PathManagerPage::get()->get_selected_path().at(pt_it - point_dists.cbegin() - 1).actions);
+        action_flags.push_back(PathManagerPage::get()->get_selected_path().at(pt_it - point_dists.cbegin() + 1).actions);
         ++pt_it;
       }
       else if (it == cached_curve_points.cend() - 1) {
