@@ -10,19 +10,19 @@ PlatformWindows::~PlatformWindows() { }
 
 std::string PlatformWindows::open_file_dialog(FileType type, const char* extension) {
   GLFWwindow* window = App::get()->get_window();
-  const char* filter = extension ? ("*." + std::string(extension)).c_str() : "*";
+  std::string filter = extension ? ("*." + std::string(extension)) : "*";
 
   OPENFILENAMEA ofn;
-  CHAR szFile[260] = { 0 };
-  CHAR currentDir[256] = { 0 };
+  CHAR sz_file[260] = { 0 };
+  CHAR current_dir[256] = { 0 };
   ZeroMemory(&ofn, sizeof(OPENFILENAME));
   ofn.lStructSize = sizeof(OPENFILENAME);
   ofn.hwndOwner = glfwGetWin32Window(window);
-  ofn.lpstrFile = szFile;
-  ofn.nMaxFile = sizeof(szFile);
-  if (GetCurrentDirectoryA(256, currentDir))
-	  ofn.lpstrInitialDir = currentDir;
-  ofn.lpstrFilter = filter;
+  ofn.lpstrFile = sz_file;
+  ofn.nMaxFile = sizeof(sz_file);
+  if (GetCurrentDirectoryA(256, current_dir))
+	  ofn.lpstrInitialDir = current_dir;
+  ofn.lpstrFilter = filter.c_str();
   ofn.nFilterIndex = 1;
   ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
 
@@ -35,24 +35,24 @@ std::string PlatformWindows::open_file_dialog(FileType type, const char* extensi
 std::string PlatformWindows::save_file_dialog(const char* extension) {
   GLFWwindow* window = App::get()->get_window();
 
-  const char* filter = extension ? ("*." + std::string(extension)).c_str() : "*";
+  std::string filter = extension ? ("*." + std::string(extension)) : "*";
 
   OPENFILENAMEA ofn;
-  CHAR szFile[260] = { 0 };
-  CHAR currentDir[256] = { 0 };
+  CHAR sz_file[260] = { 0 };
+  CHAR current_dir[256] = { 0 };
   ZeroMemory(&ofn, sizeof(OPENFILENAME));
   ofn.lStructSize = sizeof(OPENFILENAME);
   ofn.hwndOwner = glfwGetWin32Window(window);
-  ofn.lpstrFile = szFile;
-  ofn.nMaxFile = sizeof(szFile);
-  if (GetCurrentDirectoryA(256, currentDir)) {
-    ofn.lpstrInitialDir = currentDir;
+  ofn.lpstrFile = sz_file;
+  ofn.nMaxFile = sizeof(sz_file);
+  if (GetCurrentDirectoryA(256, current_dir)) {
+    ofn.lpstrInitialDir = current_dir;
   }
-  ofn.lpstrFilter = filter;
+  ofn.lpstrFilter = filter.c_str();
   ofn.nFilterIndex = 1;
   ofn.Flags = OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR;
 
-  ofn.lpstrDefExt = strchr(filter, '\0') + 1;
+  ofn.lpstrDefExt = strchr(filter.c_str(), '\0') + 1;
 
   if (GetSaveFileNameA(&ofn) == TRUE)
     return ofn.lpstrFile;
