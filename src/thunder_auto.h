@@ -31,4 +31,8 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
 
-#define FILE_EXTENSION "thunderauto"
+#if THUNDER_AUTO_WINDOWS
+# define FILE_FILTER "ThunderAuto Project (*.thunderauto)\0*.thunderauto\0"
+#else
+# define FILE_FILTER "thunderauto"
+#endif

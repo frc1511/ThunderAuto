@@ -218,7 +218,7 @@ void App::new_project() {
 }
 
 void App::open_project() {
-  std::string path = Platform::get_current()->open_file_dialog(FileType::FILE, FILE_EXTENSION);
+  std::string path = Platform::get_current()->open_file_dialog(FileType::FILE, FILE_FILTER);
   if (path.empty()) {
   }
   else {
@@ -287,7 +287,7 @@ void App::menu_save() {
 }
 
 void App::menu_save_as() {
-  std::string path = Platform::get_current()->save_file_dialog(FILE_EXTENSION);
+  std::string path = Platform::get_current()->save_file_dialog(FILE_FILTER);
   if (path.empty()) return;
   ProjectManager::get()->save_project_as(path);
 }

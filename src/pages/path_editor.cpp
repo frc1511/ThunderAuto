@@ -309,7 +309,7 @@ void PathEditorPage::present_curve_editor() {
   // --- Setup the canvas ---
 
   // Fit the canvas to the window.
-  ImVec2 win_size(ImGui::GetWindowSize());
+  ImVec2 win_size(ImGui::GetContentRegionAvail());
 
   float dim_x(win_size.x),
         dim_y(win_size.y);
@@ -638,12 +638,12 @@ void PathEditorPage::present_curve_editor() {
     };
 
     float hue;
-    switch (curve_style) {
-      case CurveStyle::VELOCITY:
+    switch (curve_overlay) {
+      case CurveOverlay::VELOCITY:
         // Dark blue is low velocity, bright red is high velocity.
         hue = 0.8f - (cached_velocities.at(i) / project->settings.max_vel);
         break;
-      case CurveStyle::CURVATURE:
+      case CurveOverlay::CURVATURE:
         // Dark blue is low curvature, bright red is high curvature.
         hue = 0.6f - (my_clamp(cached_curvatures.at(i), 0.0f, 50.0f) / 50.0f);
         break;

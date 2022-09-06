@@ -144,17 +144,17 @@ public:
    */
   constexpr void set_show_rotation(bool show) { show_rotation = show; }
 
-  enum class CurveStyle : std::size_t {
+  enum class CurveOverlay : std::size_t {
     VELOCITY = 0,
     CURVATURE = 1,
   };
 
   /**
-   * @brief Sets the style of the curve to provide different feedback to the user.
+   * @brief Sets the overlay of the curve to provide different feedback to the user.
    *
-   * @param style The style of the curve.
+   * @param overlay The overlay of the curve.
    */
-  constexpr void set_curve_style(CurveStyle style) { curve_style = style; }
+  constexpr void set_curve_overlay(CurveOverlay overlay) { curve_overlay = overlay; }
   
 private:
   PathEditorPage();
@@ -246,7 +246,7 @@ private:
   CurvePointTable::iterator selected_pt;
 
   // The style of the curve.
-  CurveStyle curve_style = CurveStyle::VELOCITY;
+  CurveOverlay curve_overlay = CurveOverlay::VELOCITY;
 
   // Whether the path editor should update its values on the next frame.
   bool updated = true;

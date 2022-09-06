@@ -74,7 +74,7 @@ void PropertiesPage::present(bool* running) {
     }
 
     if (selected_pt->stop) {
-      cond = ImGui::DragFloat2("##Heading", headings, 0.3f, 0.0f, 0.0f, "%.2f°");
+      cond = ImGui::DragFloat2("##Headings", headings, 0.3f, 0.0f, 0.0f, "%.2f°");
     }
     else {
       cond = ImGui::DragFloat("##Heading", &headings[i], 1.0f, 0.0f, 0.0f, "%.2f°");
@@ -309,23 +309,23 @@ void PropertiesPage::present(bool* running) {
 
     ImGui::Separator();
 
-    // --- Curve Style ---
+    // --- Curve Overlay ---
 
-    ImGui::PushID("Curve Style");
+    ImGui::PushID("Curve Overlay");
     ImGui::Columns(2, nullptr, false);
     ImGui::SetColumnWidth(0, COL_WIDTH);
-    ImGui::Text("Curve Style");
+    ImGui::Text("Curve Overlay");
     ImGui::NextColumn();
 
-    static PathEditorPage::CurveStyle curve_style = PathEditorPage::CurveStyle::VELOCITY;
+    static PathEditorPage::CurveOverlay curve_overlay = PathEditorPage::CurveOverlay::VELOCITY;
 
-    const char* curve_style_names[] = {
+    const char* curve_overlay_names[] = {
       "Velocity",
       "Curvature",
     };
 
-    if (ImGui::Combo("##Curve Style", (int*)&curve_style, curve_style_names, 2)) {
-      PathEditorPage::get()->set_curve_style(curve_style);
+    if (ImGui::Combo("##Curve Overlay", (int*)&curve_overlay, curve_overlay_names, 2)) {
+      PathEditorPage::get()->set_curve_overlay(curve_overlay);
     }
 
     ImGui::Columns(1);

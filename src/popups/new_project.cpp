@@ -36,7 +36,7 @@ void NewProjectPopup::present(bool* running) {
   ImGui::SameLine();
   
   if (ImGui::Button("Browse")) {
-    deploy_path_str = Platform::get_current()->save_file_dialog(FILE_EXTENSION);
+    deploy_path_str = Platform::get_current()->save_file_dialog(FILE_FILTER);
     strncpy(deploy_path_buf, deploy_path_str.c_str(), deploy_path_str.length());
   }
   
@@ -118,7 +118,7 @@ void NewProjectPopup::present(bool* running) {
   ImGui::Text(ICON_FA_SKIING "  Max Acceleration");
   ImGui::NextColumn();
 
-  static float max_accel = 3.0f;
+  static float max_accel = 2.0f;
   ImGui::DragFloat("##Max Acceleration", &max_accel, 0.1f, 0.0f, 0.0f, "%.1f m/s²");
 
   if (max_accel < 0.0f) {
@@ -136,7 +136,7 @@ void NewProjectPopup::present(bool* running) {
   ImGui::Text(ICON_FA_SKIING_NORDIC "  Max Velocity");
   ImGui::NextColumn();
   
-  static float max_vel = 4.0f;
+  static float max_vel = 2.0f;
   ImGui::DragFloat("##Max Velocity", &max_vel, 0.1f, 0.0f, 0.0f, "%.2f m/s");
 
   if (max_vel < 0.0f) {

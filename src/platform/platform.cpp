@@ -1,6 +1,6 @@
 #include <platform/platform.h>
 
-#ifdef THUNDER_AUTO_MACOS
+#if THUNDER_AUTO_MACOS
 # include <platform/macos/macos.h>
 #elif THUNDER_AUTO_WINDOWS
 # include <platform/windows/windows.h>

@@ -14,7 +14,7 @@ void WelcomePopup::present(bool* running) {
   }
 
   ImGui::PushFont(FontManager::get()->big);
-  ImGui::Text("Welcome to Thunder Auto");
+  ImGui::Text("Welcome to ThunderAuto");
   ImGui::PopFont();
 
   ImGui::Text("Version " THUNDER_AUTO_VERSION_STR);

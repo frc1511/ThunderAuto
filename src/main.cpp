@@ -28,8 +28,14 @@ static void set_imgui_style();
 #ifdef THUNDER_AUTO_WINDOWS
 #include <Windows.h>
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
+  (void)hInstance;
+  (void)hPrevInstance;
+  (void)lpCmdLine;
+  (void)nShowCmd;
 #else
 int main(int argc, char** argv) {
+  (void)argc;
+  (void)argv;
 #endif
   int exit_code = 0;
   
@@ -72,6 +78,7 @@ int main(int argc, char** argv) {
   glfwSetWindowUserPointer(window, App::get());
   
   glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+    (void)window;
     App::get()->handle_keyboard(key, scancode, action, mods);
   });
 
