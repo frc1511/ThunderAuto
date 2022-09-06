@@ -20,9 +20,15 @@ FRC Robot Path Planning Software.
 
 ## App Usage
 
-ThunderAuto is designed to be a comprehensive desktop app used to plan Autonomous Paths for FRC Robots.
+ThunderAuto is designed to be a comprehensive desktop app used to plan Autonomous Paths for FRC Robots. On launch, the user is prompted to create a new project or open an existing project. When creating a new project, several settings can be configured, such as the max velocity and acceleration, dimensions of the robot, and the field image.
 
-On launch, the user is prompted to create a new project or open an existing project. When creating a new project, several settings can be configured, such as the max velocity and acceleration, dimensions of the robot, and the field image. When the project is created, a number of windows are presented to the user, including the Path Manager, Path Editor, and Properties Editor. The Path Manager window contains the functionality to select, create, delete, and rename paths. The Path Editor page renders the current path as a Bézier curve on top of the field image. The trajectory is overlayed with a gradient representing the robot's velocity (blue = slow, red/pink = fast). The user can create/delete waypoints and adjust their attributes, such as the robot's desired position, rotation, and heading. Attributes can also be changed manually in the Properties Page under the 'Point' dropdown when a waypoint is selected in the Path Editor.
+<img src="https://raw.githubusercontent.com/wiki/petelilley/ThunderAuto/web/screenshots/screenshot_3.png" width="500">
+
+When the project is created, a number of windows are presented to the user, including the Path Selector, Path Editor, and Properties Editor.
+
+<img src="https://raw.githubusercontent.com/wiki/petelilley/ThunderAuto/web/screenshots/screenshot_1.png" width="800">
+
+The Path Selector window contains the functionality to select, create, delete, and rename paths. The Path Editor page renders the current path as a Bézier curve on top of the field image. The trajectory is overlayed with a gradient representing the robot's velocity (blue = slow, red/pink = fast). The user can create/delete waypoints and adjust their attributes, such as the robot's desired position, rotation, and heading. Attributes can also be changed manually in the Properties Page under the 'Point' dropdown when a waypoint is selected in the Path Editor.
 
 The robot can be flagged to stop at a waypoint by checking the 'Stop' checkbox. This tells the app to calculate the robot's deceleration to a complete stop at the selected point and its subsequent acceleration as it continues the trajectory. When a waypoint is marked as stopped, the path editor de-couples the heading handles so that the robot can resume the path at a different angle from when it impacted the point.
 
