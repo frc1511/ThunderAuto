@@ -58,7 +58,26 @@ Download the latest release [here](https://github.com/petelilley/ThunderAuto/rel
 
 ## Building
 
-Supported operating systems are Windows and macOS. Build projects can be generated using CMake. Tested targets include Visual Studio 19 on Windows and Xcode or Unix Makefiles on macOS. All the app's resources (Images, Fonts, etc.) are built into the executable, so there's no need to worry about moving them around.
+Supported operating systems are Windows and macOS. Make sure to resolve all the git submodules before building!
+```bash
+git submodule init
+git submodule update
+```
+Build projects can be generated using CMake. Tested targets include Visual Studio 2019 or 2022 on Windows and Xcode or Unix Makefiles on macOS. 
+```bash
+# Configure Windows
+cmake . -Bbuild -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release
+```
+```bash
+# Configure macOS
+cmake . -Bbuild -G "Xcode" -DCMAKE_BUILD_TYPE=Release
+```
+```bash
+# Build
+cmake --build build
+```
+
+All the app's resources (Images, Fonts, etc.) are built into the executable, so there's no need to worry about moving them around once it's built.
 
 ## In-Depth Explanation
 
@@ -87,11 +106,9 @@ $$ B\left(t\right) = \left(1 - t\right)^3 P_{0} + 3\left(1 - t\right)^2 t P_{1} 
 
 #### Segment Length
 
-Next, the length of each curve segment needs to be calculated to determine the number of curve samples to and for velocity and time calculations. To do this, the program utilizes the arc length formula,
+Next, the length of each curve segment needs to be calculated to determine the number of curve samples to and for velocity and time calculations. To do this the program essentially just uses Pythag's Theorem a bunch of times. The mathy explaination would be the arc length formula,
 
 $$ L=\int_{a}^{b}\sqrt{1\ +\left(\frac{dy}{dx}\right)^{2}}dx $$
-
-which is essentially just the Pythagorean Theorem a bunch of times.
 
 #### Curvature
 
