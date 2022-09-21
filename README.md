@@ -124,12 +124,12 @@ Calculating the velocity and time of each sampled point takes into account the c
 
 To calculate the velocities, the wonderful physics kinematics equations can be used.
 
-$$ v = \frac{d}{t} $$
+$$ v = \frac{x}{t} $$
 
-$$ v_{1} = v_{0} + at $$
+$$ v = v_{0} + at $$
 
-$$ d = v_{0}t + \frac{1}{2}at^2 $$
+$$ x = v_{0}t + \frac{1}{2}at^2 $$
 
-$$ v_{1}^2 = v_{0}^2 + 2ad $$
+$$ v^2 = v_{0}^2 + 2ax $$
 
 Calculating the time of each sampled point comes after. Depending on whether the robot is accelerating, decelerating, or cuising at a constant velocity determines which kinematics equation to use.
