@@ -30,7 +30,7 @@ When the project is created, a number of windows are presented to the user, incl
 
 The Path Selector window contains the functionality to select, create, delete, and rename paths. The Path Editor page renders the current path as a Bézier curve on top of the field image. The trajectory is overlayed with a gradient representing the robot's velocity (blue = slow, red/pink = fast). The user can create/delete waypoints and adjust their attributes, such as the robot's desired position, rotation, and heading. Attributes can also be changed manually in the Properties Page under the 'Point' dropdown when a waypoint is selected in the Path Editor.
 
-The robot can be flagged to stop at a waypoint by checking the 'Stop' checkbox in the inspector. This tells the app to calculate the robot's deceleration to a complete stop at the selected point and its subsequent acceleration as it continues the trajectory. When a waypoint is marked as stopped, the path editor de-couples the heading handles so that the robot can resume the path at a different angle from when it impacted the point.
+The robot can be flagged to stop at a waypoint by checking the 'Stop' checkbox in the Properties Page. This signals the app to calculate the robot's deceleration to a complete stop at the selected point and its subsequent acceleration as it continues the trajectory. When a waypoint is marked as stopped, the path editor de-couples the heading handles so that the robot can resume the path at a different angle from when it impacted the point.
 
 ThunderAuto also has a unique feature called Actions which allows the user to flag specific actions for the robot to execute at points along the trajectory. A dropdown in the Properties window contains tools for the user to create/delete/rename the available Actions and  select whatever Actions they want applied to each waypoint.
 
@@ -88,7 +88,7 @@ ThunderAuto was written in C++ 17 and utilizes a number of thirdparty libraries:
 * [stb_image.h](https://github.com/nothings/stb/blob/master/stb_image.h) - Loading images
 * [glad](https://glad.dav1d.de/) - OpenGL implementation
 
-Windows builds required the Windows SDK, and macOS builds require Foundation and AppKit for platform-specific utilities.
+Windows builds require the Windows SDK, and macOS builds require Foundation and AppKit for platform-specific utilities.
 
 ### Path Editor
 
@@ -104,7 +104,7 @@ $$ B\left(t\right) = \left(1 - t\right)^3 P_{0} + 3\left(1 - t\right)^2 t P_{1} 
 
 #### Segment Length
 
-Next, the length of each curve segment needs to be calculated to determine the number of curve samples to and for velocity and time calculations. To do this the program essentially just uses Pythag's Theorem a bunch of times. The mathy explaination would be the arc length formula,
+Next, the length of each curve segment needs to be calculated to determine the number of curve samples to calculate and for velocity and time calculations. To do this the program essentially just uses Pythag's Theorem a bunch of times. The mathy explaination would be the arc length formula,
 
 $$ L=\int_{a}^{b}\sqrt{1\ +\left(\frac{dy}{dx}\right)^{2}}dx $$
 
@@ -114,7 +114,7 @@ Before calculating the robot's velocity, it is useful to know about intervals of
 
 $$ c\left(x, y, z\right) = \frac{1}{R} = \frac{4A}{|x - y||y - z||z - x|} $$
 
-This equation utilizes the area and side lengths of a triangle formed between three points on the curve. The side lengths are determined with the Pythagorean Theorem, and the area using Heron's Formula.
+This equation returns the reciprocal of the point's radius of curvature, represented by 1/R.
 
 #### Velocity and Time
 
