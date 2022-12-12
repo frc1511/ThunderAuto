@@ -10,13 +10,6 @@ FRC Robot Path Planning Software.
     * [Actions](#actions)
 * [Downloading](#downloading)
 * [Building](#building)
-* [In-Depth Explanation](#in-depth-explanation)
-    * [Overview](#overview)
-    * [Path Editor](#path-editor)
-        * [Curve Equation](#curve-equation)
-        * [Segment Length](#segment-length)
-        * [Curvature](#curvature)
-        * [Velocity and Time](#velocity-and-time)
 
 ## App Usage
 
@@ -76,58 +69,3 @@ cmake --build build
 ```
 
 All the app's resources (Images, Fonts, etc.) are built into the executable, so there's no need to worry about moving them around once it's built.
-
-## In-Depth Explanation
-
-### Overview
-
-ThunderAuto was written in C++ 17 and utilizes a number of thirdparty libraries:
-
-* [imgui (docking branch)](https://github.com/ocornut/imgui/tree/docking) - GUI stuff
-* [glfw](https://github.com/glfw/glfw/tree/master) - Window stuff
-* [stb_image.h](https://github.com/nothings/stb/blob/master/stb_image.h) - Loading images
-* [glad](https://glad.dav1d.de/) - OpenGL implementation
-
-Windows builds require the Windows SDK, and macOS builds require Foundation and AppKit for platform-specific utilities.
-
-### Path Editor
-
-The path editor is probably the most complex part of the app, mostly due to the amount of math it required.
-
-#### Curve Equation
-
-First and foremost, the editor uses [Cubic Bézier Curves](https://en.m.wikipedia.org/wiki/B%C3%A9zier_curve) to interpolate a curve between each waypoint. An earlier version of the app was written using [Cubic Hermite Splines](https://en.m.wikipedia.org/wiki/Cubic_Hermite_spline), however I felt that bezier curves allowed for better control of the path. 
-
-The bezier curve function for X and Y coordinates using end points P<sub>0</sub> and P<sub>3</sub>, and control points P<sub>1</sub> and P<sub>2</sub>.
-
-$$ B\left(t\right) = \left(1 - t\right)^3 P_{0} + 3\left(1 - t\right)^2 t P_{1} + 3\left(1 - t\right)t^2 P_{2} + t^3 P_{3}, 0 \le t \le 1 $$
-
-#### Segment Length
-
-Next, the length of each curve segment needs to be calculated to determine the number of curve samples to calculate and for velocity and time calculations. To do this the program essentially just uses Pythag's Theorem a bunch of times. The mathy explaination would be the arc length formula,
-
-$$ L=\int_{a}^{b}\sqrt{1\ +\left(\frac{dy}{dx}\right)^{2}}dx $$
-
-#### Curvature
-
-Before calculating the robot's velocity, it is useful to know about intervals of high curvature where the robot should slow down. This is solved by calculating the [Menger curvature](https://en.wikipedia.org/wiki/Menger_curvature) of each sampled point of the curve.
-
-$$ c\left(x, y, z\right) = \frac{1}{R} = \frac{4A}{|x - y||y - z||z - x|} $$
-
-This equation returns the reciprocal of the point's radius of curvature, represented by 1/R.
-
-#### Velocity and Time
-
-Calculating the velocity and time of each sampled point takes into account the configured maximum velocity and acceleration, stop points, and invervals with high curvature. When calculating each point, the program determines the desired max velocity at the current point, the next desired max velocity, and the distance to a stop. Then the program calculates the distance needed to decelerate from the last velocity to a complete stop and compares that against the distance to the next stop. If it is greater than or equal to, the robot's deceleration is calculated. Otherwise, the program determines the distance to the next max velocity and checks whether it can reach it in time. If there's distance to spare, the velocity will accelerate to or remain at the current max. Otherwise the robot's deceleration to the next max velocity will be calculated.
-
-To calculate the velocities, the wonderful physics kinematics equations can be used.
-
-$$ v = \frac{x}{t} $$
-
-$$ v = v_{0} + at $$
-
-$$ x = v_{0}t + \frac{1}{2}at^2 $$
-
-$$ v^2 = v_{0}^2 + 2ax $$
-
-Calculating the time of each sampled point comes after. Depending on whether the robot is accelerating, decelerating, or cuising at a constant velocity determines which kinematics equation to use.
