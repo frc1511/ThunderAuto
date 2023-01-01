@@ -101,11 +101,13 @@ option(GLFW_BUILD_EXAMPLES OFF)
 option(GLFW_BUILD_TESTS OFF)
 option(GLFW_BUILD_DOCS OFF)
 option(GLFW_INSTALL OFF)
+add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/fmt")
 add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/glfw")
 add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/imgui")
 add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/stb_image")
 add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/glad")
 add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/IconFontCppHeaders")
+add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/json")
 
 # --- Build ---
 
@@ -140,11 +142,13 @@ endif()
 target_include_directories(${PROJECT_NAME} PRIVATE ${THUNDER_AUTO_INC_DIR})
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/res")
 
+target_link_libraries(${PROJECT_NAME} fmt)
 target_link_libraries(${PROJECT_NAME} glfw)
 target_link_libraries(${PROJECT_NAME} imgui)
 target_link_libraries(${PROJECT_NAME} stb_image)
 target_link_libraries(${PROJECT_NAME} glad)
 target_link_libraries(${PROJECT_NAME} icons_font_awesome)
+target_link_libraries(${PROJECT_NAME} nlohmann_json)
 
 if(THUNDER_AUTO_MACOS)
   target_link_libraries(${PROJECT_NAME} "-framework Foundation -framework AppKit -framework UniformTypeIdentifiers")
