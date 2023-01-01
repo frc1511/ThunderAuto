@@ -287,3 +287,6 @@ private:
   
   static PathEditorPage instance;
 };
+
+void to_json(nlohmann::json& json, const PathEditorPage::CurvePoint& pt);
+void from_json(const nlohmann::json& json, PathEditorPage::CurvePoint& pt);

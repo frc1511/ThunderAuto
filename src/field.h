@@ -28,3 +28,6 @@ struct Field {
 
   ~Field() = default;
 };
+
+void to_json(nlohmann::json& json, const Field& field);
+void from_json(const nlohmann::json& json, Field& field);

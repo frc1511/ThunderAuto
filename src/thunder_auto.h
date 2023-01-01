@@ -28,8 +28,12 @@
 #include <numeric>
 #include <variant>
 
+#include <fmt/core.h>
+
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
+
+#include <nlohmann/json.hpp>
 
 #if THUNDER_AUTO_WINDOWS
 # define FILE_FILTER "ThunderAuto Project (*.thunderauto)\0*.thunderauto\0"

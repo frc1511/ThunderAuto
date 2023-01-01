@@ -21,15 +21,18 @@ struct ProjectSettings {
 
   float robot_length; // m
   float robot_width; // m
-
-  ProjectSettings() = default;
-  ~ProjectSettings() = default;
 };
+
+void to_json(nlohmann::json& json, const ProjectSettings& settings);
+void from_json(const nlohmann::json& json, ProjectSettings& settings);
 
 struct Project {
   ProjectSettings settings;
   std::vector<std::pair<std::string, PathEditorPage::CurvePointTable>> paths;
 };
+
+void to_json(nlohmann::json& json, const Project& project);
+void from_json(const nlohmann::json& json, Project& project);
 
 class ProjectManager {
 public:

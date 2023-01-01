@@ -1098,3 +1098,33 @@ void PathEditorPage::cache_values() {
 }
 
 PathEditorPage PathEditorPage::instance {};
+
+void to_json(nlohmann::json& j, const PathEditorPage::CurvePoint& p) {
+  j = nlohmann::json {
+    { "x", p.px },
+    { "y", p.py },
+    { "h0", p.h0 },
+    { "h1", p.h1 },
+    { "w0", p.w0 },
+    { "w1", p.w1 },
+    { "rotation", p.rotation },
+    { "stop", p.stop },
+    { "begin", p.begin },
+    { "end", p.end },
+    { "actions", p.actions }
+  };
+}
+
+void from_json(const nlohmann::json& j, PathEditorPage::CurvePoint& p) {
+  p.px = j.at("x").get<float>();
+  p.py = j.at("y").get<float>();
+  p.h0 = j.at("h0").get<float>();
+  p.h1 = j.at("h1").get<float>();
+  p.w0 = j.at("w0").get<float>();
+  p.w1 = j.at("w1").get<float>();
+  p.rotation = j.at("rotation").get<float>();
+  p.stop = j.at("stop").get<bool>();
+  p.begin = j.at("begin").get<bool>();
+  p.end = j.at("end").get<bool>();
+  p.actions = j.at("actions").get<unsigned int>();
+}
