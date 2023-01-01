@@ -92,13 +92,13 @@ PathEditorPage::PathEditorPage() { }
 PathEditorPage::~PathEditorPage() { }
 
 ImVec2 PathEditorPage::to_field_coord(ImVec2 pt, bool apply_offset) const {
-  if (apply_offset) {
-    pt /= field_scale;
-  }
-
   pt = ImVec2((pt.x - bb.Min.x) / (bb.Max.x - bb.Min.x), 1 - (pt.y - bb.Min.y) / (bb.Max.y - bb.Min.y));
   pt.x *= FIELD_X;
   pt.y *= FIELD_Y;
+
+  if (apply_offset) {
+    pt /= field_scale;
+  }
 
   pt = un_adjust_field_coord(pt);
 
@@ -116,13 +116,13 @@ ImVec2 PathEditorPage::to_draw_coord(ImVec2 pt, bool apply_offset) const {
 
   pt = adjust_field_coord(pt);
 
-  pt.x /= FIELD_X;
-  pt.y /= FIELD_Y;
-  pt = ImVec2(pt.x, 1 - pt.y) * (bb.Max - bb.Min) + bb.Min;
-
   if (apply_offset) {
     pt *= field_scale;
   }
+
+  pt.x /= FIELD_X;
+  pt.y /= FIELD_Y;
+  pt = ImVec2(pt.x, 1 - pt.y) * (bb.Max - bb.Min) + bb.Min;
 
   return pt;
 }
@@ -374,24 +374,17 @@ void PathEditorPage::present_curve_editor() {
 
   // --- Draw the field image ---
 
-  ImVec2 img_offset(field_offset);
-  {
-    img_offset.x /= FIELD_X;
-    img_offset.y /= FIELD_Y;
+  float u = FIELD_X / (project->settings.field.max.x - project->settings.field.min.x),
+        v = FIELD_Y / (project->settings.field.max.y - project->settings.field.min.y);
 
-    img_offset.x *= (project->settings.field.max.x - project->settings.field.min.x);
-    img_offset.y *= (project->settings.field.max.y - project->settings.field.min.y);
+  ImVec2 field_min = ImVec2(-project->settings.field.min.x * u, FIELD_Y + (1 - project->settings.field.max.y) * v);
+  ImVec2 field_max = ImVec2(FIELD_X + (1 - project->settings.field.max.x) * u, -project->settings.field.min.y * v);
 
-    img_offset = ImVec2(img_offset.x, img_offset.y) * (bb.Max - bb.Min);
-  }
+  // Clamping the offset is a little weird.
+  // field_offset.x = std::clamp(field_offset.x, -field_max.x, field_max.x);
+  // field_offset.y = std::clamp(field_offset.y, field_max.y, -field_max.y);
 
-  ImVec2 img_min = ImVec2(bb.Min.x + img_offset.x, bb.Min.y - img_offset.y);
-  ImVec2 img_max = ImVec2(bb.Max.x + img_offset.x, bb.Max.y - img_offset.y);
-
-  img_min *= field_scale;
-  img_max *= field_scale;
-
-  draw_list->AddImage(reinterpret_cast<void*>(static_cast<intptr_t>(field_tex)), img_min, img_max);
+  draw_list->AddImage(reinterpret_cast<void*>(static_cast<intptr_t>(field_tex)), to_draw_coord(field_min), to_draw_coord(field_max));
 
   // --- Curve tooltip ---
 
