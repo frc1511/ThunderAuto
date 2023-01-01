@@ -1,70 +1,70 @@
+
 # ThunderAuto
 
-FRC Robot Path Planning Software.
-
-## Table of Contents
-
-* [App Usage](#app-usage)
+* [Description](#description)
+* [Usage](#usage)
 * [Robot Code](#robot-code)
     * [Movement](#movement)
     * [Actions](#actions)
-* [Downloading](#downloading)
+* [Installation](#installation)
 * [Building](#building)
 
-## App Usage
+## Description
+ThunderAuto is a custom tool for planning autonomous paths for FRC robots.
 
-ThunderAuto is designed to be a comprehensive desktop app used to plan Autonomous Paths for FRC Robots. On launch, the user is prompted to create a new project or open an existing project. When creating a new project, several settings can be configured, such as the max velocity and acceleration, dimensions of the robot, and the field image.
+## Usage
+When starting the program, the user has the option to either create a new project or open a previously saved one. If the user chooses to create a new project, they can customize various settings, including the maximum velocity and acceleration, the dimensions of the robot, and the field image.
 
-<img src="https://raw.githubusercontent.com/wiki/petelilley/ThunderAuto/web/screenshots/screenshot_3.png" width="500">
+<img src="https://frc1511.github.io/assets/images/thunderauto/screenshot_2.png" alt="ThunderAuto New Project Window" width="500">
 
-When the project is created, a number of windows are presented to the user, including the Path Selector, Path Editor, and Properties Editor.
+Upon creating a new project, the user is presented with multiple windows including the Path Selector, Path Editor, and Properties Editor.
 
-<img src="https://raw.githubusercontent.com/wiki/petelilley/ThunderAuto/web/screenshots/screenshot_1.png" width="800">
+<img src="https://frc1511.github.io/assets/images/thunderauto/screenshot_1.png" alt="ThunderAuto Path Editor" width="800">
 
-The Path Selector window contains the functionality to select, create, delete, and rename paths. The Path Editor page renders the current path as a Bézier curve on top of the field image. The trajectory is overlayed with a gradient representing the robot's velocity (blue = slow, red/pink = fast). The user can create/delete waypoints and adjust their attributes, such as the robot's desired position, rotation, and heading. Attributes can also be changed manually in the Properties Page under the 'Point' dropdown when a waypoint is selected in the Path Editor.
+The Path Selector window provides the tools for selecting, creating, deleting, and renaming paths. The Path Editor displays the current path as a Bézier curve on the field image, with a gradient representing the robot's velocity (blue for slow, red/pink for fast). The user can add or remove waypoints and adjust their attributes, such as the robot's desired position, rotation, and heading, either directly in the Path Editor or by selecting a waypoint in the Path Editor and using the Properties Page's 'Point' dropdown.
 
-The robot can be flagged to stop at a waypoint by checking the 'Stop' checkbox in the Properties Page. This signals the app to calculate the robot's deceleration to a complete stop at the selected point and its subsequent acceleration as it continues the trajectory. When a waypoint is marked as stopped, the path editor de-couples the heading handles so that the robot can resume the path at a different angle from when it impacted the point.
+In the Properties Page, the user can also flag a waypoint for the robot to stop at by checking the 'Stop' checkbox. This causes the app to calculate the robot's deceleration to a complete stop at the selected point and its subsequent acceleration as it continues the trajectory. When a waypoint is marked as stopped, the Path Editor separates the heading handles, allowing the robot to resume the path at a different angle from when it reached the point.
 
-ThunderAuto also has a unique feature called Actions which allows the user to flag specific actions for the robot to execute at points along the trajectory. A dropdown in the Properties window contains tools for the user to create/delete/rename the available Actions and  select whatever Actions they want applied to each waypoint.
+ThunderAuto also has a feature called Actions, which allows the user to specify specific actions for the robot to perform at certain points along the trajectory. The Properties Page's dropdown menu provides tools for creating, deleting, and renaming Actions, and for selecting which Actions should be applied to each waypoint.
 
-When a path has been created to the user's satisfaction, the user can click the 'Export' button in the Properties Page under the Curve dropdown. This exports the selected path to a CSV file in the project's directory. The CSV file contains a long list of timestamps corresponding to the robot's desired position, rotation, velocity, and actions.
+When the user is satisfied with the path they have created, they can use the Properties Page's 'Export' button (under the 'Curve' dropdown) to save the path as a CSV file in the project's directory. The CSV file contains a list of timestamps corresponding to the robot's desired position, rotation, velocity, and actions.
 
 ## Robot Code
+The code needed to run a ThunderAuto trajectory on the robot does not need to be complex, as the app handles most of the motion calculations before the robot executes them.
 
-The code required to execute a ThunderAuto trajectory on the robot does not need to be too elaborate because most of the motion calculations are done by the app before execution by the robot.
-
-A simple example codebase can be found [here](https://github.com/petelilley/Homer).
+You can refer to Homer's code [here](https://github.com/petelilley/Homer) for a simple example of how to use ThunderAuto's exported CSV files to execute a trajectory.
 
 ### Movement
-
-To start, the exported CSV file will need to be placed somewhere accessible on the robot, such as the deploy directory. Before the trajectory's execution, the robot program needs to [parse the CSV](https://github.com/petelilley/Homer/blob/main/src/Main/Trajectory/Trajectory.cpp#L43) and create two maps representing the path's States and Actions over time. When executing the trajectory, the robot must record the time elapsed and then [sample](https://github.com/petelilley/Homer/blob/main/src/Main/Trajectory/Trajectory.cpp#L62) the current State from the map of states. [Linear interpolation](https://github.com/petelilley/Homer/blob/main/src/Main/Trajectory/Trajectory.cpp#L94) between States can be added to attempt to smooth the trajectory. Using the current State (from odometry) and desired State, the WPILib [HolonomicDriveController](https://first.wpi.edu/wpilib/allwpilib/docs/release/cpp/classfrc_1_1_holonomic_drive_controller.html) class can be used to adjust for error and produce the optimal axis velocities to move.
+To begin, the exported CSV file should be placed in a location on the robot that is easy to access, such as the deploy directory. Before the trajectory can be run, the robot's program must [parse the CSV file](https://github.com/petelilley/Homer/blob/main/src/Main/Trajectory/Trajectory.cpp#L43) and create two maps that represent the path's States and Actions over time. When the trajectory is being executed, the robot needs to keep track of the elapsed time and then use this information to [sample](https://github.com/petelilley/Homer/blob/main/src/Main/Trajectory/Trajectory.cpp#L62) the current State from the map of States. Adding [linear interpolation](https://github.com/petelilley/Homer/blob/main/src/Main/Trajectory/Trajectory.cpp#L94) between States can help smooth out the trajectory. The WPILib [HolonomicDriveController](https://github.wpilib.org/allwpilib/docs/release/cpp/classfrc_1_1_holonomic_drive_controller.html) class can be used to calculate the optimal axis velocities for moving the robot based on the current State (as determined by odometry) and the desired State.
 
 ### Actions
+To process Actions, the robot's program must have a [list of Actions](https://github.com/frc1511/Homer/blob/main/src/Main/Autonomous/Autonomous.h#L85) that matches the one used in the app. As the robot follows the path, the program should compare the set bits in the current action bit-field with the available actions. When a match is found, the program can execute any code related to that action. "Blocking" actions can be implemented by stopping the trajectory timer, but these should only be used at waypoints where the robot is supposed to stop.
 
-To handle Actions, the robot program must contain a key of Actions matching the one in the app. During the path's execution, the program must compare the set bits in the current action bit-field with the available actions. When a match occurs, the code can execute any code relevant to that action. "Blocking" actions can be made by stopping the trajectory timer; however, these should only happen at stopped waypoints.
+## Installation
+* [Executable Download](https://github.com/petelilley/ThunderAuto/releases/latest)
 
-## Downloading
-
-Download the latest release [here](https://github.com/petelilley/ThunderAuto/releases/latest).
+Keep ThunderAuto up to date! Due to the fact that ThunderAuto is a custom tool, backwards compatibility is not guaranteed!
 
 ## Building
-
 Supported operating systems are Windows and macOS. Make sure to resolve all the git submodules before building!
 ```bash
 git submodule init
 git submodule update
 ```
+
 Build projects can be generated using CMake. Tested targets include Visual Studio 2019 or 2022 on Windows and Xcode or Unix Makefiles on macOS. 
+#### Configure Windows
 ```bash
-# Configure Windows
-cmake . -Bbuild -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release
+cmake . -B build -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release
 ```
+
+#### Configure macOS
 ```bash
-# Configure macOS
-cmake . -Bbuild -G "Xcode" -DCMAKE_BUILD_TYPE=Release
+cmake . -B build -G "Xcode" -DCMAKE_BUILD_TYPE=Release
 ```
+
+#### Build
 ```bash
-# Build
 cmake --build build
 ```
 
