@@ -4,8 +4,7 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
-#include <ThunderAuto/font_manager.h>
-FontManager FontManager::instance;
+#include <ThunderAuto/util/font_manager.h>
 
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 700

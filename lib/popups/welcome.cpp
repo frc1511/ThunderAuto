@@ -1,5 +1,5 @@
 #include <ThunderAuto/popups/welcome.h>
-#include <ThunderAuto/font_manager.h>
+#include <ThunderAuto/util/font_manager.h>
 #include <IconsFontAwesome5.h>
 
 #define COL_WIDTH 150

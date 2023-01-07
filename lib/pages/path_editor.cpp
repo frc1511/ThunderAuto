@@ -8,7 +8,7 @@
 #define CURVE_RESOLUTION_FACTOR 64.0f
 #define CURVE_THICKNESS 2.0f
 #define TANGENT_THICKNESS 1.0f
-#define POINT_RADIUS 5.0f
+#define POINT_RADIUS 3.0f
 #define POINT_BORDER_THICKNESS 2.0f
 #define INTEGRAL_PRECISION 0.001f
 
@@ -222,13 +222,6 @@ void PathEditorPage::present(bool* running) {
 void PathEditorPage::set_project(Project* _project) {
   project = _project;
   selected_pt = PathManagerPage::get()->get_selected_path().end();
-
-  auto replace_macro = [](std::string& str, std::string macro, std::string value) {
-    std::size_t pos;
-    while (pos = str.find("${" + macro + "}"), pos != std::string::npos) {
-      str.replace(pos, macro.length() + 3, value);
-    }
-  };
 
   int width, height, nr_channels;
   unsigned char* img_data;

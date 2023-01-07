@@ -40,3 +40,5 @@
 #else
 # define FILE_FILTER "thunderauto"
 #endif
+
+#include <ThunderAuto/util/util.h>
