@@ -9,6 +9,7 @@
 NewProjectPopup::NewProjectPopup() { }
 
 const Field field_constants[] {
+  Field(Field::BuiltinImage::FIELD_2023, ImVec2(0.04106342793f, 0.019011378288269043f), ImVec2(0.9589365720748901f, 0.98384028673172f)),
   Field(Field::BuiltinImage::FIELD_2022, ImVec2(0.12f, 0.16f), ImVec2(0.88f, 0.84f)),
 };
 
@@ -55,26 +56,26 @@ void NewProjectPopup::present(bool* running) {
 
   static std::optional<Field> field;
 
-  const char* fields[] = { "2022 - Rapid React", "Custom" };
+  const char* fields[] = { "2023 - Charged Up", "2022 - Rapid React", "Custom" };
   static int current_field = 0;
 
-  if (current_field == 1) {
+  if (current_field == 2) {
     field = NewFieldPopup::get()->get_field();
     if (!field) {
       current_field = 0;
     }
   }
-  if (current_field == 0) {
+  if (current_field != 2) {
     field = field_constants[current_field];
   }
 
-  const char* field_str = current_field == 1 ? std::get<std::string>(field->img).c_str() : fields[current_field];
+  const char* field_str = current_field == 2 ? std::get<std::string>(field->img).c_str() : fields[current_field];
 
   if (ImGui::BeginCombo("##Field", field_str)) {
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 3; i++) {
       if (ImGui::Selectable(fields[i], current_field == i)) {
         current_field = i;
-        if (current_field == 1) {
+        if (current_field == 2) {
           show_new_field_popup = true;
         }
       }

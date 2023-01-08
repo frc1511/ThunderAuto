@@ -218,6 +218,7 @@ void PathEditorPage::present(bool* running) {
 }
 
 #include <field_2022_png.h>
+#include <field_2023_png.h>
 
 void PathEditorPage::set_project(Project* _project) {
   project = _project;
@@ -237,6 +238,10 @@ void PathEditorPage::set_project(Project* _project) {
       case Field::BuiltinImage::FIELD_2022:
         img_data_buf = field_2022_png;
         img_data_size = field_2022_png_size;
+        break;
+      case Field::BuiltinImage::FIELD_2023:
+        img_data_buf = field_2023_png;
+        img_data_size = field_2023_png_size;
         break;
     }
 

@@ -5,6 +5,7 @@
 struct Field {
   enum class BuiltinImage : std::size_t {
     FIELD_2022,
+    FIELD_2023,
   };
 
   std::variant<std::string, BuiltinImage> img;
