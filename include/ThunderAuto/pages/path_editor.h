@@ -5,8 +5,8 @@
 #include <imgui_internal.h>
 
 // Field dimensions (meters).
-#define FIELD_X 15.5702 // 54' 1"
-#define FIELD_Y 8.1026 // 26' 7"
+#define FIELD_X 16.54175
+#define FIELD_Y 8.0137
 
 struct Project;
 

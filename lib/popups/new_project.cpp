@@ -9,7 +9,7 @@
 NewProjectPopup::NewProjectPopup() { }
 
 const Field field_constants[] {
-  Field(Field::BuiltinImage::FIELD_2023, ImVec2(0.04106342793f, 0.019011378288269043f), ImVec2(0.9589365720748901f, 0.98384028673172f)),
+  Field(Field::BuiltinImage::FIELD_2023, ImVec2(0.9739999771118164, 0.9825640916824341), ImVec2(0.02800000086426735, 0.018844246864318848)),
   Field(Field::BuiltinImage::FIELD_2022, ImVec2(0.12f, 0.16f), ImVec2(0.88f, 0.84f)),
 };
 
