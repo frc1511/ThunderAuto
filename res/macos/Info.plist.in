@@ -31,31 +31,5 @@
 	<key>NSHumanReadableCopyright</key>
 	<string>${THUNDER_AUTO_COPYRIGHT}</string>
 	<key>UTExportedTypeDeclarations</key>
-	<array>
-		<dict>
-			<key>UTTypeIcons</key>
-			<dict>
-				<key>UTTypeIconText</key>
-				<string>${THUNDER_AUTO_PROJECT_EXTENSION}</string>
-				<key>UTTypeIconFile</key>
-				<string>${THUNDER_AUTO_PROJECT_ICON_FILE}</string>
-			</dict>
-			<key>UTTypeDescription</key>
-			<string>${THUNDER_AUTO_PROJECT_DECRIPTION}</string>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>${THUNDER_AUTO_PROJECT_TYPE}</string>
-			</array>
-			<key>UTTypeIdentifier</key>
-			<string>${THUNDER_AUTO_PROJECT_IDENTIFIER}</string>
-			<key>UTTypeTagSpecification</key>
-			<dict>
-				<key>public.filename-extension</key>
-				<array>
-					<string>${THUNDER_AUTO_PROJECT_EXTENSION}</string>
-				</array>
-			</dict>
-		</dict>
-	</array>
 </dict>
 </plist>

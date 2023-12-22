@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 
 set(THUNDER_AUTO_VERSION_MAJOR "0")
-set(THUNDER_AUTO_VERSION_MINOR "2")
-set(THUNDER_AUTO_VERSION_PATCH "1")
+set(THUNDER_AUTO_VERSION_MINOR "3")
+set(THUNDER_AUTO_VERSION_PATCH "0")
 set(THUNDER_AUTO_VERSION "${THUNDER_AUTO_VERSION_MAJOR}.${THUNDER_AUTO_VERSION_MINOR}.${THUNDER_AUTO_VERSION_PATCH}")
 set(THUNDER_AUTO_VERSION_SHORT "${THUNDER_AUTO_VERSION_MAJOR}.${THUNDER_AUTO_VERSION_MINOR}")
 
@@ -12,15 +12,30 @@ list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_VERSION_MINOR=${THUNDER_AUTO_VER
 list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_VERSION_PATCH=${THUNDER_AUTO_VERSION_PATCH}")
 list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_VERSION_STR=\"${THUNDER_AUTO_VERSION}\"")
 
-set(THUNDER_AUTO_YEAR 2022)
-set(THUNDER_AUTO_PROJECT_EXTENSION "thunderauto")
+set(THUNDER_AUTO_YEAR 2023)
 
 project(ThunderAuto LANGUAGES C CXX VERSION ${THUNDER_AUTO_VERSION})
 
-set(CMAKE_CXX_STANDARD 17)
+option(THUNDER_AUTO_TEST_MACOS "Enable testing on macOS environment" OFF)
+if(THUNDER_AUTO_TEST_MACOS)
+  message(STATUS "Testing on macOS enabled")
+  list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_TEST_MACOS=1")
+endif()
+
+#
+# Project configuration.
+#
+
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Disable in-source builds.
+if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
+  message(FATAL_ERROR "In-source builds are not allowed.")
+endif()
+
+# Compiler flags.
 if(MSVC)
   add_compile_options(/W4)
   message(STATUS "MSVC Compiler Detected")
@@ -28,21 +43,28 @@ else()
   add_compile_options(-Wall -Wextra -pedantic)
 endif()
 
+# For cross-compiling with MinGW.
+if(CMAKE_CXX_COMPILER MATCHES ".*w64-mingw32.*")
+  message(STATUS "MinGW detected")
+  add_link_options(-static-libgcc -static-libstdc++)
+endif()
+
+# Default to release.
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release")
 endif()
 
+# Debug build
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  # compile_commands.json
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
   set(THUNDER_AUTO_DEBUG ON)
   list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_DEBUG")
 endif()
 
-set(THUNDER_AUTO_SRC_DIR        "${CMAKE_CURRENT_SOURCE_DIR}/lib")
-set(THUNDER_AUTO_INC_DIR        "${CMAKE_CURRENT_SOURCE_DIR}/include")
-set(THUNDER_AUTO_THIRDPARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
-
-set(THUNDER_AUTO_RES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/res")
+#
+# Platform.
+#
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(THUNDER_AUTO_WINDOWS ON)
@@ -64,20 +86,30 @@ if(THUNDER_AUTO_MACOS)
   set(CMAKE_OBJC_EXTENSIONS OFF)
   
   enable_language(OBJCXX)
-  set(CMAKE_OBJCXX_STANDARD 17)
+  set(CMAKE_OBJCXX_STANDARD 20)
   set(CMAKE_OBJCXX_STANDARD_REQUIRED YES)
   set(CMAKE_OBJCXX_EXTENSIONS OFF)
 endif()
 
-# --- Sources ---
+#
+# Sources.
+#
+
+set(THUNDER_AUTO_SRC_DIR        "${CMAKE_CURRENT_SOURCE_DIR}/src")
+set(THUNDER_AUTO_INC_DIR        "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set(THUNDER_AUTO_THIRDPARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
+set(THUNDER_AUTO_RES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/res")
 
 function(add_thunder_auto_sources)
   set(THUNDER_AUTO_SRC ${THUNDER_AUTO_SRC} ${ARGV} PARENT_SCOPE)
 endfunction()
 
+# Add sources.
 include("${THUNDER_AUTO_SRC_DIR}/CMakeLists.txt")
 
-# --- Resources ---
+#
+# Build resources.
+#
 
 function(build_thunder_auto_resource RES_FILE RES_NAME)
   set(RES_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/res/${RES_NAME}.h")
@@ -96,7 +128,9 @@ build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/fonts/Ubuntu/Ubuntu-Bold.tt
 build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/fonts/Font-Awesome/fa-regular-400.ttf" "FontAwesome_Regular_ttf")
 build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/fonts/Font-Awesome/fa-solid-900.ttf" "FontAwesome_Solid_ttf")
 
-# --- Thirdparty ---
+#
+# Thirdparty libraries.
+#
 
 option(GLFW_BUILD_EXAMPLES OFF)
 option(GLFW_BUILD_TESTS OFF)
@@ -110,7 +144,9 @@ add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/glad")
 add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/IconFontCppHeaders")
 add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/json")
 
-# --- Build ---
+#
+# Build executable.
+#
 
 if(THUNDER_AUTO_WINDOWS)
   add_executable(${PROJECT_NAME} WIN32 ${THUNDER_AUTO_SRC})
@@ -125,11 +161,6 @@ elseif(THUNDER_AUTO_MACOS)
   set(THUNDER_AUTO_COPYRIGHT            "Copyright © ${THUNDER_AUTO_YEAR} Peter P Lilley III. All rights reserved.")
   set(THUNDER_AUTO_APP_CATEGORY         "public.app-category.developer-tools")
   set(THUNDER_AUTO_BUNDLE_ICON_FILE     "bundle_icon.icns")
-  set(THUNDER_AUTO_PROJECT_EXTENSION    "thunderauto")
-  set(THUNDER_AUTO_PROJECT_DECRIPTION   "Thunder Auto Project")
-  set(THUNDER_AUTO_PROJECT_TYPE         "public.data")
-  set(THUNDER_AUTO_PROJECT_IDENTIFIER   "io.github.petelilley.thunderauto-project")
-  set(THUNDER_AUTO_PROJECT_ICON_FILE    "")
 
   add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${THUNDER_AUTO_SRC} ${THUNDER_AUTO_RESOURCES})
   set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -140,8 +171,16 @@ elseif(THUNDER_AUTO_LINUX)
   add_executable(${PROJECT_NAME} ${THUNDER_AUTO_SRC})
 endif()
 
+#
+# Include directories.
+#
+
 target_include_directories(${PROJECT_NAME} PRIVATE ${THUNDER_AUTO_INC_DIR})
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/res")
+
+#
+# Link libraries.
+#
 
 target_link_libraries(${PROJECT_NAME} fmt)
 target_link_libraries(${PROJECT_NAME} glfw)
@@ -154,5 +193,9 @@ target_link_libraries(${PROJECT_NAME} nlohmann_json)
 if(THUNDER_AUTO_MACOS)
   target_link_libraries(${PROJECT_NAME} "-framework Foundation -framework AppKit -framework UniformTypeIdentifiers")
 endif()
+
+#
+# Compile definitions.
+#
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE ${THUNDER_AUTO_DEF_LIST})
