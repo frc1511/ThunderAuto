@@ -22,6 +22,8 @@ if(THUNDER_AUTO_TEST_MACOS)
   list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_TEST_MACOS=1")
 endif()
 
+option(THUNDER_AUTO_WINDRES_EXECUTABLE "windres executable" "windres")
+
 #
 # Project configuration.
 #
@@ -149,9 +151,18 @@ add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/json")
 #
 
 if(THUNDER_AUTO_WINDOWS)
-  add_executable(${PROJECT_NAME} WIN32 ${THUNDER_AUTO_SRC})
+  # build .rc file to .o with windres.
+  set(RC_FILE "${THUNDER_AUTO_RES_DIR}/windows/thunderauto.rc")
+  set(RC_OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/thunderauto.rc.o")
+  add_custom_command(
+    COMMAND ${THUNDER_AUTO_WINDRES_EXECUTABLE} ${RC_FILE} -o ${RC_OUTPUT_FILE}
+    OUTPUT ${RC_OUTPUT_FILE}
+    DEPENDS ${RC_FILE}
+  )
+
+  add_executable(${PROJECT_NAME} WIN32 ${THUNDER_AUTO_SRC} ${RC_OUTPUT_FILE})
 elseif(THUNDER_AUTO_MACOS)
-  list(APPEND THUNDER_AUTO_RESOURCES "${THUNDER_AUTO_RES_DIR}/macos/Assets.xcassets")
+  set(ICON_FILE "${THUNDER_AUTO_RES_DIR}/macos/app_icon.icns")
 
   set(THUNDER_AUTO_BUNDLE_IDENTIFIER    "io.github.petelilley.thunderauto")
   set(THUNDER_AUTO_BUNDLE_NAME          "ThunderAuto")
@@ -160,13 +171,15 @@ elseif(THUNDER_AUTO_MACOS)
   set(THUNDER_AUTO_SHORT_VERSION_STRING "${THUNDER_AUTO_VERSION_SHORT}")
   set(THUNDER_AUTO_COPYRIGHT            "Copyright © ${THUNDER_AUTO_YEAR} Peter P Lilley III. All rights reserved.")
   set(THUNDER_AUTO_APP_CATEGORY         "public.app-category.developer-tools")
-  set(THUNDER_AUTO_BUNDLE_ICON_FILE     "bundle_icon.icns")
+  set(THUNDER_AUTO_BUNDLE_ICON_FILE     "app_icon")
 
-  add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${THUNDER_AUTO_SRC} ${THUNDER_AUTO_RESOURCES})
+  add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${THUNDER_AUTO_SRC} ${ICON_FILE})
   set_target_properties(${PROJECT_NAME} PROPERTIES
     MACOSX_BUNDLE_INFO_PLIST          "${THUNDER_AUTO_RES_DIR}/macos/Info.plist.in"
-    RESOURCE                          "${THUNDER_AUTO_RESOURCES}"
+    RESOURCE                          "${ICON_FILE}"
   )
+  # set_source_files_properties(${ICON_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+
 elseif(THUNDER_AUTO_LINUX)
   add_executable(${PROJECT_NAME} ${THUNDER_AUTO_SRC})
 endif()

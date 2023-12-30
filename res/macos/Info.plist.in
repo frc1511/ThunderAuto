@@ -30,6 +30,5 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>${THUNDER_AUTO_COPYRIGHT}</string>
-	<key>UTExportedTypeDeclarations</key>
 </dict>
 </plist>
