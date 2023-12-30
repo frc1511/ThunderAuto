@@ -1,13 +1,13 @@
 set(THUNDER_AUTO_PLATFORM_DIR "${THUNDER_AUTO_SRC_DIR}/platform")
 
 add_thunder_auto_sources(
-  "${THUNDER_AUTO_PLATFORM_DIR}/platform.cpp"
+  "${THUNDER_AUTO_PLATFORM_DIR}/platform_manager.cpp"
 )
 
 if(THUNDER_AUTO_MACOS)
-  include("${THUNDER_AUTO_PLATFORM_DIR}/macos/CMakeLists.txt")
+  add_thunder_auto_sources("${THUNDER_AUTO_PLATFORM_DIR}/platform_macos.mm")
 elseif(THUNDER_AUTO_WINDOWS)
-  include("${THUNDER_AUTO_PLATFORM_DIR}/windows/CMakeLists.txt")
+  add_thunder_auto_sources("${THUNDER_AUTO_PLATFORM_DIR}/platform_windows.cpp")
 elseif(THUNDER_AUTO_LINUX)
-  include("${THUNDER_AUTO_PLATFORM_DIR}/linux/CMakeLists.txt")
+  add_thunder_auto_sources("${THUNDER_AUTO_PLATFORM_DIR}/platform_linux.cpp")
 endif()

@@ -1,5 +1,0 @@
-set(THUNDER_AUTO_PLATFORM_MACOS_DIR "${THUNDER_AUTO_PLATFORM_DIR}/macos")
-
-add_thunder_auto_sources(
-  "${THUNDER_AUTO_PLATFORM_MACOS_DIR}/macos.mm"
-)

@@ -1,0 +1,46 @@
+#pragma once
+
+#include <ThunderAuto/field.h>
+#include <ThunderAuto/platform/platform_manager.h>
+#include <ThunderAuto/popups/popup.h>
+#include <ThunderAuto/thunder_auto.h>
+
+class NewFieldPopup : public Popup {
+  PlatformManager& m_platform_manager;
+
+  const char* m_name = "New Field";
+
+  bool m_selected_image = false;
+
+  unsigned int m_field_texture;
+  float m_field_aspect_ratio = 1;
+  bool m_image_load_failed = false;
+
+  std::optional<Field> m_field = std::nullopt;
+
+public:
+  inline NewFieldPopup(PlatformManager& platform_manager)
+    : m_platform_manager(platform_manager) {}
+
+  void present(bool* running) override;
+  constexpr const char* name() override { return m_name; }
+
+  inline const Field& field() const {
+    assert(m_field);
+    return *m_field;
+  }
+
+  enum class Result {
+    NONE,
+    CREATE,
+    CANCEL,
+  };
+
+  constexpr Result result() const { return m_result; }
+
+private:
+  void present_field_setup();
+
+private:
+  Result m_result = Result::NONE;
+};
