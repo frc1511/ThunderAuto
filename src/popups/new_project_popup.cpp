@@ -53,15 +53,15 @@ void NewProjectPopup::present(bool* running) {
     ImGuiScopedField field("Field", ICON_FA_SWIMMING_POOL "  Field",
                            COLUMN_WIDTH);
 
-    const char* fields[] = {"2023 - Charged Up", "2022 - Rapid React",
+    const char* fields[] = {"2024 - Crescendo", "2023 - Charged Up", "2022 - Rapid React",
                             "Custom"};
 
-    if (current_field != 2 && !m_field) {
+    if (current_field != 3 && !m_field) {
       m_field = Field(static_cast<Field::BuiltinImage>(current_field));
     }
 
     const char* field_str;
-    if (current_field == 2) {
+    if (current_field == 3) {
       assert(m_field->type() == Field::ImageType::CUSTOM);
       field_str = m_field->custom_image_path().c_str();
     } else {
@@ -69,13 +69,13 @@ void NewProjectPopup::present(bool* running) {
     }
 
     if (ImGui::BeginCombo("##Field", field_str)) {
-      for (int i = 0; i < 3; i++) {
+      for (int i = 0; i < 4; i++) {
         if (ImGui::Selectable(fields[i], current_field == i)) {
           current_field = i;
           m_field = std::nullopt;
 
           // If the user selects custom, open the new field popup.
-          if (current_field == 2) {
+          if (current_field == 3) {
             m_result = Result::NEW_FIELD;
           }
         }

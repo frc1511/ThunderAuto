@@ -121,6 +121,7 @@ endfunction()
 
 build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/images/field-2022.png"           "field_2022_png")
 build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/images/field-2023.png"           "field_2023_png")
+build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/images/field-2024.png"           "field_2024_png")
 build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/fonts/Roboto/Roboto-Regular.ttf" "Roboto_Regular_ttf")
 build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/fonts/Roboto/Roboto-Bold.ttf"    "Roboto_Bold_ttf")
 build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/fonts/Ubuntu/Ubuntu-Regular.ttf" "Ubuntu_Regular_ttf")

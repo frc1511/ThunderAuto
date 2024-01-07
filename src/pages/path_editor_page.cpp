@@ -67,6 +67,7 @@ static bool is_mouse_hovering_point(const ImVec2& pt, float tolerance_radius) {
 
 #include <field_2022_png.h>
 #include <field_2023_png.h>
+#include <field_2024_png.h>
 
 void PathEditorPage::setup_field(const ProjectSettings& settings) {
   m_settings = &settings;
@@ -93,6 +94,9 @@ void PathEditorPage::setup_field(const ProjectSettings& settings) {
       image_data_buf = field_2023_png;
       image_data_size = field_2023_png_size;
       break;
+    case FIELD_2024:
+      image_data_buf = field_2024_png;
+      image_data_size = field_2024_png_size;
     }
 
     image_data = stbi_load_from_memory(image_data_buf, image_data_size, &width,

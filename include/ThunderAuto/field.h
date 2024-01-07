@@ -5,8 +5,9 @@
 class Field {
 public:
   enum class BuiltinImage : std::size_t {
-    FIELD_2023 = 0,
-    FIELD_2022 = 1,
+    FIELD_2024 = 0,
+    FIELD_2023 = 1,
+    FIELD_2022 = 2,
   };
 
   enum class ImageType {
