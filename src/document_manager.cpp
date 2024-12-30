@@ -45,6 +45,10 @@ void DocumentManager::save() {
   };
 
   std::ofstream file(m_settings.path);
+  if (!file.is_open()) {
+    puts("Failed to open project file");
+    return;
+  }
   file << json.dump(2);
 
   m_history.mark_saved();
