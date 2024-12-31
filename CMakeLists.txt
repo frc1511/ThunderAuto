@@ -41,7 +41,6 @@ endif()
 
 # Compiler flags.
 if(MSVC)
-  add_compile_options(/W4)
   message(STATUS "MSVC Compiler Detected")
 else()
   add_compile_options(-Wall -Wextra -pedantic)
@@ -173,13 +172,13 @@ add_subdirectory("${TH_THIRDPARTY_DIR}/json")
 
 if(TH_WINDOWS)
   # build .rc file to .o with windres.
-  set(RC_FILE "${TH_RES_DIR}/windows/thunderauto.rc")
-  set(RC_OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/thunderauto.rc.o")
-  add_custom_command(
-    COMMAND ${TH_WINDRES_EXECUTABLE} ${RC_FILE} -o ${RC_OUTPUT_FILE}
-    OUTPUT ${RC_OUTPUT_FILE}
-    DEPENDS ${RC_FILE}
-  )
+  #set(RC_FILE "${TH_RES_DIR}/windows/thunderauto.rc")
+  #set(RC_OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/thunderauto.rc.o")
+  #add_custom_command(
+  #  COMMAND ${TH_WINDRES_EXECUTABLE} ${RC_FILE} -o ${RC_OUTPUT_FILE}
+  #  OUTPUT ${RC_OUTPUT_FILE}
+  #  DEPENDS ${RC_FILE}
+  #)
 
   add_executable(${PROJECT_NAME} WIN32 ${TH_SRC} ${RC_OUTPUT_FILE})
 elseif(TH_MACOS)

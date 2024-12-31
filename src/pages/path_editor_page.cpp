@@ -37,7 +37,7 @@ static const ImVec2 to_screen_coordinate(const ImVec2& field_pt,
   pt *= field.image_rect().Max - field.image_rect().Min;
   pt += field.image_rect().Min;
 
-  pt = ImVec2(pt.x, 1 - pt.y);
+  pt = ImVec2(pt.x, 1.f - pt.y);
 
   pt = bb.Min + pt * bb.GetSize();
 
@@ -48,7 +48,7 @@ static const ImVec2 to_field_coordinate(const ImVec2& screen_pt,
                                         const Field& field, const ImRect& bb) {
   ImVec2 pt = (screen_pt - bb.Min) / bb.GetSize();
 
-  pt = ImVec2(pt.x, 1 - pt.y);
+  pt = ImVec2(pt.x, 1.f - pt.y);
 
   pt -= field.image_rect().Min;
   pt /= field.image_rect().Max - field.image_rect().Min;
@@ -383,7 +383,7 @@ void PathEditorPage::handle_point_input(ProjectState& state, ImRect bb) {
     const auto check_pt = [&](const ImVec2& pt, PointType type) {
       if (is_mouse_hovering_point(
               to_screen_coordinate(pt, m_settings->field, bb),
-              POINT_RADIUS(bb) * 1.25)) {
+              POINT_RADIUS(bb) * 1.25f)) {
         hovered_point_type = type;
       }
     };

@@ -28,11 +28,11 @@ class PathEditorPage : public Page {
   bool m_show_rotation = true;
   bool m_show_tooltip = true;
 
-  float m_field_aspect_ratio = 1.0;
+  float m_field_aspect_ratio = 1.f;
   Texture m_field_texture;
 
   ImVec2 m_field_offset;
-  float m_field_scale = 1.0f;
+  float m_field_scale = 1.f;
 
 public:
   inline PathEditorPage(DocumentEditManager& history, OutputCurve& cached_curve)

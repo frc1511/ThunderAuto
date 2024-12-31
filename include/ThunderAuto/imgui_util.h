@@ -46,7 +46,7 @@ public:
                           std::function<void()> make_left_column) {
     ImGui::PushID(id);
     ImGui::Columns(2, nullptr, false);
-    ImGui::SetColumnWidth(0, column_width);
+    ImGui::SetColumnWidth(0.f, column_width);
 
     make_left_column();
 

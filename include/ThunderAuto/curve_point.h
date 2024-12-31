@@ -123,17 +123,17 @@ public:
     assert(action_bit <= 31);
 
     if (action_bit == 31) {
-      remove_actions(1 << 31);
+      remove_actions(1U << 31);
       return;
     }
 
     // Bitwise magic mua ha ha ha ha...
 
-    const uint32_t lower_mask = (1 << action_bit) - 1;
-    const uint32_t higher_mask = ~((1 << (action_bit + 1)) - 1);
+    const uint32_t lower_mask = (1U << action_bit) - 1;
+    const uint32_t higher_mask = ~((1U << (action_bit + 1)) - 1);
 
     const uint32_t result = (m_actions & lower_mask) |
-                            ((m_actions & higher_mask) >> shift_down_higher);
+                            ((m_actions & higher_mask) >> uint32_t(shift_down_higher));
 
     m_actions = result;
   }

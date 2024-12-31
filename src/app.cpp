@@ -284,7 +284,7 @@ void App::new_project() {
     m_path_editor_page.setup_field(m_document_manager.settings());
     m_properties_page.setup(m_document_manager.settings());
 
-    m_recent_projects.push_front(m_document_manager.path());
+    m_recent_projects.push_front(m_document_manager.path().string());
     break;
   case CANCEL:
     break;

@@ -120,9 +120,9 @@ std::size_t Curve::output_segment(const EquationFunc equation,
                                   std::map<int, float>& max_velocities,
                                   OutputCurve& output) const {
 
-  const std::size_t samples = length * static_cast<float>(samples_per_meter);
+  const std::size_t samples = std::size_t(length * float(samples_per_meter));
 
-  const float delta = 1.f / static_cast<float>(samples);
+  const float delta = 1.f / float(samples);
 
   ImVec2 prev_position;
   ImVec2 next_position = equation(0.f);
@@ -190,8 +190,8 @@ void Curve::calc_velocities(const std::map<int, float>& max_velocities,
     int offset = 0;
     while (velocity < m_settings.max_linear_vel) {
       // v^2 = v_0^2 + 2ax
-      velocity = std::sqrt(std::pow(velocity, 2) +
-                           2 * m_settings.max_linear_accel * delta_distance);
+      velocity = std::sqrtf(std::pow(velocity, 2) +
+                            2.f * m_settings.max_linear_accel * delta_distance);
       ++offset;
 
       const bool up = index + offset < (int)curve.points.size();
@@ -204,12 +204,12 @@ void Curve::calc_velocities(const std::map<int, float>& max_velocities,
       if (up) {
         point = &curve.points.at(index + offset);
 
-        point->velocity = std::min(velocity, point->velocity);
+        point->velocity = min(velocity, point->velocity);
       }
       if (down) {
         point = &curve.points.at(index - offset);
 
-        point->velocity = std::min(velocity, point->velocity);
+        point->velocity = min(velocity, point->velocity);
       }
     }
   }
