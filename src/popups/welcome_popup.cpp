@@ -15,6 +15,7 @@ void WelcomePopup::present(bool* running) {
   }
 
   m_result = Result::NONE;
+  m_recent_project = nullptr;
 
   ImGui::PushFont(m_font_lib.big_font);
   ImGui::Text("Welcome to ThunderAuto");
@@ -58,9 +59,34 @@ void WelcomePopup::present(bool* running) {
     }
   }
 
+  //
+  // Recent Projects.
+  //
+  if (!m_recent_projects.empty()) {
+    ImGui::Dummy(ImVec2(0.0f, 10.0f));
+
+    ImGui::Text(ICON_FA_CLIPBOARD "  Recent Projects");
+    ImGui::PushID("##Recents");
+    ImGui::Indent(17.0f);
+    size_t i = 0;
+    for (auto& project : m_recent_projects) {
+      std::string id =
+          std::filesystem::path(project).filename().string() + " - " + project;
+
+      if (ImGui::Selectable(id.c_str())) {
+        m_result = Result::RECENT_PROJECT;
+        m_recent_project = &project;
+      }
+      if (++i >= 5) break;
+    }
+    ImGui::Unindent(17.0f);
+    ImGui::PopID();
+  }
+
   ImGui::EndPopup();
 
   if (m_result != Result::NONE) {
     *running = false;
   }
 }
+

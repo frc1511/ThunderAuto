@@ -6,11 +6,15 @@
 class WelcomePopup : public Popup {
   const char* m_name = "##Welcome!";
 
+  std::list<std::string>& m_recent_projects;
+  std::string* m_recent_project = nullptr;
   FontLibrary& m_font_lib;
 
 public:
-  inline WelcomePopup(FontLibrary& font_lib)
-    : m_font_lib(font_lib) {}
+  inline WelcomePopup(std::list<std::string>& recent_projects,
+                      FontLibrary& font_lib)
+    : m_recent_projects(recent_projects),
+      m_font_lib(font_lib) {}
 
   void present(bool* running) override;
 
@@ -20,10 +24,15 @@ public:
     NONE,
     NEW_PROJECT,
     OPEN_PROJECT,
+    RECENT_PROJECT,
   };
 
   constexpr Result result() const { return m_result; }
+  std::string* recent_project() const {
+    return m_recent_project;
+  }
 
 private:
   Result m_result = Result::NONE;
 };
+

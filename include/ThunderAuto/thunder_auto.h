@@ -17,6 +17,7 @@
 #include <utility>
 #include <variant>
 #include <vector>
+#include <list>
 
 #include <fmt/core.h>
 #include <nlohmann/json.hpp>

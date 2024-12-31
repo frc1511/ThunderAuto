@@ -88,6 +88,35 @@ void App::close() {
   }
 }
 
+void App::data_clear() {
+  m_recent_projects.clear();
+}
+
+bool App::data_should_open(const char* name) {
+  return strcmp(name, "RecentProjects") == 0;
+}
+
+void App::data_read_line(const char* line) {
+  assert(line);
+  if (line[0] == '\0') return;
+
+  m_recent_projects.push_back(line);
+}
+
+void App::data_apply() { }
+
+void App::data_write(const char* type_name, ImGuiTextBuffer* buf) {
+  buf->appendf("[%s][%s]\n", type_name, "RecentProjects");
+
+  size_t i = 0;
+  for (const std::string& project : m_recent_projects) {
+    buf->appendf("%s\n", project.c_str());
+    if (++i >= 5) break;
+  }
+
+  buf->append("\n");
+}
+
 void App::present_menu_bar() {
   if (ImGui::BeginMenuBar()) {
     present_file_menu();
@@ -221,6 +250,12 @@ void App::welcome() {
   case OPEN_PROJECT:
     m_event_state = EventState::OPEN_PROJECT;
     break;
+  case RECENT_PROJECT: {
+    std::string* recent_path = m_welcome_popup.recent_project();
+    assert(recent_path);
+    open_from_path(*recent_path);
+    break;
+  }
   default:
     assert(false);
   }
@@ -248,6 +283,8 @@ void App::new_project() {
     m_document_manager.new_project(m_new_project_popup.result_project());
     m_path_editor_page.setup_field(m_document_manager.settings());
     m_properties_page.setup(m_document_manager.settings());
+
+    m_recent_projects.push_front(m_document_manager.path());
     break;
   case CANCEL:
     break;
@@ -284,14 +321,30 @@ void App::new_field() {
 void App::open_project() {
   std::string path = m_platform_manager.open_file_dialog(
       FileType::FILE, {THUNDERAUTO_FILE_FILTER});
-  if (!path.empty()) {
-    m_document_manager.open_project(path);
-    const ProjectSettings& settings = m_document_manager.settings();
-    m_path_editor_page.setup_field(settings);
-    m_properties_page.setup(settings);
+
+  open_from_path(path);
+}
+
+void App::open_from_path(std::string path) {
+  for (auto it = m_recent_projects.begin(); it != m_recent_projects.end();) {
+    if (*it == path) {
+      it = m_recent_projects.erase(it);
+    } else {
+      ++it;
+    }
   }
 
   m_event_state = EventState::NONE;
+
+  if (path.empty()) return;
+  if (!std::filesystem::exists(path)) return;
+
+  m_document_manager.open_project(path);
+  const ProjectSettings& settings = m_document_manager.settings();
+  m_path_editor_page.setup_field(settings);
+  m_properties_page.setup(settings);
+
+  m_recent_projects.push_front(path);
 }
 
 void App::unsaved() {

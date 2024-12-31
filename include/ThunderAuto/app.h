@@ -45,10 +45,12 @@ class App {
   DocumentManager m_document_manager;
   DocumentEditManager m_document_edit_manager {m_document_manager.history()};
 
+  std::list<std::string> m_recent_projects;
+
   NewFieldPopup m_new_field_popup {m_platform_manager};
   NewProjectPopup m_new_project_popup {m_platform_manager};
   UnsavedPopup m_unsaved_popup;
-  WelcomePopup m_welcome_popup {m_font_lib};
+  WelcomePopup m_welcome_popup {m_recent_projects, m_font_lib};
 
   OutputCurve m_cached_curve;
 
@@ -73,7 +75,15 @@ public:
 
   void close();
 
+  void data_clear();
+  bool data_should_open(const char* name);
+  void data_read_line(const char* line);
+  void data_apply();
+  void data_write(const char* type_name, ImGuiTextBuffer* buf);
+
 private:
+  void open_from_path(std::string path);
+
   void present_menu_bar();
   void present_file_menu();
   void present_edit_menu();

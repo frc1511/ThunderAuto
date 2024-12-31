@@ -6,6 +6,7 @@
 
 static void apply_imgui_style();
 static FontLibrary load_fonts();
+static void setup_data_handler(App& app);
 
 #if TH_WINDOWS
 #include <Windows.h>
@@ -28,6 +29,8 @@ int main(int argc, char** argv) {
   FontLibrary font_lib = load_fonts();
 
   App app(font_lib);
+
+  setup_data_handler(app);
 
   //
   // Main loop.
@@ -222,3 +225,43 @@ static FontLibrary load_fonts() {
   return font_lib;
 }
 
+static void setup_data_handler(App& app) {
+  ImGuiSettingsHandler ini_handler;
+  ini_handler.UserData = reinterpret_cast<void*>(&app);
+
+  ini_handler.ClearAllFn = [](ImGuiContext*, ImGuiSettingsHandler* handler) {
+    App* app = reinterpret_cast<App*>(handler->UserData);
+    app->data_clear();
+  };
+
+  ini_handler.ReadInitFn = [](ImGuiContext*, ImGuiSettingsHandler*) {};
+
+  ini_handler.ReadOpenFn = [](ImGuiContext*, ImGuiSettingsHandler* handler,
+                              const char* name) -> void* {
+    App* app = reinterpret_cast<App*>(handler->UserData);
+    return reinterpret_cast<void*>(app->data_should_open(name));
+  };
+
+  ini_handler.ReadLineFn = [](ImGuiContext*, ImGuiSettingsHandler* handler,
+                              void*, const char* line) {
+    App* app = reinterpret_cast<App*>(handler->UserData);
+    app->data_read_line(line);
+  };
+
+  ini_handler.ApplyAllFn = [](ImGuiContext*, ImGuiSettingsHandler* handler) {
+    App* app = reinterpret_cast<App*>(handler->UserData);
+    app->data_apply();
+  };
+
+  ini_handler.WriteAllFn = [](ImGuiContext*, ImGuiSettingsHandler* handler,
+                              ImGuiTextBuffer* buf) {
+    App* app = reinterpret_cast<App*>(handler->UserData);
+    app->data_write(handler->TypeName, buf);
+  };
+
+  ini_handler.TypeName = "ThunderAuto";
+  ini_handler.TypeHash = ImHashStr(ini_handler.TypeName);
+
+  ImGuiContext* context = ImGui::GetCurrentContext();
+  context->SettingsHandlers.push_back(ini_handler);
+}
