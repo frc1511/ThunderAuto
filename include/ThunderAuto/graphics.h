@@ -8,13 +8,11 @@ class Graphics {
   ID3D11DeviceContext* m_device_context = nullptr;
   IDXGISwapChain* m_swap_chain = nullptr;
   ID3D11RenderTargetView* m_main_render_target_view = nullptr;
-
-  HWND m_hwnd;
-  WNDCLASSEXW m_wc;
-#else // TH_OPENGL
-  GLFWwindow* m_window;
 #endif
 
+  GLFWwindow* m_window = nullptr;
+
+private:
   Graphics() = default;
 
 public:

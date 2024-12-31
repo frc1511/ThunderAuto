@@ -19,7 +19,7 @@ set(IMGUI_SRC
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND IMGUI_DIRECTX11)
   list(APPEND IMGUI_SRC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_dx11.cpp")
-  list(APPEND IMGUI_SRC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_win32.cpp")
+  list(APPEND IMGUI_SRC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_glfw.cpp")
 else()
   # OpenGL/GLFW
   list(APPEND IMGUI_SRC
@@ -38,12 +38,13 @@ add_library(${PROJECT_NAME} ${IMGUI_SRC})
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/")
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/")
 
+target_link_libraries(${PROJECT_NAME} PUBLIC glfw)
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND IMGUI_DIRECTX11)
   target_link_libraries(${PROJECT_NAME} PUBLIC d3d11 d3dcompiler dwmapi)
 
 else()
   find_package(OpenGL REQUIRED)
 
-  target_link_libraries(${PROJECT_NAME} PUBLIC glfw)
   target_link_libraries(${PROJECT_NAME} PUBLIC OpenGL::GL)
 endif()

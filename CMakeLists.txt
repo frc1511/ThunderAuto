@@ -148,12 +148,12 @@ build_thunder_auto_resource("${TH_RES_DIR}/fonts/Font-Awesome/fa-solid-900.ttf" 
 # Thirdparty libraries.
 #
 
+set(GLFW_BUILD_EXAMPLES OFF)
+set(GLFW_BUILD_TESTS OFF)
+set(GLFW_BUILD_DOCS OFF)
+set(GLFW_INSTALL OFF)
+add_subdirectory("${TH_THIRDPARTY_DIR}/glfw")
 if(TH_OPENGL)
-  set(GLFW_BUILD_EXAMPLES OFF)
-  set(GLFW_BUILD_TESTS OFF)
-  set(GLFW_BUILD_DOCS OFF)
-  set(GLFW_INSTALL OFF)
-  add_subdirectory("${TH_THIRDPARTY_DIR}/glfw")
   add_subdirectory("${TH_THIRDPARTY_DIR}/glad")
 endif()
 
@@ -216,9 +216,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/
 #
 
 if(TH_OPENGL)
-target_link_libraries(${PROJECT_NAME} glfw)
-target_link_libraries(${PROJECT_NAME} glad)
+  target_link_libraries(${PROJECT_NAME} glad)
 endif()
+target_link_libraries(${PROJECT_NAME} glfw)
 target_link_libraries(${PROJECT_NAME} fmt)
 target_link_libraries(${PROJECT_NAME} imgui)
 target_link_libraries(${PROJECT_NAME} stb_image)

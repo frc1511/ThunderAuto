@@ -30,7 +30,10 @@ inline bool float_eq(float x, float y) { return std::fabs(x - y) < 1e-6; }
 
 #if TH_WINDOWS
 #include <Windows.h>
+#else
 #endif
+using std::min;
+using std::max;
 
 #if TH_DIRECTX11
 #include <d3d11.h>
@@ -38,7 +41,7 @@ inline bool float_eq(float x, float y) { return std::fabs(x - y) < 1e-6; }
 #include <wrl/client.h>
 #else // TH_OPENGL
 #include <glad/glad.h>
-// This order
+#endif
+
 #include <GLFW/glfw3.h>
-#endif // TH_DIRECTX11
 

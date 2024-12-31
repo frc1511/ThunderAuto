@@ -1,51 +1,19 @@
 #include <ThunderAuto/graphics.h>
 
-// Default Window Properties.
 #define WINDOW_WIDTH  1300
 #define WINDOW_HEIGHT 800
-
-#if TH_DIRECTX11
-
-#define WINDOW_TITLE L"ThunderAuto"
-
-#include <imgui_impl_dx11.h>
-#include <imgui_impl_win32.h>
-
-static UINT g_resize_width = 0, g_resize_height = 0;
-
-// Forward declare message handler from imgui_impl_win32.cpp
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd,
-                                                             UINT msg,
-                                                             WPARAM wParam,
-                                                             LPARAM lParam);
-
-// Win32 message handler.
-LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-  if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam)) return true;
-
-  switch (msg) {
-  case WM_SIZE:
-    if (wParam == SIZE_MINIMIZED) return 0;
-    g_resize_width = (UINT)LOWORD(lParam); // Queue resize
-    g_resize_height = (UINT)HIWORD(lParam);
-    return 0;
-  case WM_SYSCOMMAND:
-    if ((wParam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu
-      return 0;
-    break;
-  case WM_DESTROY:
-    PostQuitMessage(0);
-    return 0;
-  }
-  return DefWindowProcW(hWnd, msg, wParam, lParam);
-}
-
-#else // TH_OPENGL
 
 #define WINDOW_TITLE "ThunderAuto"
 
 #include <imgui_impl_glfw.h>
+
+#if TH_DIRECTX11
+#include <imgui_impl_dx11.h>
+#else // TH_OPENGL
 #include <imgui_impl_opengl3.h>
+#endif
+
+#if TH_OPENGL
 
 //
 // GL/GLSL versions.
@@ -64,51 +32,20 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 #define GL_VERSION_MINOR 0
 #endif
 
+#endif
+
 #if TH_WINDOWS
+
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
-#endif
-
-#endif
-
-#if TH_WINDOWS
 
 HWND Graphics::hwnd() {
-#if TH_DIRECTX11
-  return m_hwnd;
-#else
   return glfwGetWin32Window(m_window);
-#endif
 }
 
 #endif
 
 void Graphics::init() {
-#if TH_DIRECTX11
-  // ImGui_ImplWin32_EnableDpiAwareness();
-  m_wc = {sizeof(m_wc), CS_CLASSDC,   WndProc,
-          0L,           0L,           GetModuleHandle(nullptr),
-          nullptr,      nullptr,      nullptr,
-          nullptr,      WINDOW_TITLE, nullptr};
-
-  RegisterClassExW(&m_wc);
-
-  m_hwnd = CreateWindowW(m_wc.lpszClassName, WINDOW_TITLE, WS_OVERLAPPEDWINDOW,
-                         0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, nullptr, nullptr,
-                         m_wc.hInstance, nullptr);
-
-  // Initialize Direct3D
-  if (!init_device()) {
-    deinit_device();
-    UnregisterClassW(m_wc.lpszClassName, m_wc.hInstance);
-    exit(1);
-  }
-
-  // Show the window
-  ShowWindow(m_hwnd, SW_SHOWDEFAULT);
-  UpdateWindow(m_hwnd);
-
-#else // TH_OPENGL
   //
   // GLFW.
   //
@@ -120,12 +57,17 @@ void Graphics::init() {
     exit(1);
   }
 
+#if TH_DIRECTX11
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+#else // TH_OPENGL
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GL_VERSION_MAJOR);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GL_VERSION_MINOR);
 
 #if TH_MACOS || TH_WINDOWS_TEST_OPENGL_MACOS
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // 3.2+ only
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // Required on Mac
+#endif
 #endif
 
   // Initialize window.
@@ -137,9 +79,14 @@ void Graphics::init() {
   // VSync.
   glfwSwapInterval(true);
 
-  //
+#if TH_DIRECTX11
+  // Initialize Direct3D
+  if (!init_device()) {
+    deinit_device();
+    exit(1);
+  }
+#else // TH_OPENGL
   // Load OpenGL functions.
-  //
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 #endif
 
@@ -158,8 +105,8 @@ void Graphics::init() {
     io->ConfigWindowsMoveFromTitleBarOnly = true;
   }
 
-#ifdef TH_DIRECTX11
-  ImGui_ImplWin32_Init(m_hwnd);
+#if TH_DIRECTX11
+  ImGui_ImplGlfw_InitForOther(m_window, true);
   ImGui_ImplDX11_Init(m_device, m_device_context);
 #else // TH_OPENGL
   ImGui_ImplGlfw_InitForOpenGL(m_window, true);
@@ -168,37 +115,17 @@ void Graphics::init() {
 }
 
 bool Graphics::poll_events() {
-#ifdef TH_DIRECTX11
-  MSG msg;
-  while (PeekMessage(&msg, nullptr, 0U, 0U, PM_REMOVE)) {
-    TranslateMessage(&msg);
-    DispatchMessage(&msg);
-    if (msg.message == WM_QUIT) return true;
-  }
-
-  // Handle window resize (we don't resize directly in the WM_SIZE handler)
-  if (g_resize_width != 0 && g_resize_height != 0) {
-    deinit_render_target();
-    m_swap_chain->ResizeBuffers(0, g_resize_width, g_resize_height,
-                                DXGI_FORMAT_UNKNOWN, 0);
-    g_resize_width = g_resize_height = 0;
-    init_render_target();
-  }
-  return false;
-#else // TH_OPENGL
   glfwPollEvents();
   return glfwWindowShouldClose(m_window);
-#endif
 }
 
 void Graphics::begin_frame() {
-#ifdef TH_DIRECTX11
+#if TH_DIRECTX11
   ImGui_ImplDX11_NewFrame();
-  ImGui_ImplWin32_NewFrame();
 #else // TH_OPENGL
   ImGui_ImplOpenGL3_NewFrame();
-  ImGui_ImplGlfw_NewFrame();
 #endif
+  ImGui_ImplGlfw_NewFrame();
 
   ImGui::NewFrame();
 }
@@ -208,7 +135,7 @@ void Graphics::end_frame() {
 
   const ImVec4 clear_color = ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
 
-#ifdef TH_DIRECTX11
+#if TH_DIRECTX11
   const float clear_color_with_alpha[4] = {
       clear_color.x * clear_color.w, clear_color.y * clear_color.w,
       clear_color.z * clear_color.w, clear_color.w};
@@ -248,90 +175,56 @@ void Graphics::end_frame() {
 }
 
 void Graphics::deinit() {
-#ifdef TH_DIRECTX11
+#if TH_DIRECTX11
   ImGui_ImplDX11_Shutdown();
-  ImGui_ImplWin32_Shutdown();
 #else // TH_OPENGL
-  // Shutdown ImGui.
   ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
 #endif
+  ImGui_ImplGlfw_Shutdown();
 
   ImGui::DestroyContext();
 
-#ifdef TH_DIRECTX11
+#if TH_DIRECTX11
   deinit_device();
-  DestroyWindow(m_hwnd);
-  UnregisterClassW(m_wc.lpszClassName, m_wc.hInstance);
 #else // TH_OPENGL
-  // Shutdown GLFW.
+#endif
   glfwDestroyWindow(m_window);
   glfwTerminate();
-#endif
 }
 
 ImVec2 Graphics::window_size() const {
-#ifdef TH_DIRECTX11
-  return ImVec2(WINDOW_WIDTH, WINDOW_HEIGHT);
-#else // TH_OPENGL
   int width, height;
   glfwGetWindowSize(m_window, &width, &height);
   return ImVec2(width, height);
-#endif
 }
 
 ImVec2 Graphics::window_pos() const {
-#ifdef TH_DIRECTX11
-  return ImVec2(0, 0);
-#else // TH_OPENGL
   int x, y;
   glfwGetWindowPos(m_window, &x, &y);
-
   return ImVec2(x, y);
-#endif
 }
 
 void Graphics::window_set_size(int width, int height) {
-#ifdef TH_DIRECTX11
-  (void)width;
-  (void)height;
-#else // TH_OPENGL
   glfwSetWindowSize(m_window, width, height);
-#endif
 }
 
 void Graphics::window_set_pos(int x, int y) {
-#ifdef TH_DIRECTX11
-  (void)x;
-  (void)y;
-#else // TH_OPENGL
   glfwSetWindowPos(m_window, x, y);
-#endif
 }
 
 void Graphics::window_set_title(const char* title) {
-#ifdef TH_DIRECTX11
-  (void)title;
-#else // TH_OPENGL
   glfwSetWindowTitle(m_window, title);
-#endif
 }
 
 void Graphics::window_focus() {
-#ifdef TH_DIRECTX11
-#else // TH_OPENGL
   glfwFocusWindow(m_window);
-#endif
 }
 
 void Graphics::window_set_should_close(bool value) {
-#ifdef TH_DIRECTX11
-#else // TH_OPENGL
   glfwSetWindowShouldClose(m_window, value);
-#endif
 }
 
-#ifdef TH_DIRECTX11 // DirectX 11 helper functions.
+#if TH_DIRECTX11 // DirectX 11 helper functions.
 
 bool Graphics::init_device() {
   // Setup swap chain
@@ -345,7 +238,7 @@ bool Graphics::init_device() {
   sd.BufferDesc.RefreshRate.Denominator = 1;
   sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
   sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-  sd.OutputWindow = m_hwnd;
+  sd.OutputWindow = hwnd();
   sd.SampleDesc.Count = 1;
   sd.SampleDesc.Quality = 0;
   sd.Windowed = TRUE;
@@ -375,6 +268,7 @@ bool Graphics::init_device() {
 }
 
 void Graphics::deinit_device() {
+  deinit_render_target();
   if (m_swap_chain) {
     m_swap_chain->Release();
     m_swap_chain = nullptr;
