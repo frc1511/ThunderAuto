@@ -2,41 +2,12 @@
 #include <ThunderAuto/font_library.h>
 #include <ThunderAuto/thunder_auto.h>
 
-#include <glad/glad.h>
-
-#include <GLFW/glfw3.h>
-
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h>
-
-//
-// GL/GLSL versions.
-//
-#if defined(IMGUI_IMPL_OPENGL_ES2)
-#error "OpenGL ES 2 is not supported"
-#endif
-
-#if defined(THUNDER_AUTO_MACOS) || defined(THUNDER_AUTO_TEST_MACOS)
-#define GLSL_VERSION     "#version 150"
-#define GL_VERSION_MAJOR 3
-#define GL_VERSION_MINOR 2
-#else
-#define GLSL_VERSION     "#version 130"
-#define GL_VERSION_MAJOR 3
-#define GL_VERSION_MINOR 0
-#endif
-
-//
-// Default Window Properties.
-//
-#define WINDOW_WIDTH  1200
-#define WINDOW_HEIGHT 700
-#define WINDOW_TITLE  "1511 Auto Planner"
+#include <ThunderAuto/graphics.h>
 
 static void apply_imgui_style();
 static FontLibrary load_fonts();
 
-#ifdef THUNDER_AUTO_WINDOWS
+#if TH_WINDOWS
 #include <Windows.h>
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine,
             int nShowCmd) {
@@ -51,84 +22,25 @@ int main(int argc, char** argv) {
 #endif
   int exit_code = 0;
 
-  //
-  // Initialize GLFW.
-  //
-  glfwSetErrorCallback([](int error, const char* description) {
-    fprintf(stderr, "GLFW Error %d: %s\n", error, description);
-  });
+  Graphics::get().init();
 
-  if (!glfwInit()) {
-    exit(-1);
-  }
-
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GL_VERSION_MAJOR);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GL_VERSION_MINOR);
-
-#if defined(THUNDER_AUTO_MACOS) || defined(THUNDER_AUTO_TEST_MACOS)
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // 3.2+ only
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // Required on Mac
-#endif
-
-  //
-  // Initialize window.
-  //
-  GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT,
-                                        WINDOW_TITLE, nullptr, nullptr);
-  if (!window) exit(-1);
-
-  glfwMakeContextCurrent(window);
-  // VSync.
-  glfwSwapInterval(true);
-
-  //
-  // Load OpenGL functions.
-  //
-  gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-
-  //
-  // Initialize ImGui
-  //
-  IMGUI_CHECKVERSION();
-
-  ImGui::CreateContext();
-
-  {
-    ImGuiIO* io = &ImGui::GetIO();
-    io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    io->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-    io->ConfigWindowsMoveFromTitleBarOnly = true;
-  }
-
-  apply_imgui_style();
-
+ apply_imgui_style();
   FontLibrary font_lib = load_fonts();
 
-  // Setup OpenGL backend.
-  ImGui_ImplGlfw_InitForOpenGL(window, true);
-  ImGui_ImplOpenGL3_Init(GLSL_VERSION);
-
-  App app(window, font_lib);
+  App app(font_lib);
 
   //
   // Main loop.
   //
   while (app.is_running()) {
-    glfwPollEvents();
-
-    app.process_input();
-
-    if (glfwWindowShouldClose(window)) {
+    if (Graphics::get().poll_events()) {
       app.close();
     }
 
-    //
+    app.process_input();
+
     // New Frame.
-    //
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
+    Graphics::get().begin_frame();
 
     ImGuiViewport* viewport = ImGui::GetMainViewport();
 
@@ -142,7 +54,7 @@ int main(int argc, char** argv) {
     bool running = app.is_running();
 
     // clang-format off
-    if (!ImGui::Begin(WINDOW_TITLE, &running,
+    if (!ImGui::Begin("ThunderAuto", &running,
                       ImGuiWindowFlags_MenuBar
                     | ImGuiWindowFlags_NoDocking
                     | ImGuiWindowFlags_NoTitleBar
@@ -168,51 +80,16 @@ int main(int argc, char** argv) {
       app.setup_dockspace(dockspace_id);
     }
 
-    //
     // Frame Content
-    //
     app.present();
 
     ImGui::End();
 
-    //
     // Render frame.
-    //
-    ImGui::Render();
-
-    int buf_width, buf_height;
-    glfwGetFramebufferSize(window, &buf_width, &buf_height);
-
-    glViewport(0, 0, buf_width, buf_height);
-    ImVec4 clear_color = ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
-    glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w,
-                 clear_color.z * clear_color.w, clear_color.w);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-    if (io->ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-      GLFWwindow* backup_current_context = glfwGetCurrentContext();
-      ImGui::UpdatePlatformWindows();
-      ImGui::RenderPlatformWindowsDefault();
-      glfwMakeContextCurrent(backup_current_context);
-    }
-
-    glfwSwapBuffers(window);
+    Graphics::get().end_frame();
   }
 
-  //
-  // Shutdown ImGui.
-  //
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
-  ImGui::DestroyContext();
-
-  //
-  // Shutdown GLFW.
-  //
-  glfwDestroyWindow(window);
-  glfwTerminate();
+  Graphics::get().deinit();
 
   return exit_code;
 }
@@ -344,3 +221,4 @@ static FontLibrary load_fonts() {
 
   return font_lib;
 }
+

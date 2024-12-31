@@ -20,7 +20,7 @@ void WelcomePopup::present(bool* running) {
   ImGui::Text("Welcome to ThunderAuto");
   ImGui::PopFont();
 
-  ImGui::Text("Version " THUNDER_AUTO_VERSION_STR);
+  ImGui::Text("Version " TH_VERSION_STR);
 
   ImGui::Dummy(ImVec2(0.0f, 15.0f));
 

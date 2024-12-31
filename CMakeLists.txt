@@ -1,26 +1,30 @@
 cmake_minimum_required(VERSION 3.22)
 
-set(THUNDER_AUTO_VERSION_MAJOR "2025")
-set(THUNDER_AUTO_VERSION_MINOR "0")
-set(THUNDER_AUTO_VERSION_PATCH "0")
-set(THUNDER_AUTO_VERSION "${THUNDER_AUTO_VERSION_MAJOR}.${THUNDER_AUTO_VERSION_MINOR}.${THUNDER_AUTO_VERSION_PATCH}")
-set(THUNDER_AUTO_VERSION_SHORT "${THUNDER_AUTO_VERSION_MAJOR}.${THUNDER_AUTO_VERSION_MINOR}")
+set(TH_VERSION_MAJOR "2025")
+set(TH_VERSION_MINOR "0")
+set(TH_VERSION_PATCH "0")
 
-list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_VERSION=${THUNDER_AUTO_VERSION_SHORT}")
-list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_VERSION_MAJOR=${THUNDER_AUTO_VERSION_MAJOR}")
-list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_VERSION_MINOR=${THUNDER_AUTO_VERSION_MINOR}")
-list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_VERSION_PATCH=${THUNDER_AUTO_VERSION_PATCH}")
-list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_VERSION_STR=\"${THUNDER_AUTO_VERSION}\"")
+set(TH_VERSION "${TH_VERSION_MAJOR}.${TH_VERSION_MINOR}.${TH_VERSION_PATCH}")
+set(TH_VERSION_SHORT "${TH_VERSION_MAJOR}.${TH_VERSION_MINOR}")
 
-project(ThunderAuto LANGUAGES C CXX VERSION ${THUNDER_AUTO_VERSION})
+list(APPEND TH_DEF_LIST "TH_VERSION=${TH_VERSION_SHORT}")
+list(APPEND TH_DEF_LIST "TH_VERSION_MAJOR=${TH_VERSION_MAJOR}")
+list(APPEND TH_DEF_LIST "TH_VERSION_MINOR=${TH_VERSION_MINOR}")
+list(APPEND TH_DEF_LIST "TH_VERSION_PATCH=${TH_VERSION_PATCH}")
+list(APPEND TH_DEF_LIST "TH_VERSION_STR=\"${TH_VERSION}\"")
 
-option(THUNDER_AUTO_TEST_MACOS "Enable testing on macOS environment" OFF)
-if(THUNDER_AUTO_TEST_MACOS)
-  message(STATUS "Testing on macOS enabled")
-  list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_TEST_MACOS=1")
+project(ThunderAuto LANGUAGES C CXX VERSION ${TH_VERSION})
+
+option(TH_WINDOWS_TEST_OPENGL_MACOS "Enable Windows OpenGL testing on macOS environment" OFF)
+if(TH_WINDOWS_TEST_OPENGL_MACOS AND CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  message(STATUS "OpenGL Windows testing on macOS enabled")
+  list(APPEND TH_DEF_LIST "TH_WINDOWS_TEST_OPENGL_MACOS=1")
 endif()
 
-option(THUNDER_AUTO_WINDRES_EXECUTABLE "windres executable" "windres")
+option(TH_DIRECTX11 "Enable DirectX 11" OFF)
+option(TH_OPENGL "Enable OpenGL" OFF)
+
+set(TH_WINDRES_EXECUTABLE "windres" CACHE STRING "Path to windres executable")
 
 #
 # Project configuration.
@@ -58,8 +62,8 @@ endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   # compile_commands.json
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-  set(THUNDER_AUTO_DEBUG ON)
-  list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_DEBUG")
+  set(TH_DEBUG ON)
+  list(APPEND TH_DEF_LIST "TH_DEBUG")
 endif()
 
 #
@@ -67,19 +71,31 @@ endif()
 #
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-  set(THUNDER_AUTO_WINDOWS ON)
-  list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_WINDOWS=1")
+  set(TH_WINDOWS ON)
+  list(APPEND TH_DEF_LIST "TH_WINDOWS=1")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-  set(THUNDER_AUTO_MACOS ON)
-  list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_MACOS=1")
+  set(TH_MACOS ON)
+  list(APPEND TH_DEF_LIST "TH_MACOS=1")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  set(THUNDER_AUTO_LINUX ON)
-  list(APPEND THUNDER_AUTO_DEF_LIST "THUNDER_AUTO_LINUX=1")
+  set(TH_LINUX ON)
+  list(APPEND TH_DEF_LIST "TH_LINUX=1")
 else()
   message(FATAL_ERROR "Target operating system '${CMAKE_SYSTEM_NAME}' not supported")
 endif()
 
-if(THUNDER_AUTO_MACOS)
+if(TH_DIRECTX11 AND TH_OPENGL)
+  message(FATAL_ERROR "DirectX 11 and OpenGL cannot be enabled at the same time")
+elseif(TH_DIRECTX11)
+  if(NOT TH_WINDOWS)
+    message(FATAL_ERROR "DirectX 11 is only supported on Windows")
+  endif()
+  list(APPEND TH_DEF_LIST "TH_DIRECTX11=1")
+else()
+  set(TH_OPENGL ON)
+  list(APPEND TH_DEF_LIST "TH_OPENGL=1")
+endif()
+
+if(TH_MACOS)
   enable_language(OBJC)
   set(CMAKE_OBJC_STANDARD 11)
   set(CMAKE_OBJC_STANDARD_REQUIRED YES)
@@ -95,17 +111,17 @@ endif()
 # Sources.
 #
 
-set(THUNDER_AUTO_SRC_DIR        "${CMAKE_CURRENT_SOURCE_DIR}/src")
-set(THUNDER_AUTO_INC_DIR        "${CMAKE_CURRENT_SOURCE_DIR}/include")
-set(THUNDER_AUTO_THIRDPARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
-set(THUNDER_AUTO_RES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/res")
+set(TH_SRC_DIR        "${CMAKE_CURRENT_SOURCE_DIR}/src")
+set(TH_INC_DIR        "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set(TH_THIRDPARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
+set(TH_RES_DIR        "${CMAKE_CURRENT_SOURCE_DIR}/res")
 
 function(add_thunder_auto_sources)
-  set(THUNDER_AUTO_SRC ${THUNDER_AUTO_SRC} ${ARGV} PARENT_SCOPE)
+  set(TH_SRC ${TH_SRC} ${ARGV} PARENT_SCOPE)
 endfunction()
 
 # Add sources.
-include("${THUNDER_AUTO_SRC_DIR}/CMakeLists.txt")
+include("${TH_SRC_DIR}/CMakeLists.txt")
 
 #
 # Build resources.
@@ -119,90 +135,98 @@ function(build_thunder_auto_resource RES_FILE RES_NAME)
   file(APPEND ${RES_OUTPUT} "unsigned char ${RES_NAME}[] = {${filedata}};\nconst unsigned ${RES_NAME}_size = sizeof(${RES_NAME});\n")
 endfunction()
 
-build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/images/field-2022.png"           "field_2022_png")
-build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/images/field-2023.png"           "field_2023_png")
-build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/images/field-2024.png"           "field_2024_png")
-build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/fonts/Roboto/Roboto-Regular.ttf" "Roboto_Regular_ttf")
-build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/fonts/Roboto/Roboto-Bold.ttf"    "Roboto_Bold_ttf")
-build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/fonts/Ubuntu/Ubuntu-Regular.ttf" "Ubuntu_Regular_ttf")
-build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/fonts/Ubuntu/Ubuntu-Bold.ttf"    "Ubuntu_Bold_ttf")
-build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/fonts/Font-Awesome/fa-regular-400.ttf" "FontAwesome_Regular_ttf")
-build_thunder_auto_resource("${THUNDER_AUTO_RES_DIR}/fonts/Font-Awesome/fa-solid-900.ttf" "FontAwesome_Solid_ttf")
+build_thunder_auto_resource("${TH_RES_DIR}/images/field-2022.png"           "field_2022_png")
+build_thunder_auto_resource("${TH_RES_DIR}/images/field-2023.png"           "field_2023_png")
+build_thunder_auto_resource("${TH_RES_DIR}/images/field-2024.png"           "field_2024_png")
+build_thunder_auto_resource("${TH_RES_DIR}/fonts/Roboto/Roboto-Regular.ttf" "Roboto_Regular_ttf")
+build_thunder_auto_resource("${TH_RES_DIR}/fonts/Roboto/Roboto-Bold.ttf"    "Roboto_Bold_ttf")
+build_thunder_auto_resource("${TH_RES_DIR}/fonts/Ubuntu/Ubuntu-Regular.ttf" "Ubuntu_Regular_ttf")
+build_thunder_auto_resource("${TH_RES_DIR}/fonts/Ubuntu/Ubuntu-Bold.ttf"    "Ubuntu_Bold_ttf")
+build_thunder_auto_resource("${TH_RES_DIR}/fonts/Font-Awesome/fa-regular-400.ttf" "FontAwesome_Regular_ttf")
+build_thunder_auto_resource("${TH_RES_DIR}/fonts/Font-Awesome/fa-solid-900.ttf" "FontAwesome_Solid_ttf")
 
 #
 # Thirdparty libraries.
 #
 
-option(GLFW_BUILD_EXAMPLES OFF)
-option(GLFW_BUILD_TESTS OFF)
-option(GLFW_BUILD_DOCS OFF)
-option(GLFW_INSTALL OFF)
-add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/fmt")
-add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/glfw")
-add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/imgui")
-add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/stb_image")
-add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/glad")
-add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/IconFontCppHeaders")
-add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/json")
+if(TH_OPENGL)
+  set(GLFW_BUILD_EXAMPLES OFF)
+  set(GLFW_BUILD_TESTS OFF)
+  set(GLFW_BUILD_DOCS OFF)
+  set(GLFW_INSTALL OFF)
+  add_subdirectory("${TH_THIRDPARTY_DIR}/glfw")
+  add_subdirectory("${TH_THIRDPARTY_DIR}/glad")
+endif()
+
+add_subdirectory("${TH_THIRDPARTY_DIR}/fmt")
+if(TH_DIRECTX11)
+  set(IMGUI_DIRECTX11 ON)
+endif()
+add_subdirectory("${TH_THIRDPARTY_DIR}/imgui")
+add_subdirectory("${TH_THIRDPARTY_DIR}/stb_image")
+add_subdirectory("${TH_THIRDPARTY_DIR}/IconFontCppHeaders")
+add_subdirectory("${TH_THIRDPARTY_DIR}/json")
 
 #
 # Build executable.
 #
 
-if(THUNDER_AUTO_WINDOWS)
+if(TH_WINDOWS)
   # build .rc file to .o with windres.
-  set(RC_FILE "${THUNDER_AUTO_RES_DIR}/windows/thunderauto.rc")
+  set(RC_FILE "${TH_RES_DIR}/windows/thunderauto.rc")
   set(RC_OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/thunderauto.rc.o")
   add_custom_command(
-    COMMAND ${THUNDER_AUTO_WINDRES_EXECUTABLE} ${RC_FILE} -o ${RC_OUTPUT_FILE}
+    COMMAND ${TH_WINDRES_EXECUTABLE} ${RC_FILE} -o ${RC_OUTPUT_FILE}
     OUTPUT ${RC_OUTPUT_FILE}
     DEPENDS ${RC_FILE}
   )
 
-  add_executable(${PROJECT_NAME} WIN32 ${THUNDER_AUTO_SRC} ${RC_OUTPUT_FILE})
-elseif(THUNDER_AUTO_MACOS)
-  set(ICON_FILE "${THUNDER_AUTO_RES_DIR}/macos/app_icon.icns")
+  add_executable(${PROJECT_NAME} WIN32 ${TH_SRC} ${RC_OUTPUT_FILE})
+elseif(TH_MACOS)
+  set(ICON_FILE "${TH_RES_DIR}/macos/app_icon.icns")
 
-  set(THUNDER_AUTO_BUNDLE_IDENTIFIER    "io.github.petelilley.thunderauto")
-  set(THUNDER_AUTO_BUNDLE_NAME          "ThunderAuto")
-  set(THUNDER_AUTO_VERSION              "${THUNDER_AUTO_VERSION}")
-  set(THUNDER_AUTO_LONG_VERSION_STRING  "${THUNDER_AUTO_VERSION}")
-  set(THUNDER_AUTO_SHORT_VERSION_STRING "${THUNDER_AUTO_VERSION_SHORT}")
-  set(THUNDER_AUTO_COPYRIGHT            "Copyright © 2022-2024 Peter P Lilley III. All rights reserved.")
-  set(THUNDER_AUTO_APP_CATEGORY         "public.app-category.developer-tools")
-  set(THUNDER_AUTO_BUNDLE_ICON_FILE     "app_icon")
+  set(TH_BUNDLE_IDENTIFIER    "io.github.petelilley.thunderauto")
+  set(TH_BUNDLE_NAME          "ThunderAuto")
+  set(TH_VERSION              "${TH_VERSION}")
+  set(TH_LONG_VERSION_STRING  "${TH_VERSION}")
+  set(TH_SHORT_VERSION_STRING "${TH_VERSION_SHORT}")
+  set(TH_COPYRIGHT            "Copyright © 2022-2024 Peter P Lilley III. All rights reserved.")
+  set(TH_APP_CATEGORY         "public.app-category.developer-tools")
+  set(TH_BUNDLE_ICON_FILE     "app_icon")
 
-  add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${THUNDER_AUTO_SRC} ${ICON_FILE})
+  add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${TH_SRC} ${ICON_FILE})
   set_target_properties(${PROJECT_NAME} PROPERTIES
-    MACOSX_BUNDLE_INFO_PLIST          "${THUNDER_AUTO_RES_DIR}/macos/Info.plist.in"
+    MACOSX_BUNDLE_INFO_PLIST          "${TH_RES_DIR}/macos/Info.plist.in"
     RESOURCE                          "${ICON_FILE}"
   )
   # set_source_files_properties(${ICON_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 
-elseif(THUNDER_AUTO_LINUX)
-  add_executable(${PROJECT_NAME} ${THUNDER_AUTO_SRC})
+elseif(TH_LINUX)
+  add_executable(${PROJECT_NAME} ${TH_SRC})
 endif()
 
 #
 # Include directories.
 #
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${THUNDER_AUTO_INC_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE ${TH_INC_DIR})
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/res")
 
 #
 # Link libraries.
 #
 
-target_link_libraries(${PROJECT_NAME} fmt)
+if(TH_OPENGL)
 target_link_libraries(${PROJECT_NAME} glfw)
+target_link_libraries(${PROJECT_NAME} glad)
+endif()
+target_link_libraries(${PROJECT_NAME} fmt)
 target_link_libraries(${PROJECT_NAME} imgui)
 target_link_libraries(${PROJECT_NAME} stb_image)
-target_link_libraries(${PROJECT_NAME} glad)
 target_link_libraries(${PROJECT_NAME} icons_font_awesome)
 target_link_libraries(${PROJECT_NAME} nlohmann_json)
 
-if(THUNDER_AUTO_MACOS)
+if(TH_MACOS)
   target_link_libraries(${PROJECT_NAME} "-framework Foundation -framework AppKit -framework UniformTypeIdentifiers")
 endif()
 
@@ -210,4 +234,4 @@ endif()
 # Compile definitions.
 #
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE ${THUNDER_AUTO_DEF_LIST})
+target_compile_definitions(${PROJECT_NAME} PRIVATE ${TH_DEF_LIST})

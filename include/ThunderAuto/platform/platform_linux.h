@@ -4,8 +4,6 @@
 
 class PlatformLinux : public PlatformImpl {
 public:
-  PlatformLinux(GLFWwindow* window);
-
   std::string open_file_dialog(FileType type,
                                const FileExtensionList& extensions) override;
 

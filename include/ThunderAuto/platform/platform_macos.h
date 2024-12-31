@@ -4,8 +4,6 @@
 
 class PlatformMacOS : public PlatformImpl {
 public:
-  PlatformMacOS(GLFWwindow* window);
-
   std::string open_file_dialog(FileType type,
                                const FileExtensionList& extensions) override;
 

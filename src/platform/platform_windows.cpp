@@ -1,12 +1,6 @@
 #include <ThunderAuto/platform/platform_windows.h>
 
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3.h>
-#include <GLFW/glfw3native.h>
-#include <Windows.h>
-
-PlatformWindows::PlatformWindows(GLFWwindow* window)
-  : PlatformImpl(window) {}
+#include <ThunderAuto/graphics.h>
 
 std::string
 PlatformWindows::open_file_dialog(FileType type,
@@ -21,7 +15,7 @@ PlatformWindows::open_file_dialog(FileType type,
   CHAR current_dir[256] = {0};
   ZeroMemory(&ofn, sizeof(OPENFILENAME));
   ofn.lStructSize = sizeof(OPENFILENAME);
-  ofn.hwndOwner = glfwGetWin32Window(window());
+  ofn.hwndOwner = Graphics::get().hwnd();
   ofn.lpstrFile = sz_file;
   ofn.nMaxFile = sizeof(sz_file);
   if (GetCurrentDirectoryA(256, current_dir)) {
@@ -51,7 +45,7 @@ PlatformWindows::save_file_dialog(const FileExtensionList& extensions) {
   CHAR current_dir[256] = {0};
   ZeroMemory(&ofn, sizeof(OPENFILENAME));
   ofn.lStructSize = sizeof(OPENFILENAME);
-  ofn.hwndOwner = glfwGetWin32Window(window());
+  ofn.hwndOwner = Graphics::get().hwnd();
   ofn.lpstrFile = sz_file;
   ofn.nMaxFile = sizeof(sz_file);
   if (GetCurrentDirectoryA(256, current_dir)) {
@@ -93,3 +87,4 @@ void PlatformWindows::create_filter(char* filter_buffer,
     std::memcpy(filter_buffer, filter, std::strlen(filter));
   }
 }
+

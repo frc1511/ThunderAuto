@@ -28,5 +28,5 @@ cmake . -B$BUILD_DIR \
   -DCMAKE_SYSTEM_PROCESSOR=$ARCH \
   -DCMAKE_C_COMPILER=/opt/homebrew/bin/$ARCH-w64-mingw32-gcc \
   -DCMAKE_CXX_COMPILER=/opt/homebrew/bin/$ARCH-w64-mingw32-g++ \
-  -DTHUNDER_AUTO_WINDRES_EXECUTABLE=/opt/homebrew/bin/$ARCH-w64-mingw32-windres \
+  -DTH_WINDRES_EXECUTABLE=/opt/homebrew/bin/$ARCH-w64-mingw32-windres \
   $@

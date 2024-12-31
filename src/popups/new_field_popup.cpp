@@ -1,7 +1,5 @@
 #include <ThunderAuto/popups/new_field_popup.h>
 
-#include <glad/glad.h>
-
 #include <ThunderAuto/file_types.h>
 #include <stb_image.h>
 
@@ -20,7 +18,6 @@ void NewFieldPopup::present(bool* running) {
 
     if (ImGui::Button("Ok")) {
       m_selected_image = false;
-      glDeleteTextures(1, &m_field_texture);
       m_result = Result::CREATE;
     }
   } else {
@@ -49,28 +46,12 @@ void NewFieldPopup::present(bool* running) {
     ImGui::SameLine();
 
     if (ImGui::Button("Ok")) {
-      int width, height, nr_channels;
-      unsigned char* img_data =
-          stbi_load(img_path_buf, &width, &height, &nr_channels, 0);
-      if (img_data) {
+      m_field_texture.init(img_path_buf);
+      if (m_field_texture) {
         m_selected_image = true;
 
-        int tex_channels = nr_channels == 3 ? GL_RGB : GL_RGBA;
-
-        glGenTextures(1, &m_field_texture);
-        glBindTexture(GL_TEXTURE_2D, m_field_texture);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                        GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexImage2D(GL_TEXTURE_2D, 0, tex_channels, width, height, 0,
-                     tex_channels, GL_UNSIGNED_BYTE, img_data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        stbi_image_free(img_data);
-        m_field_aspect_ratio =
-            static_cast<float>(width) / static_cast<float>(height);
+        m_field_aspect_ratio = static_cast<float>(m_field_texture.width()) /
+                               static_cast<float>(m_field_texture.height());
 
         m_field = Field(img_path_buf, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
       } else {
@@ -116,9 +97,7 @@ void NewFieldPopup::present_field_setup() {
   ImGui::ItemSize(bb);
   if (!ImGui::ItemAdd(bb, 0)) return;
 
-  draw_list->AddImage(
-      reinterpret_cast<void*>(static_cast<intptr_t>(m_field_texture)), bb.Min,
-      bb.Max);
+  draw_list->AddImage(m_field_texture.id(), bb.Min, bb.Max);
 
   ImVec2 mouse = io.MousePos;
   auto move_point = [&](ImVec2 pt) -> ImVec2 {
@@ -175,3 +154,4 @@ void NewFieldPopup::present_field_setup() {
   draw_list->AddCircleFilled(min_pt, POINT_RADIUS, ImColor(252, 186, 3, 255));
   draw_list->AddCircleFilled(max_pt, POINT_RADIUS, ImColor(252, 186, 3, 255));
 }
+

@@ -4,8 +4,6 @@
 
 class PlatformWindows : public PlatformImpl {
 public:
-  PlatformWindows(GLFWwindow* window);
-
   std::string open_file_dialog(FileType type,
                                const FileExtensionList& extensions) override;
 

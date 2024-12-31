@@ -3,6 +3,7 @@
 #include <ThunderAuto/field.h>
 #include <ThunderAuto/platform/platform_manager.h>
 #include <ThunderAuto/popups/popup.h>
+#include <ThunderAuto/texture.h>
 #include <ThunderAuto/thunder_auto.h>
 
 class NewFieldPopup : public Popup {
@@ -12,14 +13,14 @@ class NewFieldPopup : public Popup {
 
   bool m_selected_image = false;
 
-  unsigned int m_field_texture;
+  Texture m_field_texture;
   float m_field_aspect_ratio = 1;
   bool m_image_load_failed = false;
 
   std::optional<Field> m_field = std::nullopt;
 
 public:
-  inline NewFieldPopup(PlatformManager& platform_manager)
+  inline explicit NewFieldPopup(PlatformManager& platform_manager)
     : m_platform_manager(platform_manager) {}
 
   void present(bool* running) override;
@@ -44,3 +45,4 @@ private:
 private:
   Result m_result = Result::NONE;
 };
+

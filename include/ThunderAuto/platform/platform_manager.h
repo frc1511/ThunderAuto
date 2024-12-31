@@ -4,11 +4,10 @@
 #include <ThunderAuto/thunder_auto.h>
 
 class PlatformManager {
-  GLFWwindow* m_window;
   std::unique_ptr<PlatformImpl> m_impl;
 
 public:
-  PlatformManager(GLFWwindow* window);
+  PlatformManager();
 
   std::string open_file_dialog(FileType type,
                                const FileExtensionList& extensions);

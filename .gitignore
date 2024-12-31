@@ -92,4 +92,4 @@ _deps
 .cache/
 
 # Build dir
-[Bb]uild/
+[Bb]uild*/

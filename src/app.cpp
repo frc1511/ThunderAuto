@@ -3,7 +3,7 @@
 #include <IconsFontAwesome5.h>
 #include <ThunderAuto/file_types.h>
 
-#include <GLFW/glfw3.h>
+#include <ThunderAuto/graphics.h>
 
 void App::setup_dockspace(ImGuiID dockspace_id) {
   ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -76,9 +76,9 @@ void App::present() {
     if (m_document_manager.is_unsaved()) {
       title += " - Unsaved";
     }
-    glfwSetWindowTitle(m_window, title.c_str());
+    Graphics::get().window_set_title(title.c_str());
   } else {
-    glfwSetWindowTitle(m_window, "ThunderAuto");
+    Graphics::get().window_set_title("ThunderAuto");
   }
 }
 
@@ -101,7 +101,7 @@ void App::present_menu_bar() {
   }
 }
 
-#ifdef THUNDER_AUTO_MACOS
+#ifdef TH_MACOS
 #define CTRL_STR       "Cmd+"
 #define CTRL_SHIFT_STR "Cmd+Shift+"
 #else
@@ -322,7 +322,7 @@ void App::unsaved() {
     break;
   case CANCEL:
     m_event_state = m_next_event_state = EventState::NONE;
-    glfwSetWindowShouldClose(m_window, GLFW_FALSE);
+    Graphics::get().window_set_should_close(false);
     break;
   default:
     assert(false);
@@ -343,7 +343,7 @@ void App::redo() {
       m_cached_curve, preview_output_curve_settings);
 }
 
-#if THUNDER_AUTO_MACOS
+#if TH_MACOS
 #define CTRL_KEY (io.KeySuper)
 #else
 #define CTRL_KEY (io.KeyCtrl)

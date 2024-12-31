@@ -21,12 +21,11 @@
 struct GLFWwindow;
 
 class App {
-  GLFWwindow* m_window;
   FontLibrary& m_font_lib;
 
   bool m_running = true;
 
-  PlatformManager m_platform_manager {m_window};
+  PlatformManager m_platform_manager;
 
   // The state of the application (used to manage popups and stuff).
   enum class EventState {
@@ -60,9 +59,8 @@ class App {
   ActionsPage m_actions_page {m_document_edit_manager};
 
 public:
-  inline App(GLFWwindow* window, FontLibrary& font_lib)
-    : m_window(window),
-      m_font_lib(font_lib) {}
+  inline explicit App(FontLibrary& font_lib)
+    : m_font_lib(font_lib) {}
 
   ~App() = default;
 

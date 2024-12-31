@@ -19,7 +19,6 @@
 #include <vector>
 
 #include <fmt/core.h>
-
 #include <nlohmann/json.hpp>
 
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -27,3 +26,18 @@
 #include <imgui_internal.h>
 
 inline bool float_eq(float x, float y) { return std::fabs(x - y) < 1e-6; }
+
+#if TH_WINDOWS
+#include <Windows.h>
+#endif
+
+#if TH_DIRECTX11
+#include <d3d11.h>
+#include <tchar.h>
+#include <wrl/client.h>
+#else // TH_OPENGL
+#include <glad/glad.h>
+// This order
+#include <GLFW/glfw3.h>
+#endif // TH_DIRECTX11
+

@@ -3,10 +3,6 @@
 #import <AppKit/AppKit.h>
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
-PlatformMacOS::PlatformMacOS(GLFWwindow* window)
-  : PlatformImpl(window) {
-}
-
 std::string PlatformMacOS::open_file_dialog(FileType type, const FileExtensionList& extensions) {
   NSOpenPanel* open_dialog = [NSOpenPanel openPanel];
   

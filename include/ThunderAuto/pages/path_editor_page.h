@@ -5,6 +5,7 @@
 #include <ThunderAuto/pages/page.h>
 #include <ThunderAuto/project_settings.h>
 #include <ThunderAuto/thunder_auto.h>
+#include <ThunderAuto/texture.h>
 
 class PathEditorPage : public Page {
   DocumentEditManager& m_history;
@@ -27,8 +28,8 @@ class PathEditorPage : public Page {
   bool m_show_rotation = true;
   bool m_show_tooltip = true;
 
-  float m_field_aspect_ratio;
-  unsigned int m_field_texture;
+  float m_field_aspect_ratio = 1.0;
+  Texture m_field_texture;
 
   ImVec2 m_field_offset;
   float m_field_scale = 1.0f;

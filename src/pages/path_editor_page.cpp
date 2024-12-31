@@ -4,7 +4,6 @@
 #include <ThunderAuto/macro_util.h>
 
 #include <IconsFontAwesome5.h>
-#include <glad/glad.h>
 #include <stb_image.h>
 
 static const ImVec2 FIELD_SIZE(16.54175f, 8.0137f); // meters.
@@ -72,17 +71,14 @@ static bool is_mouse_hovering_point(const ImVec2& pt, float tolerance_radius) {
 void PathEditorPage::setup_field(const ProjectSettings& settings) {
   m_settings = &settings;
 
-  int width, height, nr_channels;
-  unsigned char* image_data;
   if (settings.field.type() == Field::ImageType::CUSTOM) {
     std::string image_path(settings.field.custom_image_path());
     replace_macro(image_path, "PROJECT_DIR",
                   settings.path.parent_path().string());
 
-    image_data =
-        stbi_load(image_path.c_str(), &width, &height, &nr_channels, 0);
+    m_field_texture.init(image_path.c_str());
   } else {
-    const unsigned char* image_data_buf = nullptr;
+    unsigned char* image_data_buf = nullptr;
     std::size_t image_data_size = 0;
     switch (settings.field.builtin_image()) {
       using enum Field::BuiltinImage;
@@ -99,30 +95,16 @@ void PathEditorPage::setup_field(const ProjectSettings& settings) {
       image_data_size = field_2024_png_size;
     }
 
-    image_data = stbi_load_from_memory(image_data_buf, image_data_size, &width,
-                                       &height, &nr_channels, 0);
+    m_field_texture.init(image_data_buf, image_data_size);
   }
 
-  if (!image_data) {
+  m_field_aspect_ratio = static_cast<float>(m_field_texture.width()) /
+                         static_cast<float>(m_field_texture.height());
+
+  if (!m_field_texture) {
     puts("Failed to load field image!!\n");
     return;
   }
-
-  int texture_channels(nr_channels == 3 ? GL_RGB : GL_RGBA);
-
-  glGenTextures(1, &m_field_texture);
-  glBindTexture(GL_TEXTURE_2D, m_field_texture);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                  GL_LINEAR_MIPMAP_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexImage2D(GL_TEXTURE_2D, 0, texture_channels, width, height, 0,
-               texture_channels, GL_UNSIGNED_BYTE, image_data);
-  glGenerateMipmap(GL_TEXTURE_2D);
-
-  stbi_image_free(image_data);
-  m_field_aspect_ratio = static_cast<float>(width) / static_cast<float>(height);
 
   m_field_offset = ImVec2(0, 0);
   m_field_scale = 1.0f;
@@ -259,9 +241,7 @@ void PathEditorPage::present_field(ImRect bb) {
   ImDrawList* draw_list(ImGui::GetWindowDrawList());
 
   // Background image.
-  draw_list->AddImage(
-      reinterpret_cast<void*>(static_cast<intptr_t>(m_field_texture)), bb.Min,
-      bb.Max);
+  draw_list->AddImage(m_field_texture.id(), bb.Min, bb.Max);
 }
 
 void PathEditorPage::present_curve(ImRect bb) {
@@ -575,3 +555,4 @@ void PathEditorPage::handle_curve_input(ProjectState& state, ImRect bb) {
     curve.output(m_cached_curve, preview_output_curve_settings);
   }
 }
+
