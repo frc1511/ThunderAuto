@@ -73,10 +73,12 @@ void WelcomePopup::present(bool* running) {
       std::string id =
           std::filesystem::path(project).filename().string() + " - " + project;
 
+      ImGui::PushID(i);
       if (ImGui::Selectable(id.c_str())) {
         m_result = Result::RECENT_PROJECT;
         m_recent_project = &project;
       }
+      ImGui::PopID();
       if (++i >= 5) break;
     }
     ImGui::Unindent(17.0f);

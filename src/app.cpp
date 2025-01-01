@@ -88,9 +88,7 @@ void App::close() {
   }
 }
 
-void App::data_clear() {
-  m_recent_projects.clear();
-}
+void App::data_clear() { m_recent_projects.clear(); }
 
 bool App::data_should_open(const char* name) {
   return strcmp(name, "RecentProjects") == 0;
@@ -103,7 +101,7 @@ void App::data_read_line(const char* line) {
   m_recent_projects.push_back(line);
 }
 
-void App::data_apply() { }
+void App::data_apply() {}
 
 void App::data_write(const char* type_name, ImGuiTextBuffer* buf) {
   buf->appendf("[%s][%s]\n", type_name, "RecentProjects");
@@ -453,3 +451,4 @@ void App::process_input() {
     }
   }
 }
+

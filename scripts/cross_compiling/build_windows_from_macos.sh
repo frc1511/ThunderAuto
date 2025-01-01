@@ -30,3 +30,4 @@ cmake . -B$BUILD_DIR \
   -DCMAKE_CXX_COMPILER=/opt/homebrew/bin/$ARCH-w64-mingw32-g++ \
   -DTH_WINDRES_EXECUTABLE=/opt/homebrew/bin/$ARCH-w64-mingw32-windres \
   $@
+

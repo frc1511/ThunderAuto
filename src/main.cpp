@@ -8,29 +8,39 @@ static void apply_imgui_style();
 static FontLibrary load_fonts();
 static void setup_data_handler(App& app);
 
-#if TH_WINDOWS
-#include <Windows.h>
-int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine,
-            int nShowCmd) {
-  (void)hInstance;
-  (void)hPrevInstance;
-  (void)lpCmdLine;
-  (void)nShowCmd;
-#else
-int main(int argc, char** argv) {
-  (void)argc;
-  (void)argv;
-#endif
+int _main(int argc, char** argv) {
+  std::optional<std::filesystem::path> start_project_path;
+  while (argc > 1) {
+    std::filesystem::path path(argv[1]);
+    if (path.extension() != ".thunderauto") {
+      fprintf(stderr, "'%s' does not have a .thunderauto extension\n", argv[1]);
+      break;
+    }
+
+    if (!std::filesystem::exists(path)) {
+      fprintf(stderr, "'%s' does not exist\n", argv[1]);
+      break;
+    }
+
+    start_project_path = std::filesystem::absolute(path);
+
+    break;
+  }
+
   int exit_code = 0;
 
   Graphics::get().init();
 
- apply_imgui_style();
+  apply_imgui_style();
   FontLibrary font_lib = load_fonts();
 
   App app(font_lib);
 
   setup_data_handler(app);
+
+  if (start_project_path.has_value()) {
+    app.open_from_path(start_project_path.value().string());
+  }
 
   //
   // Main loop.
@@ -96,6 +106,47 @@ int main(int argc, char** argv) {
 
   return exit_code;
 }
+
+#if TH_WINDOWS
+int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine,
+            int nShowCmd) {
+  (void)hInstance;
+  (void)hPrevInstance;
+  (void)lpCmdLine;
+  (void)nShowCmd;
+
+  int argc;
+  LPWSTR* wc_argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+  if (wc_argv == nullptr) {
+    fputs("GetCommandLineW() failed\n", stderr);
+    return 1;
+  }
+
+  char** argv = new char*[argc];
+  for (int i = 0; i < argc; ++i) {
+    int len = WideCharToMultiByte(CP_UTF8, 0, wc_argv[i], -1, nullptr, 0,
+                                  nullptr, nullptr);
+    argv[i] = new char[len];
+    WideCharToMultiByte(CP_UTF8, 0, wc_argv[i], -1, argv[i], len, nullptr,
+                        nullptr);
+  }
+
+  LocalFree(wc_argv);
+
+  int exit_code = _main(argc, argv);
+
+  for (int i = 0; i < argc; ++i) {
+    delete[] argv[i];
+  }
+
+  delete[] argv;
+
+  return exit_code;
+}
+
+#else
+int main(int argc, char** argv) { return _main(argc, argv); }
+#endif
 
 #include <Ubuntu_Bold_ttf.h>
 #include <Ubuntu_Regular_ttf.h>
@@ -265,3 +316,4 @@ static void setup_data_handler(App& app) {
   ImGuiContext* context = ImGui::GetCurrentContext();
   context->SettingsHandlers.push_back(ini_handler);
 }
+

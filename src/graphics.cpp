@@ -75,10 +75,6 @@ void Graphics::init() {
                               nullptr, nullptr);
   if (!m_window) exit(1);
 
-  glfwMakeContextCurrent(m_window);
-  // VSync.
-  glfwSwapInterval(true);
-
 #if TH_DIRECTX11
   // Initialize Direct3D
   if (!init_device()) {
@@ -86,6 +82,11 @@ void Graphics::init() {
     exit(1);
   }
 #else // TH_OPENGL
+  glfwMakeContextCurrent(m_window);
+
+  // VSync.
+  glfwSwapInterval(true);
+
   // Load OpenGL functions.
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 #endif

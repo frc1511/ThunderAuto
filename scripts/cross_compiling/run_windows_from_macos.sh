@@ -17,5 +17,8 @@ if [ -z "$2" ]; then
   exit 1
 fi
 
+shift
+
 WINEPATH=/opt/homebrew/opt/mingw-w64/toolchain-$ARCH/$ARCH-w64-mingw32/bin/ \
-  wine64 $2
+  wine64 $@
+

@@ -81,9 +81,9 @@ public:
   void data_apply();
   void data_write(const char* type_name, ImGuiTextBuffer* buf);
 
-private:
   void open_from_path(std::string path);
 
+private:
   void present_menu_bar();
   void present_file_menu();
   void present_edit_menu();
@@ -101,3 +101,4 @@ private:
   void undo();
   void redo();
 };
+
