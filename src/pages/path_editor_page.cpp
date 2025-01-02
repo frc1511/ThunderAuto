@@ -16,7 +16,7 @@ static float LINE_THICKNESS(const ImRect& bb) {
   return bb.GetSize().x / 900.0f;
 }
 
-static float POINT_RADIUS(const ImRect& bb) { return bb.GetSize().x / 250.0f; }
+static float POINT_RADIUS = 4.5f;
 
 static const int32_t POINT_COLOR = IM_COL32(255, 255, 255, 255);
 static const int32_t POINT_COLOR_SELECTED = IM_COL32(255, 242, 0, 255);
@@ -114,6 +114,7 @@ void PathEditorPage::setup_field(const ProjectSettings& settings) {
 }
 
 void PathEditorPage::present(bool* running) {
+
   ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
   if (!ImGui::Begin(name(), running,
                     ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar |
@@ -200,7 +201,11 @@ void PathEditorPage::present_curve_editor() {
     present_point_widget(point, selected, first, last, bb);
   }
 
-  handle_input(state, bb);
+  if (ImGui::IsWindowHovered()) {
+    handle_input(state, bb);
+  }
+
+  present_context_menus(state);
 }
 
 void PathEditorPage::pan_and_zoom() {
@@ -210,7 +215,8 @@ void PathEditorPage::pan_and_zoom() {
   //
   // Panning (Shift + Left-Click, or Middle-Click).
   //
-  if ((io.KeyShift && ImGui::IsMouseDragging(0)) || ImGui::IsMouseDragging(2)) {
+  if ((io.KeyShift && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) ||
+      ImGui::IsMouseDragging(ImGuiMouseButton_Middle)) {
     m_field_offset += io.MouseDelta;
     ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
   }
@@ -235,6 +241,47 @@ void PathEditorPage::pan_and_zoom() {
       m_field_scale;
 
   m_field_offset += mouse_pos_diff;
+}
+
+void PathEditorPage::present_context_menus(ProjectState& state) {
+  const Curve& curve = state.current_path();
+
+  if (ImGui::BeginPopup("EditorContextMenu")) {
+    if (ImGui::MenuItem("Add Point to Start")) {
+      insert_point(state, 0, m_context_menu_position);
+    }
+    if (ImGui::MenuItem("Add Point to End")) {
+      insert_point(state, curve.points().size(), m_context_menu_position);
+    }
+    {
+      ImGuiScopedDisabled disable(state.selected_point_index() == -1);
+
+      if (ImGui::MenuItem("Add Point before Selected")) {
+        insert_point(state, state.selected_point_index(),
+                     m_context_menu_position);
+      }
+      if (ImGui::MenuItem("Add Point after Selected")) {
+        insert_point(state, state.selected_point_index() + 1,
+                     m_context_menu_position);
+      }
+    }
+
+    ImGui::EndPopup();
+  }
+
+  if (ImGui::BeginPopup("EditorPointContextMenu")) {
+    if (ImGui::MenuItem("Remove Point")) {
+      remove_selected_point(state);
+    }
+    ImGui::EndPopup();
+  }
+
+  if (ImGui::BeginPopup("EditorCurveContextMenu")) {
+    if (ImGui::MenuItem("Insert Point Here")) {
+      insert_point(state, m_context_menu_hovered_curve_point_index, m_context_menu_position);
+    }
+    ImGui::EndPopup();
+  }
 }
 
 void PathEditorPage::present_field(ImRect bb) {
@@ -300,7 +347,7 @@ void PathEditorPage::present_point_widget(const CurvePoint& point,
 
   const int32_t final_color = selected ? color_selected : color;
 
-  draw_list->AddCircleFilled(pt, POINT_RADIUS(bb), final_color);
+  draw_list->AddCircleFilled(pt, POINT_RADIUS, final_color);
 }
 
 void PathEditorPage::present_point_rotation_widget(const CurvePoint& point,
@@ -312,7 +359,7 @@ void PathEditorPage::present_point_rotation_widget(const CurvePoint& point,
   ImVec2 pt = to_screen_coordinate(
       point.rotation_control_point(m_settings->robot_length), m_settings->field,
       bb);
-  draw_list->AddCircleFilled(pt, POINT_RADIUS(bb), color);
+  draw_list->AddCircleFilled(pt, POINT_RADIUS, color);
 
   std::array<ImVec2, 4> corners =
       point.robot_corners(m_settings->robot_length, m_settings->robot_width);
@@ -342,7 +389,7 @@ void PathEditorPage::present_point_heading_widget(const CurvePoint& point,
 
     draw_list->AddLine(pt, control_pt, handle_color, HANDLE_THICKNESS(bb));
 
-    draw_list->AddCircleFilled(control_pt, POINT_RADIUS(bb), point_color);
+    draw_list->AddCircleFilled(control_pt, POINT_RADIUS, point_color);
   }
   if (outgoing) {
     const ImVec2 control_pt =
@@ -351,16 +398,26 @@ void PathEditorPage::present_point_heading_widget(const CurvePoint& point,
 
     draw_list->AddLine(pt, control_pt, handle_color, HANDLE_THICKNESS(bb));
 
-    draw_list->AddCircleFilled(control_pt, POINT_RADIUS(bb), point_color);
+    draw_list->AddCircleFilled(control_pt, POINT_RADIUS, point_color);
   }
 }
 
 void PathEditorPage::handle_input(ProjectState& state, ImRect bb) {
+  m_show_context_menu = false;
+
   handle_point_input(state, bb);
 
-  if (m_drag_point == PointType::NONE && ImGui::IsWindowFocused() &&
-      ImGui::IsWindowHovered()) {
+  if (m_drag_point == PointType::NONE) {
     handle_curve_input(state, bb);
+  }
+
+  if (!m_show_context_menu && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+    ImVec2 mouse_pos = ImGui::GetIO().MousePos;
+    ImGui::OpenPopup("EditorContextMenu");
+    ImGui::SetNextWindowPos(mouse_pos);
+    m_context_menu_position =
+        to_field_coordinate(mouse_pos, m_settings->field, bb);
+    m_show_context_menu = true;
   }
 }
 
@@ -383,7 +440,7 @@ void PathEditorPage::handle_point_input(ProjectState& state, ImRect bb) {
     const auto check_pt = [&](const ImVec2& pt, PointType type) {
       if (is_mouse_hovering_point(
               to_screen_coordinate(pt, m_settings->field, bb),
-              POINT_RADIUS(bb) * 1.25f)) {
+              POINT_RADIUS * 1.25f)) {
         hovered_point_type = type;
       }
     };
@@ -404,7 +461,7 @@ void PathEditorPage::handle_point_input(ProjectState& state, ImRect bb) {
     }
   }
 
-  if (!ImGui::IsWindowFocused() || !ImGui::IsWindowHovered()) {
+  if (!ImGui::IsWindowHovered()) {
     if (m_drag_point != PointType::NONE) {
       // End drag.
       m_history.finish_long_edit();
@@ -416,7 +473,11 @@ void PathEditorPage::handle_point_input(ProjectState& state, ImRect bb) {
     return;
   }
 
-  if (ImGui::IsMouseClicked(0)) {
+  bool right_click = ImGui::IsMouseClicked(ImGuiMouseButton_Right);
+
+  if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) ||
+      (right_click && (hovered_point_type == PointType::POSITION))) {
+
     int prev_selected_point_index = state.selected_point_index();
 
     state.selected_point_index() = hovered_point_index;
@@ -425,11 +486,17 @@ void PathEditorPage::handle_point_input(ProjectState& state, ImRect bb) {
     if (prev_selected_point_index != hovered_point_index) {
       m_history.add_state(state, false);
     }
+
+    if (right_click && !m_show_context_menu && (hovered_point_index != -1)) {
+      ImGui::OpenPopup("EditorPointContextMenu");
+      ImGui::SetNextWindowPos(ImGui::GetIO().MousePos);
+      m_show_context_menu = true;
+    }
   }
 
   if (m_clicked_point != PointType::NONE || m_drag_point != PointType::NONE) {
     // Dragging.
-    if (ImGui::IsMouseDragging(0)) {
+    if (ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
       ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 
       curve.output(m_cached_curve, preview_output_curve_settings);
@@ -470,7 +537,7 @@ void PathEditorPage::handle_point_input(ProjectState& state, ImRect bb) {
     }
 
     // Release.
-    if (ImGui::IsMouseReleased(0)) {
+    if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
       if (m_drag_point != PointType::NONE) {
         // End drag.
         m_history.finish_long_edit();
@@ -515,7 +582,7 @@ void PathEditorPage::handle_curve_input(ProjectState& state, ImRect bb) {
     }
   }
 
-  if (ImGui::IsMouseDoubleClicked(0)) {
+  if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
     std::size_t index;
     const ImVec2 mouse_pos =
         to_field_coordinate(io.MousePos, m_settings->field, bb);
@@ -535,24 +602,46 @@ void PathEditorPage::handle_curve_input(ProjectState& state, ImRect bb) {
                   : curve.points().size();
     }
 
-    curve.insert_point(index, mouse_pos);
-    state.selected_point_index() = index;
-    m_history.add_state(state);
-
-    curve.output(m_cached_curve, preview_output_curve_settings);
+    insert_point(state, index, mouse_pos);
+  }
+  if (!m_show_context_menu && hovered &&
+      ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+    ImVec2 mouse_pos = ImGui::GetIO().MousePos;
+    m_context_menu_position =
+        to_field_coordinate(mouse_pos, m_settings->field, bb);
+    m_context_menu_hovered_curve_point_index = hovered_point->segment_index + 1;
+    ImGui::OpenPopup("EditorCurveContextMenu");
+    ImGui::SetNextWindowPos(mouse_pos);
+    m_show_context_menu = true;
   }
 
   if (state.selected_point_index() != -1 && curve.points().size() > 2 &&
       (ImGui::IsKeyPressed(ImGuiKey_Delete) ||
        ImGui::IsKeyPressed(ImGuiKey_Backspace))) {
-
-    curve.remove_point(state.selected_point_index());
-    if (state.selected_point_index()) {
-      state.selected_point_index() -= 1;
-    }
-    m_history.add_state(state);
-
-    curve.output(m_cached_curve, preview_output_curve_settings);
+    remove_selected_point(state);
   }
+}
+
+void PathEditorPage::insert_point(ProjectState& state, std::size_t index,
+                                  ImVec2 position) {
+  Curve& curve = state.current_path();
+
+  curve.insert_point(index, position);
+  state.selected_point_index() = index;
+  m_history.add_state(state);
+
+  curve.output(m_cached_curve, preview_output_curve_settings);
+}
+
+void PathEditorPage::remove_selected_point(ProjectState& state) {
+  Curve& curve = state.current_path();
+
+  curve.remove_point(state.selected_point_index());
+  if (state.selected_point_index()) {
+    state.selected_point_index() -= 1;
+  }
+  m_history.add_state(state);
+
+  curve.output(m_cached_curve, preview_output_curve_settings);
 }
 

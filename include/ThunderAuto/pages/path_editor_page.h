@@ -4,8 +4,8 @@
 #include <ThunderAuto/document_edit_manager.h>
 #include <ThunderAuto/pages/page.h>
 #include <ThunderAuto/project_settings.h>
-#include <ThunderAuto/thunder_auto.h>
 #include <ThunderAuto/texture.h>
+#include <ThunderAuto/thunder_auto.h>
 
 class PathEditorPage : public Page {
   DocumentEditManager& m_history;
@@ -21,6 +21,10 @@ class PathEditorPage : public Page {
 
   PointType m_drag_point = PointType::NONE;
   PointType m_clicked_point = PointType::NONE;
+
+  bool m_show_context_menu = false;
+  ImVec2 m_context_menu_position;
+  std::size_t m_context_menu_hovered_curve_point_index = 0;
 
   OutputCurve& m_cached_curve;
 
@@ -74,6 +78,8 @@ private:
 
   void pan_and_zoom();
 
+  void present_context_menus(ProjectState& state);
+
   void present_field(ImRect bb);
 
   void present_curve(ImRect bb);
@@ -90,6 +96,10 @@ private:
   void handle_point_input(ProjectState& state, ImRect bb);
   void handle_curve_input(ProjectState& state, ImRect bb);
 
+  void insert_point(ProjectState& state, std::size_t index, ImVec2 position);
+  void remove_selected_point(ProjectState& state);
+
 private:
   CurveOverlay m_curve_overlay = CurveOverlay::VELOCITY;
 };
+
