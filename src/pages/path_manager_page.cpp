@@ -34,6 +34,7 @@ void PathManagerPage::present(bool* running) {
                          tmp_input_active)) {
       if (!is_selected) {
         state.current_path_index() = i;
+        state.selected_point_index() = -1;
         m_history.add_state(state);
         state.current_path().output(m_cached_curve,
                                     preview_output_curve_settings);
