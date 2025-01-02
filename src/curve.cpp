@@ -18,10 +18,33 @@ const Curve default_new_curve({
 void Curve::insert_point(std::size_t index, ImVec2 position) {
   assert(index <= m_points.size());
 
+  // Orient the new point roughly in the direction of the curve.
+
+  ImVec2 prev_position, next_position;
+
+  if (index != 0) {
+    prev_position = m_points.at(index - 1).position();
+  } else {
+    prev_position = position;
+  }
+  if (index != m_points.size()) {
+    next_position = m_points.at(index).position();
+  } else {
+    next_position = position;
+  }
+
+  float heading_rad = std::atan2(next_position.y - prev_position.y,
+                                 next_position.x - prev_position.x) +
+                      std::numbers::pi_v<float>;
+
+  Angle heading = Angle::radians(heading_rad);
+
+  // Construct point and insert.
+
+  CurvePoint point(position, heading, {0.5f, 0.5f}, 0_rad);
+
   std::vector<CurvePoint>::const_iterator it =
       std::next(m_points.cbegin(), index);
-
-  CurvePoint point(position, 0_rad, {0.5f, 0.5f}, 0_rad);
 
   m_points.insert(it, point);
 }
@@ -265,3 +288,4 @@ void from_json(const nlohmann::json& json, Curve& curve) {
   curve.settings() = json.at("settings").get<CurveSettings>();
   curve.points() = json.at("points").get<std::vector<CurvePoint>>();
 }
+
