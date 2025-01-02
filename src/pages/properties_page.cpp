@@ -63,12 +63,10 @@ void PropertiesPage::present_point_properties(ProjectState& state) {
   // Rotation.
   changed |= edit_point_rotation(pt);
 
-  ImGui::Separator();
-
   // Stop.
   if (!is_first && !is_last) {
-    changed |= edit_point_stop(pt);
     ImGui::Separator();
+    changed |= edit_point_stop(pt);
   }
 
   if (changed) {
@@ -78,31 +76,35 @@ void PropertiesPage::present_point_properties(ProjectState& state) {
 
   const std::vector<std::string>& actions = state.actions();
 
-  if (ImGui::TreeNode("Actions")) {
-    for (std::size_t i = 0; i < actions.size(); ++i) {
-      bool selected = pt.actions() & (1 << i);
+  if (!actions.empty()) {
+    ImGui::Separator();
 
-      if (ImGui::Checkbox(("##action_" + std::to_string(i)).c_str(),
-                          &selected)) {
-        if (selected)
-          pt.add_actions(1 << i);
-        else
-          pt.remove_actions(1 << i);
+    if (ImGui::TreeNode("Actions")) {
+      for (std::size_t i = 0; i < actions.size(); ++i) {
+        bool selected = pt.actions() & (1 << i);
 
-        m_history.add_state(state);
+        if (ImGui::Checkbox(("##action_" + std::to_string(i)).c_str(),
+                            &selected)) {
+          if (selected)
+            pt.add_actions(1 << i);
+          else
+            pt.remove_actions(1 << i);
+
+          m_history.add_state(state);
+        }
+
+        ImGui::SameLine();
+
+        ImGui::Text("%s", actions.at(i).c_str());
+
+        // Align to the right.
+        ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 45.0f);
+
+        ImGui::Text("1 << %d", (int)i);
       }
 
-      ImGui::SameLine();
-
-      ImGui::Text("%s", actions.at(i).c_str());
-
-      // Align to the right.
-      ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 45.0f);
-
-      ImGui::Text("1 << %d", (int)i);
+      ImGui::TreePop();
     }
-
-    ImGui::TreePop();
   }
 }
 
@@ -351,3 +353,4 @@ void PropertiesPage::export_to_csv() {
 
   printf("Exported to %s\n", path.string().c_str());
 }
+
