@@ -57,7 +57,7 @@ void PathManagerPage::present(bool* running) {
 
     // Delete button.
     if (state.paths().size() != 1) {
-      if (ImGui::Button(ICON_FA_TRASH)) {
+      if (ImGui::Button(ICON_FA_TRASH_ALT)) {
         if ((state.current_path_index() == 1 && i == 0) ||
             state.current_path_index() == state.paths().size() - 1) {
           state.current_path_index() -= 1;

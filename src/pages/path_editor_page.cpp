@@ -247,38 +247,43 @@ void PathEditorPage::present_context_menus(ProjectState& state) {
   const Curve& curve = state.current_path();
 
   if (ImGui::BeginPopup("EditorContextMenu")) {
-    if (ImGui::MenuItem("Add Point to Start")) {
-      insert_point(state, 0, m_context_menu_position);
-    }
-    if (ImGui::MenuItem("Add Point to End")) {
-      insert_point(state, curve.points().size(), m_context_menu_position);
-    }
-    {
-      ImGuiScopedDisabled disable(state.selected_point_index() == -1);
+    if (ImGui::BeginMenu(ICON_FA_PLUS "  Insert Point Here")) {
+      if (ImGui::MenuItem("At Beginning")) {
+        insert_point(state, 0, m_context_menu_position);
+      }
+      if (ImGui::MenuItem("At End")) {
+        insert_point(state, curve.points().size(), m_context_menu_position);
+      }
+      {
+        ImGuiScopedDisabled disable(state.selected_point_index() == -1);
 
-      if (ImGui::MenuItem("Add Point before Selected")) {
-        insert_point(state, state.selected_point_index(),
-                     m_context_menu_position);
+        if (ImGui::MenuItem("Before Selected")) {
+          insert_point(state, state.selected_point_index(),
+                       m_context_menu_position);
+        }
+        if (ImGui::MenuItem("After Selected")) {
+          insert_point(state, state.selected_point_index() + 1,
+                       m_context_menu_position);
+        }
       }
-      if (ImGui::MenuItem("Add Point after Selected")) {
-        insert_point(state, state.selected_point_index() + 1,
-                     m_context_menu_position);
-      }
+
+      ImGui::EndMenu();
     }
 
     ImGui::EndPopup();
   }
 
   if (ImGui::BeginPopup("EditorPointContextMenu")) {
-    if (ImGui::MenuItem("Remove Point")) {
+    if (ImGui::MenuItem(ICON_FA_TRASH_ALT "  Remove Point")) {
       remove_selected_point(state);
     }
     ImGui::EndPopup();
   }
 
   if (ImGui::BeginPopup("EditorCurveContextMenu")) {
-    if (ImGui::MenuItem("Insert Point Here")) {
-      insert_point(state, m_context_menu_hovered_curve_point_index, m_context_menu_position);
+    if (ImGui::MenuItem(ICON_FA_PLUS "  Insert Point Here")) {
+      insert_point(state, m_context_menu_hovered_curve_point_index,
+                   m_context_menu_position);
     }
     ImGui::EndPopup();
   }
