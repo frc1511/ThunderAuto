@@ -87,6 +87,7 @@ private:
   void present_menu_bar();
   void present_file_menu();
   void present_edit_menu();
+  void present_view_menu();
   void present_tools_menu();
 
   bool try_change_state(EventState event_state);

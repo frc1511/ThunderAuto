@@ -274,7 +274,7 @@ void PathEditorPage::present_context_menus(ProjectState& state) {
   }
 
   if (ImGui::BeginPopup("EditorPointContextMenu")) {
-    if (ImGui::MenuItem(ICON_FA_TRASH_ALT "  Remove Point")) {
+    if (ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete Point")) {
       remove_selected_point(state);
     }
     ImGui::EndPopup();
@@ -636,6 +636,24 @@ void PathEditorPage::insert_point(ProjectState& state, std::size_t index,
   m_history.add_state(state);
 
   curve.output(m_cached_curve, preview_output_curve_settings);
+}
+
+void PathEditorPage::select_next_point(ProjectState& state) {
+  Curve& curve = state.current_path();
+
+  if (state.selected_point_index() == -1 ||
+      state.selected_point_index() == int(curve.points().size() - 1))
+    return;
+
+  state.selected_point_index() += 1;
+  m_history.add_state(state);
+}
+
+void PathEditorPage::select_previous_point(ProjectState& state) {
+  if (state.selected_point_index() <= 0) return;
+
+  state.selected_point_index() -= 1;
+  m_history.add_state(state);
 }
 
 void PathEditorPage::remove_selected_point(ProjectState& state) {

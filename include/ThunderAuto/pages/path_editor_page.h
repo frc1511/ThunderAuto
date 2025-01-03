@@ -73,6 +73,15 @@ public:
     m_curve_overlay = curve_overlay;
   }
 
+  constexpr void reset_view() {
+    m_field_offset = ImVec2(0.f, 0.f);
+    m_field_scale = 1.f;
+  }
+
+  void select_next_point(ProjectState& state);
+  void select_previous_point(ProjectState& state);
+  void remove_selected_point(ProjectState& state);
+
 private:
   void present_curve_editor();
 
@@ -97,7 +106,6 @@ private:
   void handle_curve_input(ProjectState& state, ImRect bb);
 
   void insert_point(ProjectState& state, std::size_t index, ImVec2 position);
-  void remove_selected_point(ProjectState& state);
 
 private:
   CurveOverlay m_curve_overlay = CurveOverlay::VELOCITY;

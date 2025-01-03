@@ -2,6 +2,7 @@
 
 #include <IconsFontAwesome5.h>
 #include <ThunderAuto/file_types.h>
+#include <ThunderAuto/imgui_util.h>
 
 #include <ThunderAuto/graphics.h>
 
@@ -121,6 +122,7 @@ void App::present_menu_bar() {
 
     if (m_document_manager.is_open()) {
       present_edit_menu();
+      present_view_menu();
       present_tools_menu();
     }
 
@@ -144,19 +146,14 @@ void App::present_file_menu() {
     ImGui::MenuItem(ICON_FA_FILE "  New", CTRL_STR "N", &item_new);
     ImGui::MenuItem(ICON_FA_FOLDER_OPEN "  Open", CTRL_STR "O", &item_open);
 
-    if (!m_document_manager.is_open()) {
-      ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-      ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-    }
+    {
+      ImGuiScopedDisabled disabled(!m_document_manager.is_open());
 
-    ImGui::MenuItem(ICON_FA_SAVE "  Save", CTRL_STR "S", &item_save);
-    ImGui::MenuItem(ICON_FA_SAVE "  Save As", CTRL_SHIFT_STR "S",
-                    &item_save_as);
-    ImGui::MenuItem(ICON_FA_WINDOW_CLOSE "  Close", CTRL_STR "W", &item_close);
-
-    if (!m_document_manager.is_open()) {
-      ImGui::PopItemFlag();
-      ImGui::PopStyleVar();
+      ImGui::MenuItem(ICON_FA_SAVE "  Save", CTRL_STR "S", &item_save);
+      ImGui::MenuItem(ICON_FA_SAVE "  Save As", CTRL_SHIFT_STR "S",
+                      &item_save_as);
+      ImGui::MenuItem(ICON_FA_WINDOW_CLOSE "  Close", CTRL_STR "W",
+                      &item_close);
     }
 
     ImGui::EndMenu();
@@ -171,23 +168,30 @@ void App::present_file_menu() {
 }
 
 void App::present_edit_menu() {
-  bool item_undo = false, item_redo = false, item_cut = false,
-       item_copy = false, item_paste = false, item_delete = false;
-
   if (ImGui::BeginMenu("Edit")) {
-    ImGui::MenuItem(ICON_FA_UNDO "  Undo", CTRL_STR "Z", &item_undo);
-    ImGui::MenuItem(ICON_FA_REDO "  Redo", CTRL_SHIFT_STR "Z", &item_redo);
+    if (ImGui::MenuItem(ICON_FA_UNDO "  Undo", CTRL_STR "Z")) {
+      undo();
+    }
+    if (ImGui::MenuItem(ICON_FA_REDO "  Redo", CTRL_SHIFT_STR "Z")) {
+      redo();
+    }
+
     ImGui::Separator();
-    ImGui::MenuItem(ICON_FA_CUT "  Cut", CTRL_STR "X", &item_cut);
-    ImGui::MenuItem(ICON_FA_COPY "  Copy", CTRL_STR "C", &item_copy);
-    ImGui::MenuItem(ICON_FA_PASTE "  Paste", CTRL_STR "V", &item_paste);
-    ImGui::MenuItem(ICON_FA_TRASH "  Delete", "Delete", &item_delete);
+
+    if (ImGui::MenuItem(ICON_FA_TRASH "  Delete", "Delete")) {
+    }
 
     ImGui::EndMenu();
   }
+}
 
-  if (item_undo) undo();
-  if (item_redo) redo();
+void App::present_view_menu() {
+  if (ImGui::BeginMenu("View")) {
+    if (ImGui::MenuItem(ICON_FA_REDO "  Reset View", CTRL_STR "0")) {
+      m_path_editor_page.reset_view();
+    }
+    ImGui::EndMenu();
+  }
 }
 
 void App::present_tools_menu() {
@@ -440,14 +444,16 @@ void App::process_input() {
                 KEY_DOWN_OR_REPEAT(ImGuiKey_Z))) { // Ctrl+Shift+Z
       redo();
 
-    } else if (CTRL_DOWN && KEY_DOWN(ImGuiKey_X)) { // Ctrl+X
-      // TODO: Cut
+    } else if (CTRL_DOWN && KEY_DOWN(ImGuiKey_0)) { // Ctrl+0
+      m_path_editor_page.reset_view();
 
-    } else if (CTRL_DOWN && KEY_DOWN(ImGuiKey_C)) { // Ctrl+C
-      // TODO: Copy
-
-    } else if (CTRL_DOWN && KEY_DOWN(ImGuiKey_V)) { // Ctrl+V
-      // TODO: Paste
+    } else if (KEY_DOWN(ImGuiKey_Tab)) {
+      ProjectState state = m_document_edit_manager.current_state();
+      if (io.KeyShift) {
+        m_path_editor_page.select_previous_point(state);
+      } else {
+        m_path_editor_page.select_next_point(state);
+      }
     }
   }
 }
