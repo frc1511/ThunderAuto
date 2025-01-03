@@ -1,6 +1,7 @@
 #include <ThunderAuto/pages/path_manager_page.h>
 
 #include <IconsFontAwesome5.h>
+#include <ThunderAuto/imgui_util.h>
 
 void PathManagerPage::present(bool* running) {
   ImGui::SetNextWindowSize(ImVec2(400, 400), ImGuiCond_FirstUseEver);
@@ -15,7 +16,9 @@ void PathManagerPage::present(bool* running) {
   static bool was_input_active = false;
 
   char buf[256] = "";
-  for (std::size_t i = 0; i < state.paths().size(); ++i) {
+  size_t num_paths = state.paths().size();
+  bool done = false;
+  for (std::size_t i = 0; i < num_paths && !done; ++i) {
     std::string& name = state.paths().at(i).first;
 
     strncpy(buf, name.c_str(), 255);
@@ -23,7 +26,7 @@ void PathManagerPage::present(bool* running) {
 
     bool is_selected = i == state.current_path_index();
 
-    ImGui::PushID((void*)(intptr_t)i);
+    ImGui::PushID(i);
     ImGui::Columns(2, nullptr, false);
     ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() - 40.0f);
 
@@ -40,6 +43,23 @@ void PathManagerPage::present(bool* running) {
                                     preview_output_curve_settings);
         is_selected = true;
       }
+    }
+    if (ImGui::BeginPopupContextItem()) {
+      if (ImGui::MenuItem(ICON_FA_COPY "  Duplicate")) {
+        duplicate_path(state, i);
+        done = true;
+      }
+
+      {
+        ImGuiScopedDisabled disabled(num_paths <= 1);
+
+        if (ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete")) {
+          delete_path(state, i);
+          done = true;
+        }
+      }
+
+      ImGui::EndPopup();
     }
 
     if (!tmp_input_active && tmp_input_was_active) {
@@ -59,16 +79,8 @@ void PathManagerPage::present(bool* running) {
     // Delete button.
     if (state.paths().size() != 1) {
       if (ImGui::Button(ICON_FA_TRASH_ALT)) {
-        if ((state.current_path_index() == 1 && i == 0) ||
-            state.current_path_index() == state.paths().size() - 1) {
-          state.current_path_index() -= 1;
-        }
-
-        state.paths().erase(state.paths().cbegin() + i);
-        m_history.add_state(state);
-
-        state.current_path().output(m_cached_curve,
-                                    preview_output_curve_settings);
+        delete_path(state, i);
+        done = true;
       }
     }
 
@@ -97,7 +109,8 @@ bool PathManagerPage::selectable_input(const char* label, bool selected,
                                ImVec2(0.0f, 20.0f));
 
   const ImGuiID id = window->GetID("##Input");
-  const bool input_start = ret ? ImGui::IsMouseDoubleClicked(0) : false;
+  const bool input_start =
+      ret ? ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) : false;
 
   if (input_start) {
     ImGui::SetActiveID(id, window);
@@ -130,3 +143,26 @@ bool PathManagerPage::selectable_input(const char* label, bool selected,
   ImGui::PopID();
   return ret;
 }
+
+void PathManagerPage::duplicate_path(ProjectState& state, std::size_t index) {
+  const std::string& name = state.paths().at(index).first;
+  const Curve& curve = state.paths().at(index).second;
+
+  state.paths().emplace_back(name + " copy", curve);
+  m_history.add_state(state);
+
+  state.current_path().output(m_cached_curve, preview_output_curve_settings);
+}
+
+void PathManagerPage::delete_path(ProjectState& state, std::size_t index) {
+  if ((state.current_path_index() == 1 && index == 0) ||
+      state.current_path_index() == state.paths().size() - 1) {
+    state.current_path_index() -= 1;
+  }
+
+  state.paths().erase(state.paths().cbegin() + index);
+  m_history.add_state(state);
+
+  state.current_path().output(m_cached_curve, preview_output_curve_settings);
+}
+
