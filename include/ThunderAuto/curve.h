@@ -43,10 +43,15 @@ class Curve {
   std::vector<CurvePoint> m_points;
 
 public:
-  inline Curve(CurveSettings settings = {})
+  inline explicit Curve(CurveSettings settings = {})
     : m_settings(settings) {}
 
-  inline Curve(std::initializer_list<CurvePoint> points,
+  inline explicit Curve(std::initializer_list<CurvePoint> points,
+               CurveSettings settings = {})
+    : m_settings(settings),
+      m_points(points) {}
+
+  inline explicit Curve(const std::vector<CurvePoint>& points,
                CurveSettings settings = {})
     : m_settings(settings),
       m_points(points) {}

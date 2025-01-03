@@ -123,6 +123,7 @@ void App::present_menu_bar() {
     if (m_document_manager.is_open()) {
       present_edit_menu();
       present_view_menu();
+      present_path_menu();
       present_tools_menu();
     }
 
@@ -191,6 +192,35 @@ void App::present_view_menu() {
       m_path_editor_page.reset_view();
     }
     ImGui::EndMenu();
+  }
+}
+
+void App::present_path_menu() {
+  bool item_reverse = false, item_duplicate = false, item_delete = false;
+
+  ProjectState state = m_document_manager.history()->current_state();
+
+  if (ImGui::BeginMenu("Path")) {
+    ImGui::MenuItem("\xef\x8d\xa3" "  Reverse Direction", nullptr, &item_reverse);
+    ImGui::MenuItem(ICON_FA_COPY "  Duplicate", nullptr, &item_duplicate);
+    {
+      ImGuiScopedDisabled disabled(state.paths().size() <= 1);
+
+      ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete", nullptr, &item_delete);
+    }
+    ImGui::EndMenu();
+  }
+
+  if (item_reverse) {
+    m_path_manager_page.reverse_path(state, state.current_path_index());
+  }
+
+  if (item_duplicate) {
+    m_path_manager_page.duplicate_path(state, state.current_path_index());
+  }
+
+  if (item_delete) {
+    m_path_manager_page.delete_path(state, state.current_path_index());
   }
 }
 

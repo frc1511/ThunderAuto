@@ -20,10 +20,12 @@ public:
 
   void present(bool* running) override;
 
+  void duplicate_path(ProjectState& state, std::size_t index);
+  void delete_path(ProjectState& state, std::size_t index);
+  void reverse_path(ProjectState& state, std::size_t index);
+
 private:
   bool selectable_input(const char* label, bool selected, char* buf,
                         std::size_t buf_size, bool& input_active);
-
-  void duplicate_path(ProjectState& state, std::size_t index);
-  void delete_path(ProjectState& state, std::size_t index);
 };
+

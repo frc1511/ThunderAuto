@@ -27,8 +27,6 @@ void PathManagerPage::present(bool* running) {
     bool is_selected = i == state.current_path_index();
 
     ImGui::PushID(i);
-    ImGui::Columns(2, nullptr, false);
-    ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() - 40.0f);
 
     bool tmp_input_active = is_selected ? input_active : false;
     bool tmp_input_was_active = is_selected ? was_input_active : false;
@@ -45,6 +43,11 @@ void PathManagerPage::present(bool* running) {
       }
     }
     if (ImGui::BeginPopupContextItem()) {
+      if (ImGui::MenuItem("\xef\x8d\xa3" "  Reverse Direction")) {
+        reverse_path(state, i);
+        done = true;
+      }
+
       if (ImGui::MenuItem(ICON_FA_COPY "  Duplicate")) {
         duplicate_path(state, i);
         done = true;
@@ -74,17 +77,6 @@ void PathManagerPage::present(bool* running) {
       was_input_active = tmp_input_active;
     }
 
-    ImGui::NextColumn();
-
-    // Delete button.
-    if (state.paths().size() != 1) {
-      if (ImGui::Button(ICON_FA_TRASH_ALT)) {
-        delete_path(state, i);
-        done = true;
-      }
-    }
-
-    ImGui::Columns(1);
     ImGui::PopID();
   }
 
@@ -94,6 +86,46 @@ void PathManagerPage::present(bool* running) {
   }
 
   ImGui::End();
+}
+
+void PathManagerPage::duplicate_path(ProjectState& state, std::size_t index) {
+  const std::string& name = state.paths().at(index).first;
+  const Curve& curve = state.paths().at(index).second;
+
+  state.paths().emplace_back(name + " copy", curve);
+  m_history.add_state(state);
+
+  state.current_path().output(m_cached_curve, preview_output_curve_settings);
+}
+
+void PathManagerPage::delete_path(ProjectState& state, std::size_t index) {
+  if ((state.current_path_index() == 1 && index == 0) ||
+      state.current_path_index() == state.paths().size() - 1) {
+    state.current_path_index() -= 1;
+  }
+
+  state.paths().erase(state.paths().cbegin() + index);
+  m_history.add_state(state);
+
+  state.current_path().output(m_cached_curve, preview_output_curve_settings);
+}
+
+void PathManagerPage::reverse_path(ProjectState& state, std::size_t index) {
+  Curve& curve = state.paths().at(index).second;
+  std::reverse(curve.points().begin(), curve.points().end());
+
+  for (CurvePoint& pt : curve.points()) {
+    HeadingAngles headings = pt.headings();
+    std::swap(headings.incoming, headings.outgoing);
+    pt.set_headings(headings);
+
+    HeadingWeights weights = pt.heading_weights();
+    std::swap(weights.incoming, weights.outgoing);
+    pt.set_heading_weights(weights);
+  }
+
+  m_history.add_state(state);
+  state.current_path().output(m_cached_curve, preview_output_curve_settings);
 }
 
 bool PathManagerPage::selectable_input(const char* label, bool selected,
@@ -142,27 +174,5 @@ bool PathManagerPage::selectable_input(const char* label, bool selected,
 
   ImGui::PopID();
   return ret;
-}
-
-void PathManagerPage::duplicate_path(ProjectState& state, std::size_t index) {
-  const std::string& name = state.paths().at(index).first;
-  const Curve& curve = state.paths().at(index).second;
-
-  state.paths().emplace_back(name + " copy", curve);
-  m_history.add_state(state);
-
-  state.current_path().output(m_cached_curve, preview_output_curve_settings);
-}
-
-void PathManagerPage::delete_path(ProjectState& state, std::size_t index) {
-  if ((state.current_path_index() == 1 && index == 0) ||
-      state.current_path_index() == state.paths().size() - 1) {
-    state.current_path_index() -= 1;
-  }
-
-  state.paths().erase(state.paths().cbegin() + index);
-  m_history.add_state(state);
-
-  state.current_path().output(m_cached_curve, preview_output_curve_settings);
 }
 
