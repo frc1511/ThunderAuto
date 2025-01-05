@@ -65,6 +65,12 @@ void CurvePoint::set_rotation_control_point(const ImVec2 pt) {
 
 std::array<ImVec2, 4> CurvePoint::robot_corners(const float robot_length,
                                                 const float robot_width) const {
+  return ::robot_corners(m_position, m_rotation, robot_length, robot_width);
+}
+
+std::array<ImVec2, 4> robot_corners(const ImVec2 position, const Angle rotation,
+                                    const float robot_length,
+                                    const float robot_width) {
 
   const float x_dist = robot_width / 2.f;
   const float y_dist = robot_length / 2.f;
@@ -75,9 +81,9 @@ std::array<ImVec2, 4> CurvePoint::robot_corners(const float robot_length,
     const int x_sign = (i <= 1) ? 1 : -1;
     const int y_sign = (i == 1 || i == 2) ? 1 : -1;
 
-    ImVec2 corner = m_position;
-    corner = pt_extend_at_angle(corner, m_rotation, y_dist * y_sign);
-    corner = pt_extend_at_angle(corner, m_rotation + 90_deg, x_dist * x_sign);
+    ImVec2 corner = position;
+    corner = pt_extend_at_angle(corner, rotation, y_dist * y_sign);
+    corner = pt_extend_at_angle(corner, rotation + 90_deg, x_dist * x_sign);
 
     corners[i] = corner;
   }
@@ -116,3 +122,4 @@ void from_json(const nlohmann::json& json, CurvePoint& point) {
 
   point = CurvePoint(pos, headings, weights, rotation, stop, actions);
 }
+

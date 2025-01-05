@@ -132,8 +132,9 @@ public:
     const uint32_t lower_mask = (1U << action_bit) - 1;
     const uint32_t higher_mask = ~((1U << (action_bit + 1)) - 1);
 
-    const uint32_t result = (m_actions & lower_mask) |
-                            ((m_actions & higher_mask) >> uint32_t(shift_down_higher));
+    const uint32_t result =
+        (m_actions & lower_mask) |
+        ((m_actions & higher_mask) >> uint32_t(shift_down_higher));
 
     m_actions = result;
   }
@@ -169,5 +170,9 @@ public:
                                       float robot_width) const;
 };
 
+std::array<ImVec2, 4> robot_corners(ImVec2 position, Angle rotation,
+                                    float robot_length, float robot_width);
+
 void to_json(nlohmann::json& json, const CurvePoint& point);
 void from_json(const nlohmann::json& json, CurvePoint& point);
+

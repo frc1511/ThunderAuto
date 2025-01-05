@@ -11,6 +11,8 @@ class PathEditorPage : public Page {
   DocumentEditManager& m_history;
   const ProjectSettings* m_settings = nullptr;
 
+  bool m_is_focused = false;
+
   enum class PointType {
     NONE = 0,
     POSITION,
@@ -39,10 +41,16 @@ class PathEditorPage : public Page {
   ImVec2 m_field_offset;
   float m_field_scale = 1.f;
 
+  float m_playback_time = 0.f;
+  float m_is_playing = false;
+  float m_was_playing = false;
+
 public:
   inline PathEditorPage(DocumentEditManager& history, OutputCurve& cached_curve)
     : m_history(history),
       m_cached_curve(cached_curve) {}
+
+  bool is_focused() const { return m_is_focused; }
 
   void setup_field(const ProjectSettings& settings);
 
@@ -83,6 +91,8 @@ public:
   void select_previous_point(ProjectState& state);
   void remove_selected_point(ProjectState& state);
 
+  void toggle_playback();
+
 private:
   void present_curve_editor();
 
@@ -100,6 +110,9 @@ private:
                                      ImRect bb);
   void present_point_heading_widget(const CurvePoint& point, bool incoming,
                                     bool outgoing, bool selected, ImRect bb);
+
+  void present_playback_slider();
+  void present_robot_preview(ImRect bb);
 
   void handle_input(ProjectState& state, ImRect bb);
 

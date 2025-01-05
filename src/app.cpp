@@ -480,12 +480,17 @@ void App::process_input() {
     } else if (CTRL_DOWN && KEY_DOWN(ImGuiKey_0)) { // Ctrl+0
       m_path_editor_page.reset_view();
 
-    } else if (KEY_DOWN(ImGuiKey_Tab)) {
-      ProjectState state = m_document_edit_manager.current_state();
-      if (io.KeyShift) {
-        m_path_editor_page.select_previous_point(state);
-      } else {
-        m_path_editor_page.select_next_point(state);
+    } else if (m_path_editor_page.is_focused()) {
+      if (KEY_DOWN(ImGuiKey_Tab)) {
+        ProjectState state = m_document_edit_manager.current_state();
+        if (io.KeyShift) {
+          m_path_editor_page.select_previous_point(state);
+        } else {
+          m_path_editor_page.select_next_point(state);
+        }
+
+      } else if (KEY_DOWN(ImGuiKey_Space)) {
+        m_path_editor_page.toggle_playback();
       }
     }
   }

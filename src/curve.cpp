@@ -84,7 +84,8 @@ void Curve::output(OutputCurve& output,
 
     std::size_t segment_points =
         output_segment(equation, segment_length, settings.samples_per_meter,
-                       end.rotation().radians(), i, max_velocities, output);
+                       begin.rotation().radians(), end.rotation().radians(), i,
+                       max_velocities, output);
 
     std::vector<OutputCurvePoint>::iterator segment_begin =
         output.points.end() - segment_points;
@@ -135,17 +136,23 @@ float Curve::calc_segment_length(const EquationFunc equation,
   return length;
 }
 
-std::size_t Curve::output_segment(const EquationFunc equation,
-                                  const float length,
-                                  const std::size_t samples_per_meter,
-                                  const float rotation,
-                                  const std::size_t segment_index,
-                                  std::map<int, float>& max_velocities,
-                                  OutputCurve& output) const {
+std::size_t Curve::output_segment(
+    const EquationFunc equation, const float length,
+    const std::size_t samples_per_meter, const float begin_rotation,
+    const float end_rotation, const std::size_t segment_index,
+    std::map<int, float>& max_velocities, OutputCurve& output) const {
 
   const std::size_t samples = std::size_t(length * float(samples_per_meter));
 
-  const float delta = 1.f / float(samples);
+  const float delta = 1.f / float(samples - 1);
+
+  float rotation_delta = (end_rotation - begin_rotation);
+  if (rotation_delta > std::numbers::pi_v<float>) {
+    rotation_delta -= 2.f * std::numbers::pi_v<float>;
+  } else if (rotation_delta < -std::numbers::pi_v<float>) {
+    rotation_delta += 2.f * std::numbers::pi_v<float>;
+  }
+  rotation_delta /= samples;
 
   ImVec2 prev_position;
   ImVec2 next_position = equation(0.f);
@@ -185,10 +192,14 @@ std::size_t Curve::output_segment(const EquationFunc equation,
       }
     }
 
+    // Rotation
+    float actual_rotation = begin_rotation + i * rotation_delta;
+
     output.points.push_back({
         .position = position,
         .velocity = m_settings.max_linear_vel,
-        .rotation = rotation,
+        .rotation = end_rotation,
+        .actual_rotation = actual_rotation,
         .distance = distance,
         .curvature = curvature,
         .segment_index = segment_index,

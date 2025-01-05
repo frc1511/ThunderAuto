@@ -11,6 +11,7 @@ struct OutputCurvePoint {
   ImVec2 position;
   float velocity;
   float rotation;
+  float actual_rotation;
   uint32_t actions;
 
   float distance;
@@ -43,15 +44,10 @@ class Curve {
   std::vector<CurvePoint> m_points;
 
 public:
-  inline explicit Curve(CurveSettings settings = {})
+  inline Curve(CurveSettings settings = {})
     : m_settings(settings) {}
 
-  inline explicit Curve(std::initializer_list<CurvePoint> points,
-               CurveSettings settings = {})
-    : m_settings(settings),
-      m_points(points) {}
-
-  inline explicit Curve(const std::vector<CurvePoint>& points,
+  inline Curve(std::initializer_list<CurvePoint> points,
                CurveSettings settings = {})
     : m_settings(settings),
       m_points(points) {}
@@ -72,7 +68,8 @@ private:
   float calc_segment_length(EquationFunc equation, std::size_t samples) const;
 
   std::size_t output_segment(EquationFunc equation, float length,
-                             std::size_t samples_per_meter, float rotation,
+                             std::size_t samples_per_meter,
+                             float begin_rotation, float end_rotation,
                              std::size_t segment_index,
                              std::map<int, float>& max_velocities,
                              OutputCurve& output) const;
@@ -88,3 +85,4 @@ extern const Curve default_new_curve;
 
 void to_json(nlohmann::json& json, const Curve& curve);
 void from_json(const nlohmann::json& json, Curve& curve);
+

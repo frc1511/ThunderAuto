@@ -28,6 +28,8 @@ static const int32_t POINT_END_COLOR_SELECTED = IM_COL32(255, 0, 0, 255);
 static const int32_t HANDLE_COLOR = IM_COL32(225, 225, 225, 255);
 static const int32_t HANDLE_COLOR_SELECTED = IM_COL32(178, 169, 0, 255);
 
+static const int32_t PREVIEW_ROBOT_COLOR = IM_COL32(128, 128, 128, 255);
+
 static const ImVec2 to_screen_coordinate(const ImVec2& field_pt,
                                          const Field& field, const ImRect& bb) {
   ImVec2 pt = field_pt / field.size();
@@ -118,7 +120,6 @@ void PathEditorPage::setup_field(const ProjectSettings& settings) {
 }
 
 void PathEditorPage::present(bool* running) {
-
   ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
   if (!ImGui::Begin(name(), running,
                     ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar |
@@ -127,7 +128,11 @@ void PathEditorPage::present(bool* running) {
     return;
   }
 
+  m_is_focused = ImGui::IsWindowFocused();
+
   present_curve_editor();
+
+  present_playback_slider();
 
   ImGui::End();
 }
@@ -182,6 +187,11 @@ void PathEditorPage::present_curve_editor() {
   // Curve.
   //
   present_curve(bb);
+
+  //
+  // Robot Preview.
+  //
+  present_robot_preview(bb);
 
   //
   // Widgets.
@@ -411,6 +421,108 @@ void PathEditorPage::present_point_heading_widget(const CurvePoint& point,
   }
 }
 
+void PathEditorPage::present_robot_preview(ImRect bb) {
+  ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+  // Find closest time.
+
+  std::vector<OutputCurvePoint>& points = m_cached_curve.points;
+
+  std::vector<OutputCurvePoint>::iterator lower_it =
+      std::lower_bound(points.begin(), points.end(), m_playback_time,
+                       [](const OutputCurvePoint& point, float time) {
+                         return point.time < time;
+                       });
+  std::vector<OutputCurvePoint>::iterator upper_it;
+
+  if (lower_it == points.end()) {
+    lower_it = std::prev(lower_it);
+    upper_it = lower_it;
+  } else {
+    upper_it = std::next(lower_it);
+    if (upper_it == points.end()) {
+      upper_it = lower_it;
+    }
+  }
+  assert(lower_it != points.end());
+  assert(upper_it != points.end());
+
+  const OutputCurvePoint& lower_point = *lower_it;
+  const OutputCurvePoint& upper_point = *upper_it;
+
+  const float t = (m_playback_time - lower_point.time) /
+                  (upper_point.time - lower_point.time);
+
+  const ImVec2 position =
+      ImVec2(std::lerp(lower_point.position.x, upper_point.position.x, t),
+             std::lerp(lower_point.position.y, upper_point.position.y, t));
+
+  Angle rotation = Angle::radians(lower_point.actual_rotation);
+
+  {
+    ImVec2 pt_start = to_screen_coordinate(
+        pt_extend_at_angle(position, rotation, m_settings->robot_length / 2.f),
+        m_settings->field, bb);
+    ImVec2 pt_end = to_screen_coordinate(
+        pt_extend_at_angle(position, rotation,
+                           m_settings->robot_length / 2.f + 0.1),
+        m_settings->field, bb);
+
+    draw_list->AddLine(pt_start, pt_end, PREVIEW_ROBOT_COLOR,
+                       HANDLE_THICKNESS(bb));
+  }
+
+  std::array<ImVec2, 4> corners = robot_corners(
+      position, rotation, m_settings->robot_length, m_settings->robot_width);
+  for (ImVec2& corner : corners) {
+    corner = to_screen_coordinate(corner, m_settings->field, bb);
+  }
+
+  draw_list->AddQuad(corners[0], corners[1], corners[2], corners[3],
+                     PREVIEW_ROBOT_COLOR, HANDLE_THICKNESS(bb));
+}
+
+void PathEditorPage::present_playback_slider() {
+  // Bottom of the window.
+  ImGui::SetCursorPosY(ImGui::GetWindowHeight() - 30);
+
+  // Play button.
+  if (ImGui::Button(m_is_playing ? ICON_FA_PAUSE : ICON_FA_PLAY)) {
+    m_is_playing = !m_is_playing;
+  }
+  ImGui::SameLine();
+
+  // Reset button.
+  if (ImGui::Button(ICON_FA_REDO)) {
+    m_playback_time = 0.f;
+  }
+  ImGui::SameLine();
+
+  // Slider.
+  assert(m_cached_curve.points.size() > 0);
+  float total_time = m_cached_curve.points.back().time;
+
+  if (m_is_playing) {
+    m_playback_time += ImGui::GetIO().DeltaTime;
+    m_playback_time = std::fmod(m_playback_time, total_time);
+  }
+
+  ImGui::PushItemWidth(ImGui::GetWindowWidth() - 75);
+
+  {
+    char buffer[64];
+    snprintf(buffer, sizeof(buffer), "%.2f / %.2f s", m_playback_time,
+             total_time);
+
+    ImGui::SliderFloat("##Playback", &m_playback_time, 0.0f, total_time,
+                       buffer);
+  }
+
+  ImGui::PopItemWidth();
+}
+
+void PathEditorPage::toggle_playback() { m_is_playing = !m_is_playing; }
+
 void PathEditorPage::handle_input(ProjectState& state, ImRect bb) {
   m_show_context_menu = false;
 
@@ -514,6 +626,10 @@ void PathEditorPage::handle_point_input(ProjectState& state, ImRect bb) {
         // Begin drag.
         m_history.start_long_edit();
 
+        m_was_playing = m_is_playing;
+        m_is_playing = false;
+        m_playback_time = 0.f;
+
         m_drag_point = m_clicked_point;
       }
 
@@ -550,6 +666,8 @@ void PathEditorPage::handle_point_input(ProjectState& state, ImRect bb) {
       if (m_drag_point != PointType::NONE) {
         // End drag.
         m_history.finish_long_edit();
+
+        m_is_playing = m_was_playing;
       }
 
       m_drag_point = PointType::NONE;
