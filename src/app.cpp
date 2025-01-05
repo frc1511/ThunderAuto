@@ -201,7 +201,9 @@ void App::present_path_menu() {
   ProjectState state = m_document_manager.history()->current_state();
 
   if (ImGui::BeginMenu("Path")) {
-    ImGui::MenuItem("\xef\x8d\xa3" "  Reverse Direction", nullptr, &item_reverse);
+    ImGui::MenuItem("\xef\x8d\xa3"
+                    "  Reverse Direction",
+                    nullptr, &item_reverse);
     ImGui::MenuItem(ICON_FA_COPY "  Duplicate", nullptr, &item_duplicate);
     {
       ImGuiScopedDisabled disabled(state.paths().size() <= 1);
@@ -369,7 +371,8 @@ void App::open_from_path(std::string path) {
   m_event_state = EventState::NONE;
 
   if (path.empty()) return;
-  if (!std::filesystem::exists(path)) return;
+  if (!std::filesystem::exists(path) || !std::filesystem::is_regular_file(path))
+    return;
 
   m_document_manager.open_project(path);
   const ProjectSettings& settings = m_document_manager.settings();

@@ -1,6 +1,7 @@
 #include <ThunderAuto/popups/new_field_popup.h>
 
 #include <ThunderAuto/file_types.h>
+#include <ThunderAuto/imgui_util.h>
 #include <stb_image.h>
 
 void NewFieldPopup::present(bool* running) {
@@ -24,19 +25,32 @@ void NewFieldPopup::present(bool* running) {
     m_field = std::nullopt;
 
     static char img_path_buf[256] = "";
+    std::string img_path;
 
-    if (ImGui::InputText("Field Image", img_path_buf, 256,
-                         ImGuiInputTextFlags_None)) {
-      m_image_load_failed = false;
+    {
+      ImGuiScopedField field("Field Image", 100);
+
+      if (ImGui::InputText("##field_image", img_path_buf, 256,
+                           ImGuiInputTextFlags_None)) {
+        m_image_load_failed = false;
+      }
+
+      ImGui::SameLine();
+
+      if (ImGui::Button("Browse")) {
+        img_path = m_platform_manager.open_file_dialog(FileType::FILE, {});
+        memset(img_path_buf, 0, 256);
+        strncpy(img_path_buf, img_path.c_str(), img_path.length());
+      }
     }
 
-    ImGui::SameLine();
-
-    std::string img_path;
-    if (ImGui::Button("Browse")) {
-      img_path = m_platform_manager.open_file_dialog(FileType::FILE, {});
-      memset(img_path_buf, 0, 256);
-      strncpy(img_path_buf, img_path.c_str(), img_path.length());
+    {
+      ImGuiScopedField field("Field Width", 100);
+      ImGui::InputFloat("##field_width", &m_field_size.x, 0.f, 0.f, "%0.3f m");
+    }
+    {
+      ImGuiScopedField field("Field Height", 100);
+      ImGui::InputFloat("##field_height", &m_field_size.y, 0.f, 0.f, "%0.3f m");
     }
 
     if (ImGui::Button("Cancel")) {
@@ -53,7 +67,8 @@ void NewFieldPopup::present(bool* running) {
         m_field_aspect_ratio = static_cast<float>(m_field_texture.width()) /
                                static_cast<float>(m_field_texture.height());
 
-        m_field = Field(img_path_buf, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+        m_field = Field(img_path_buf, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f),
+                        m_field_size);
       } else {
         m_image_load_failed = true;
       }

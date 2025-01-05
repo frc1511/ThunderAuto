@@ -6,8 +6,6 @@
 #include <IconsFontAwesome5.h>
 #include <stb_image.h>
 
-static const ImVec2 FIELD_SIZE(16.54175f, 8.0137f); // meters.
-
 static float HANDLE_THICKNESS(const ImRect& bb) {
   return bb.GetSize().x / 1000.0f;
 }
@@ -32,7 +30,7 @@ static const int32_t HANDLE_COLOR_SELECTED = IM_COL32(178, 169, 0, 255);
 
 static const ImVec2 to_screen_coordinate(const ImVec2& field_pt,
                                          const Field& field, const ImRect& bb) {
-  ImVec2 pt = field_pt / FIELD_SIZE;
+  ImVec2 pt = field_pt / field.size();
 
   pt *= field.image_rect().Max - field.image_rect().Min;
   pt += field.image_rect().Min;
@@ -53,7 +51,7 @@ static const ImVec2 to_field_coordinate(const ImVec2& screen_pt,
   pt -= field.image_rect().Min;
   pt /= field.image_rect().Max - field.image_rect().Min;
 
-  pt *= FIELD_SIZE;
+  pt *= field.size();
 
   return pt;
 }
@@ -67,6 +65,7 @@ static bool is_mouse_hovering_point(const ImVec2& pt, float tolerance_radius) {
 #include <field_2022_png.h>
 #include <field_2023_png.h>
 #include <field_2024_png.h>
+#include <field_2025_png.h>
 
 void PathEditorPage::setup_field(const ProjectSettings& settings) {
   m_settings = &settings;
@@ -93,6 +92,11 @@ void PathEditorPage::setup_field(const ProjectSettings& settings) {
     case FIELD_2024:
       image_data_buf = field_2024_png;
       image_data_size = field_2024_png_size;
+      break;
+    case FIELD_2025:
+      image_data_buf = field_2025_png;
+      image_data_size = field_2025_png_size;
+      break;
     }
 
     m_field_texture.init(image_data_buf, image_data_size);

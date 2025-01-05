@@ -19,6 +19,8 @@ class NewFieldPopup : public Popup {
 
   std::optional<Field> m_field = std::nullopt;
 
+  ImVec2 m_field_size = {16.54175f, 8.0137f}; // meters.
+
 public:
   inline explicit NewFieldPopup(PlatformManager& platform_manager)
     : m_platform_manager(platform_manager) {}

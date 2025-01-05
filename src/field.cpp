@@ -1,6 +1,10 @@
 #include <ThunderAuto/field.h>
 
 static const ImRect field_rects[] {
+    // 2025
+    ImRect(ImVec2(0.0795935557f, 0.1139555361f),
+           ImVec2(1.f - 0.0795935557f, 1.f - 0.1139555361f)),
+
     // 2024
     ImRect(ImVec2(0.080078125f, 0.07861328125f),
            ImVec2(0.919921875f, 0.90625f)),
@@ -13,7 +17,18 @@ static const ImRect field_rects[] {
     ImRect(ImVec2(0.12f, 0.16f), ImVec2(0.88f, 0.84f)),
 };
 
+static const ImVec2 field_sizes[] {
+    // 2025
+    ImVec2(17.548249f, 8.077200f),
+
+    // 2024
+    ImVec2(16.54175f, 8.0137f),
+    ImVec2(16.54175f, 8.0137f),
+    ImVec2(16.54175f, 8.0137f),
+};
+
 static const char* field_names[] {
+    "2025",
     "2024",
     "2023",
     "2022",
@@ -21,7 +36,8 @@ static const char* field_names[] {
 
 Field::Field(BuiltinImage builtin_image)
   : m_image(builtin_image),
-    m_image_rect(field_rects[static_cast<std::size_t>(builtin_image)]) {}
+    m_image_rect(field_rects[static_cast<std::size_t>(builtin_image)]),
+    m_size(field_sizes[static_cast<std::size_t>(builtin_image)]) {}
 
 void to_json(nlohmann::json& json, const Field& field) {
   std::string image_str;
@@ -34,6 +50,7 @@ void to_json(nlohmann::json& json, const Field& field) {
   }
 
   ImRect image_rect = field.image_rect();
+  ImVec2 field_size = field.size();
 
   json = nlohmann::json {
       {"img_type", static_cast<std::size_t>(type)},
@@ -45,6 +62,8 @@ void to_json(nlohmann::json& json, const Field& field) {
     json["min_y"] = image_rect.Min.y;
     json["max_x"] = image_rect.Max.x;
     json["max_y"] = image_rect.Max.y;
+    json["field_size_x"] = field_size.x;
+    json["field_size_y"] = field_size.y;
   }
 }
 
@@ -60,11 +79,14 @@ void from_json(const nlohmann::json& json, Field& field) {
     image_rect.Min.y = json.at("min_y").get<float>();
     image_rect.Max.x = json.at("max_x").get<float>();
     image_rect.Max.y = json.at("max_y").get<float>();
+    ImVec2 field_size;
+    field_size.x = json.at("field_size_x").get<float>();
+    field_size.y = json.at("field_size_y").get<float>();
 
-    field = Field(image_str, image_rect);
+    field = Field(image_str, image_rect, field_size);
   } else {
     int image_index = -1;
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 4; ++i) {
       if (image_str == field_names[i]) {
         image_index = i;
         break;

@@ -32,6 +32,7 @@ class PathEditorPage : public Page {
   bool m_show_rotation = true;
   bool m_show_tooltip = true;
 
+  ImVec2 m_field_size;
   float m_field_aspect_ratio = 1.f;
   Texture m_field_texture;
 
