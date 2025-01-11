@@ -9,7 +9,7 @@ void DocumentManager::new_project(ProjectSettings settings) {
   m_name = std::filesystem::path(m_settings.path).filename().string();
   m_open = true;
 
-  m_history.reset({}, true);
+  m_history.reset(ProjectState{}, true);
 }
 
 void DocumentManager::open_project(std::filesystem::path path) {

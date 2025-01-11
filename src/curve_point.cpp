@@ -107,7 +107,9 @@ void to_json(nlohmann::json& json, const CurvePoint& point) {
                          {"w1", weights.outgoing},
                          {"rotation", rotation.radians()},
                          {"stop", stop},
-                         {"actions", actions}};
+                         {"actions", actions},
+                         {"locked", point.editor_locked()},
+                         {"link_index", point.link_index()}};
 }
 
 void from_json(const nlohmann::json& json, CurvePoint& point) {
@@ -121,5 +123,13 @@ void from_json(const nlohmann::json& json, CurvePoint& point) {
   unsigned actions = json.at("actions").get<unsigned>();
 
   point = CurvePoint(pos, headings, weights, rotation, stop, actions);
+
+  if (json.contains("locked")) {
+    point.set_editor_locked(json.at("locked").get<bool>());
+  }
+
+  if (json.contains("link_index")) {
+    point.set_link_index(json.at("link_index").get<int>());
+  }
 }
 

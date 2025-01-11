@@ -14,7 +14,9 @@ static float LINE_THICKNESS(const ImRect& bb) {
   return bb.GetSize().x / 900.0f;
 }
 
-static float POINT_RADIUS = 4.5f;
+static float POINT_RADIUS(const ImRect& bb) {
+  return max(min(4.5f, bb.GetSize().x / 250.0f), LINE_THICKNESS(bb) * 1.25f);
+}
 
 static const int32_t POINT_COLOR = IM_COL32(255, 255, 255, 255);
 static const int32_t POINT_COLOR_SELECTED = IM_COL32(255, 242, 0, 255);
@@ -28,7 +30,8 @@ static const int32_t POINT_END_COLOR_SELECTED = IM_COL32(255, 0, 0, 255);
 static const int32_t HANDLE_COLOR = IM_COL32(225, 225, 225, 255);
 static const int32_t HANDLE_COLOR_SELECTED = IM_COL32(178, 169, 0, 255);
 
-static const int32_t PREVIEW_ROBOT_COLOR = IM_COL32(128, 128, 128, 255);
+static const int32_t POINT_COLOR_PREVIEW = IM_COL32(128, 128, 128, 255);
+static const int32_t POINT_COLOR_LOCKED = IM_COL32(192, 192, 192, 255);
 
 static const ImVec2 to_screen_coordinate(const ImVec2& field_pt,
                                          const Field& field, const ImRect& bb) {
@@ -215,9 +218,7 @@ void PathEditorPage::present_curve_editor() {
     present_point_widget(point, selected, first, last, bb);
   }
 
-  if (ImGui::IsWindowHovered()) {
-    handle_input(state, bb);
-  }
+  handle_input(state, bb);
 
   present_context_menus(state);
 }
@@ -364,21 +365,31 @@ void PathEditorPage::present_point_widget(const CurvePoint& point,
     color_selected = POINT_END_COLOR_SELECTED;
   }
 
-  const int32_t final_color = selected ? color_selected : color;
+  int32_t final_color = selected ? color_selected : color;
 
-  draw_list->AddCircleFilled(pt, POINT_RADIUS, final_color);
+  if (point.editor_locked()) {
+    final_color = POINT_COLOR_LOCKED;
+  }
+
+  draw_list->AddCircleFilled(pt, POINT_RADIUS(bb), final_color);
 }
 
 void PathEditorPage::present_point_rotation_widget(const CurvePoint& point,
                                                    bool selected, ImRect bb) {
   ImDrawList* draw_list(ImGui::GetWindowDrawList());
 
-  const int32_t color = selected ? POINT_COLOR_SELECTED : POINT_COLOR;
+  int32_t color = POINT_COLOR;
+
+  if (point.editor_locked()) {
+    color = POINT_COLOR_LOCKED;
+  } else if (selected) {
+    color = POINT_COLOR_SELECTED;
+  }
 
   ImVec2 pt = to_screen_coordinate(
       point.rotation_control_point(m_settings->robot_length), m_settings->field,
       bb);
-  draw_list->AddCircleFilled(pt, POINT_RADIUS, color);
+  draw_list->AddCircleFilled(pt, POINT_RADIUS(bb), color);
 
   std::array<ImVec2, 4> corners =
       point.robot_corners(m_settings->robot_length, m_settings->robot_width);
@@ -393,6 +404,8 @@ void PathEditorPage::present_point_rotation_widget(const CurvePoint& point,
 void PathEditorPage::present_point_heading_widget(const CurvePoint& point,
                                                   bool incoming, bool outgoing,
                                                   bool selected, ImRect bb) {
+  if (point.editor_locked()) return;
+
   ImDrawList* draw_list(ImGui::GetWindowDrawList());
 
   const ImVec2 pt =
@@ -408,7 +421,7 @@ void PathEditorPage::present_point_heading_widget(const CurvePoint& point,
 
     draw_list->AddLine(pt, control_pt, handle_color, HANDLE_THICKNESS(bb));
 
-    draw_list->AddCircleFilled(control_pt, POINT_RADIUS, point_color);
+    draw_list->AddCircleFilled(control_pt, POINT_RADIUS(bb), point_color);
   }
   if (outgoing) {
     const ImVec2 control_pt =
@@ -417,7 +430,7 @@ void PathEditorPage::present_point_heading_widget(const CurvePoint& point,
 
     draw_list->AddLine(pt, control_pt, handle_color, HANDLE_THICKNESS(bb));
 
-    draw_list->AddCircleFilled(control_pt, POINT_RADIUS, point_color);
+    draw_list->AddCircleFilled(control_pt, POINT_RADIUS(bb), point_color);
   }
 }
 
@@ -459,18 +472,12 @@ void PathEditorPage::present_robot_preview(ImRect bb) {
 
   Angle rotation = Angle::radians(lower_point.actual_rotation);
 
-  {
-    ImVec2 pt_start = to_screen_coordinate(
-        pt_extend_at_angle(position, rotation, m_settings->robot_length / 2.f),
-        m_settings->field, bb);
-    ImVec2 pt_end = to_screen_coordinate(
-        pt_extend_at_angle(position, rotation,
-                           m_settings->robot_length / 2.f + 0.1),
-        m_settings->field, bb);
+  ImVec2 rotation_pt = to_screen_coordinate(
+      pt_extend_at_angle(position, rotation, m_settings->robot_length / 2.f),
+      m_settings->field, bb);
 
-    draw_list->AddLine(pt_start, pt_end, PREVIEW_ROBOT_COLOR,
-                       HANDLE_THICKNESS(bb));
-  }
+  draw_list->AddCircleFilled(rotation_pt, POINT_RADIUS(bb),
+                             POINT_COLOR_PREVIEW);
 
   std::array<ImVec2, 4> corners = robot_corners(
       position, rotation, m_settings->robot_length, m_settings->robot_width);
@@ -479,7 +486,7 @@ void PathEditorPage::present_robot_preview(ImRect bb) {
   }
 
   draw_list->AddQuad(corners[0], corners[1], corners[2], corners[3],
-                     PREVIEW_ROBOT_COLOR, HANDLE_THICKNESS(bb));
+                     POINT_COLOR_PREVIEW, HANDLE_THICKNESS(bb));
 }
 
 void PathEditorPage::present_playback_slider() {
@@ -528,17 +535,19 @@ void PathEditorPage::handle_input(ProjectState& state, ImRect bb) {
 
   handle_point_input(state, bb);
 
-  if (m_drag_point == PointType::NONE) {
-    handle_curve_input(state, bb);
-  }
+  if (ImGui::IsWindowHovered()) {
+    if (m_drag_point == PointType::NONE) {
+      handle_curve_input(state, bb);
+    }
 
-  if (!m_show_context_menu && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-    ImVec2 mouse_pos = ImGui::GetIO().MousePos;
-    ImGui::OpenPopup("EditorContextMenu");
-    ImGui::SetNextWindowPos(mouse_pos);
-    m_context_menu_position =
-        to_field_coordinate(mouse_pos, m_settings->field, bb);
-    m_show_context_menu = true;
+    if (!m_show_context_menu && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+      ImVec2 mouse_pos = ImGui::GetIO().MousePos;
+      ImGui::OpenPopup("EditorContextMenu");
+      ImGui::SetNextWindowPos(mouse_pos);
+      m_context_menu_position =
+          to_field_coordinate(mouse_pos, m_settings->field, bb);
+      m_show_context_menu = true;
+    }
   }
 }
 
@@ -553,6 +562,8 @@ void PathEditorPage::handle_point_input(ProjectState& state, ImRect bb) {
   for (std::size_t i = 0; i < curve.points().size(); ++i) {
     CurvePoint& point = curve.points().at(i);
 
+    if (point.editor_locked()) continue;
+
     const ImVec2 position_pt = point.position();
     const auto [heading_in_pt, heading_out_pt] = point.heading_control_points();
     const ImVec2 rotation_pt =
@@ -561,7 +572,7 @@ void PathEditorPage::handle_point_input(ProjectState& state, ImRect bb) {
     const auto check_pt = [&](const ImVec2& pt, PointType type) {
       if (is_mouse_hovering_point(
               to_screen_coordinate(pt, m_settings->field, bb),
-              POINT_RADIUS * 1.25f)) {
+              POINT_RADIUS(bb) * 1.25f)) {
         hovered_point_type = type;
       }
     };
@@ -585,7 +596,14 @@ void PathEditorPage::handle_point_input(ProjectState& state, ImRect bb) {
   if (!ImGui::IsWindowHovered()) {
     if (m_drag_point != PointType::NONE) {
       // End drag.
+      state.update_linked_waypoints_from_selected();
+      m_history.add_state(state);
+
       m_history.finish_long_edit();
+
+      m_is_playing = m_was_playing;
+
+      curve.output(m_cached_curve, preview_output_curve_settings);
     }
 
     m_drag_point = PointType::NONE;
@@ -620,6 +638,7 @@ void PathEditorPage::handle_point_input(ProjectState& state, ImRect bb) {
     if (ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
       ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 
+      state.update_linked_waypoints_from_selected();
       curve.output(m_cached_curve, preview_output_curve_settings);
 
       if (m_clicked_point != PointType::NONE) {
@@ -665,9 +684,14 @@ void PathEditorPage::handle_point_input(ProjectState& state, ImRect bb) {
     if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
       if (m_drag_point != PointType::NONE) {
         // End drag.
+        state.update_linked_waypoints_from_selected();
+        m_history.add_state(state);
+
         m_history.finish_long_edit();
 
         m_is_playing = m_was_playing;
+
+        curve.output(m_cached_curve, preview_output_curve_settings);
       }
 
       m_drag_point = PointType::NONE;
@@ -709,34 +733,34 @@ void PathEditorPage::handle_curve_input(ProjectState& state, ImRect bb) {
     }
   }
 
-  if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
-    std::size_t index;
-    const ImVec2 mouse_pos =
-        to_field_coordinate(io.MousePos, m_settings->field, bb);
+  std::size_t hovered_point_index = curve.points().size();
+  const ImVec2 mouse_pos =
+      to_field_coordinate(io.MousePos, m_settings->field, bb);
 
-    if (hovered) {
-      assert(hovered_point);
-      index = hovered_point->segment_index + 1;
+  if (hovered) {
+    assert(hovered_point);
+    hovered_point_index = hovered_point->segment_index + 1;
 
-    } else {
-      const float distance_from_front =
-          pt_distance(mouse_pos, curve.points().front().position());
-      const float distance_from_back =
-          pt_distance(mouse_pos, curve.points().back().position());
+  } else {
+    const float distance_from_front =
+        pt_distance(mouse_pos, curve.points().front().position());
+    const float distance_from_back =
+        pt_distance(mouse_pos, curve.points().back().position());
 
-      index = (distance_from_front < distance_from_back)
-                  ? 0
-                  : curve.points().size();
+    if (distance_from_front < distance_from_back) {
+      hovered_point_index = 0;
     }
+  }
 
-    insert_point(state, index, mouse_pos);
+  if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+    insert_point(state, hovered_point_index, mouse_pos);
   }
   if (!m_show_context_menu && hovered &&
       ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
     ImVec2 mouse_pos = ImGui::GetIO().MousePos;
     m_context_menu_position =
         to_field_coordinate(mouse_pos, m_settings->field, bb);
-    m_context_menu_hovered_curve_point_index = hovered_point->segment_index + 1;
+    m_context_menu_hovered_curve_point_index = hovered_point_index;
     ImGui::OpenPopup("EditorCurveContextMenu");
     ImGui::SetNextWindowPos(mouse_pos);
     m_show_context_menu = true;

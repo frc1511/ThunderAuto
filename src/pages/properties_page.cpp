@@ -15,6 +15,12 @@ void PropertiesPage::present(bool* running) {
 
   ProjectState state = m_history.current_state();
 
+  // Path Properties.
+  if (ImGui::CollapsingHeader(ICON_FA_BEZIER_CURVE "  Path", nullptr,
+                              ImGuiTreeNodeFlags_DefaultOpen)) {
+    present_path_properties(state);
+  }
+
   // Point Properties.
   if (state.selected_point_index() != -1 &&
       ImGui::CollapsingHeader(ICON_FA_CIRCLE "  Point", nullptr,
@@ -23,10 +29,16 @@ void PropertiesPage::present(bool* running) {
     present_point_properties(state);
   }
 
-  // Path Properties.
-  if (ImGui::CollapsingHeader(ICON_FA_BEZIER_CURVE "  Path", nullptr,
+  // Velocity Constraints.
+  if (ImGui::CollapsingHeader("Velocity Constraints", nullptr,
                               ImGuiTreeNodeFlags_DefaultOpen)) {
-    present_path_properties(state);
+    present_velocity_properties(state);
+  }
+
+  // Editor Properties.
+  if (ImGui::CollapsingHeader("Editor", nullptr,
+                              ImGuiTreeNodeFlags_DefaultOpen)) {
+    present_editor_properties();
   }
 
   ImGui::End();
@@ -70,6 +82,8 @@ void PropertiesPage::present_point_properties(ProjectState& state) {
   }
 
   if (changed) {
+    state.update_linked_waypoints_from_selected();
+
     m_history.add_state(state);
     curve.output(m_cached_curve, preview_output_curve_settings);
   }
@@ -110,7 +124,6 @@ void PropertiesPage::present_point_properties(ProjectState& state) {
 
 void PropertiesPage::present_path_properties(ProjectState& state) {
   Curve& curve = state.current_path();
-  CurveSettings& settings = curve.settings();
 
   // Export to CSV.
   {
@@ -122,6 +135,85 @@ void PropertiesPage::present_path_properties(ProjectState& state) {
   }
 
   ImGui::Separator();
+
+  // Waypoint list
+
+  std::vector<CurvePoint>& points = curve.points();
+
+  ImGui::PushID("Waypoints");
+
+  ImGui::Text("Waypoints");
+
+  for (std::size_t i = 0; i < points.size(); ++i) {
+    CurvePoint& pt = points.at(i);
+
+    ImGui::PushID(i);
+    ImGui::Columns(3, nullptr, false);
+    ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() - 70.0f - 20.0f);
+    ImGui::SetColumnWidth(1, 30.0f);
+    ImGui::SetColumnWidth(2, 40.0f);
+
+    {
+      ImGui::Indent(10.0f);
+
+      if (ImGui::Selectable(std::to_string(i).c_str(),
+                            int(i) == state.selected_point_index())) {
+        state.selected_point_index() = i;
+        m_history.add_state(state);
+      }
+
+      if (pt.link_index() != -1) {
+        ImGui::SameLine();
+        ImGui::Text(ICON_FA_ARROW_RIGHT "  %s",
+                    state.waypoint_links().at(pt.link_index()).c_str());
+      }
+
+      ImGui::Unindent(10.0f);
+    }
+
+    ImGui::NextColumn();
+
+    {
+      bool locked = pt.editor_locked();
+      if (ImGui::Button(locked ? ICON_FA_LOCK : ICON_FA_UNLOCK)) {
+        pt.set_editor_locked(!locked);
+        m_history.add_state(state);
+      }
+      if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(locked ? "Unlock" : "Lock");
+      }
+    }
+
+    ImGui::NextColumn();
+
+    {
+      bool reset = false;
+
+      if (ImGui::Button(ICON_FA_LINK)) {
+        reset = true;
+
+        ImGui::OpenPopup("Link Waypoint");
+        ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), false,
+                                ImVec2(0.5f, 0.5f));
+      }
+      if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Link to another point");
+      }
+
+      present_link_popup(state, i, reset);
+    }
+
+    ImGui::Columns(1);
+
+    ImGui::PopID();
+  }
+
+  ImGui::PopID();
+}
+
+void PropertiesPage::present_velocity_properties(ProjectState& state) {
+  Curve& curve = state.current_path();
+  CurveSettings& settings = curve.settings();
 
   bool changed = false;
 
@@ -162,8 +254,9 @@ void PropertiesPage::present_path_properties(ProjectState& state) {
     m_history.add_state(state);
     state.current_path().output(m_cached_curve, preview_output_curve_settings);
   }
+}
 
-  ImGui::Separator();
+void PropertiesPage::present_editor_properties() {
 
   // Curve overlay.
   {
@@ -212,6 +305,116 @@ void PropertiesPage::present_path_properties(ProjectState& state) {
       m_path_editor_page.set_show_tooltip(show_tooltip);
     }
   }
+}
+
+void PropertiesPage::present_link_popup(ProjectState& state,
+                                        std::size_t point_index, bool reset) {
+  CurvePoint& point = state.current_path().points().at(point_index);
+
+  static int link_index = -1;
+  static char link_buffer[256] = "";
+  static bool new_link = false;
+
+  std::vector<std::string>& links = state.waypoint_links();
+
+  if (reset) {
+    link_index = point.link_index();
+    link_buffer[0] = '\0';
+    new_link = false;
+  }
+
+  if (!ImGui::BeginPopupModal("Link Waypoint", nullptr,
+                              ImGuiWindowFlags_NoResize |
+                                  ImGuiWindowFlags_NoMove)) {
+    return;
+  }
+
+  ImGui::SetWindowSize(ImVec2(300.f, -1.f));
+  {
+    ImGuiScopedField field("Link", 80.f);
+
+    const char* combo_title = new_link ? "New Link"
+                              : (link_index == -1)
+                                  ? "None"
+                                  : links.at(link_index).c_str();
+
+    if (ImGui::BeginCombo("##link", combo_title)) {
+      for (std::size_t j = 0; j < links.size(); ++j) {
+        bool selected = (int(j) == link_index);
+        if (ImGui::Selectable(links.at(j).c_str(), selected)) {
+          link_index = j;
+          new_link = false;
+        }
+      }
+
+      ImGui::Separator();
+
+      if (ImGui::Selectable("New Link", new_link)) {
+        link_index = -1;
+        new_link = true;
+      }
+
+      ImGui::Separator();
+
+      if (ImGui::Selectable("None", link_index == -1)) {
+        link_index = -1;
+        new_link = false;
+      }
+
+      ImGui::EndCombo();
+    }
+  }
+
+  if (new_link) {
+    ImGuiScopedField field("Link Name", 80.f);
+
+    ImGui::InputText("##input", link_buffer, 256);
+  }
+
+  {
+    ImGuiScopedDisabled disabled(new_link && !strlen(link_buffer));
+
+    if (ImGui::Button("Done")) {
+      if (new_link) {
+        link_index = links.size();
+
+        std::string link_name = link_buffer;
+
+        bool found_match = false;
+        for (std::size_t i = 0; i < links.size(); ++i) {
+          if (links.at(i) == link_name) {
+            link_index = i;
+            found_match = true;
+            break;
+          }
+        }
+
+        if (!found_match) {
+          links.push_back(link_name);
+        }
+      }
+
+      point.set_link_index(link_index);
+
+      if (!new_link) {
+        state.update_point_from_linked_waypoints(point_index);
+        state.current_path().output(m_cached_curve,
+                                    preview_output_curve_settings);
+      }
+
+      m_history.add_state(state);
+
+      ImGui::CloseCurrentPopup();
+    }
+  }
+
+  ImGui::SameLine();
+
+  if (ImGui::Button("Cancel") || ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+    ImGui::CloseCurrentPopup();
+  }
+
+  ImGui::EndPopup();
 }
 
 bool PropertiesPage::edit_point_position(CurvePoint& pt) {

@@ -36,6 +36,9 @@ class CurvePoint {
   // Bit-field of actions to perform at this point.
   uint32_t m_actions = 0;
 
+  bool m_editor_locked = false;
+  int m_link_index = -1;
+
 public:
   inline CurvePoint()
     : CurvePoint({0, 0}, 0_deg, {}, 0_deg) {}
@@ -112,6 +115,12 @@ public:
         m_headings.incoming = m_headings.outgoing.supplementary();
     }
   }
+
+  inline bool editor_locked() const { return m_editor_locked; }
+  inline void set_editor_locked(bool locked) { m_editor_locked = locked; }
+
+  inline int link_index() const { return m_link_index; }
+  inline void set_link_index(int index) { m_link_index = index; }
 
   inline uint32_t actions() const { return m_actions; }
   inline void set_actions(uint32_t actions) { m_actions = actions; }

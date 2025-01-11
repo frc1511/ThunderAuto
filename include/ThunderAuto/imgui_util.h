@@ -46,7 +46,7 @@ public:
                           std::function<void()> make_left_column) {
     ImGui::PushID(id);
     ImGui::Columns(2, nullptr, false);
-    ImGui::SetColumnWidth(0.f, column_width);
+    ImGui::SetColumnWidth(0, column_width);
 
     make_left_column();
 
@@ -71,3 +71,4 @@ inline ImVec2 pt_extend_at_angle(const ImVec2& pt, const Angle& angle,
 
   return pt + ImVec2(dx, dy);
 }
+

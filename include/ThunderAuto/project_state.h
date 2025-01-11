@@ -12,8 +12,10 @@ class ProjectState {
   std::size_t m_current_path_index = 0;
   int m_selected_point_index = -1;
 
+  std::vector<std::string> m_waypoint_links;
+
 public:
-  ProjectState(std::vector<std::pair<std::string, Curve>> paths = {});
+  explicit ProjectState(std::vector<std::pair<std::string, Curve>> paths = {});
 
   inline const std::vector<std::string>& actions() const { return m_actions; }
   inline std::vector<std::string>& actions() { return m_actions; }
@@ -46,7 +48,20 @@ public:
     }
     return &current_path().points().at(m_selected_point_index);
   }
+
+  inline std::vector<std::string>& waypoint_links() { return m_waypoint_links; }
+  inline const std::vector<std::string>& waypoint_links() const {
+    return m_waypoint_links;
+  }
+
+  // Update linked waypoints with the same link as the selected point.
+  void update_linked_waypoints_from_selected();
+  void update_point_from_linked_waypoints(int point_index);
+  inline void update_selected_from_linked_waypoints() {
+    update_point_from_linked_waypoints(m_selected_point_index);
+  }
 };
 
 void to_json(nlohmann::json& json, const ProjectState& project);
 void from_json(const nlohmann::json& json, ProjectState& project);
+

@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <list>
 #include <map>
 #include <numbers>
 #include <numeric>
@@ -17,7 +18,6 @@
 #include <utility>
 #include <variant>
 #include <vector>
-#include <list>
 
 #include <fmt/core.h>
 #include <nlohmann/json.hpp>
@@ -32,8 +32,8 @@ inline bool float_eq(float x, float y) { return std::fabs(x - y) < 1e-6; }
 #include <Windows.h>
 #else
 #endif
-using std::min;
 using std::max;
+using std::min;
 
 #if TH_DIRECTX11
 #include <d3d11.h>

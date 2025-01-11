@@ -10,7 +10,7 @@ class DocumentEditManager {
   std::optional<ProjectState> m_current_state = std::nullopt;
 
 public:
-  inline DocumentEditManager(HistoryManager* history)
+  inline explicit DocumentEditManager(HistoryManager* history)
     : m_history(history) {}
 
   inline void start_long_edit() {
@@ -63,3 +63,4 @@ public:
     m_history->add_state(state, unsaved);
   }
 };
+

@@ -34,6 +34,11 @@ public:
 private:
   void present_point_properties(ProjectState& current_state);
   void present_path_properties(ProjectState& current_state);
+  void present_velocity_properties(ProjectState& current_state);
+  void present_editor_properties();
+
+  void present_link_popup(ProjectState& current_state, std::size_t point_index,
+                          bool reset = false);
 
   bool edit_point_position(CurvePoint& point);
   bool edit_point_headings(CurvePoint& point, bool incoming, bool outgoing);
@@ -48,3 +53,4 @@ private:
 
   void export_to_csv();
 };
+
