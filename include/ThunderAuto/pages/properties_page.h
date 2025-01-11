@@ -50,7 +50,5 @@ private:
 
   bool present_slider(const char* id, float& value, float speed = 1.f,
                       const char* format = "%.2f");
-
-  void export_to_csv();
 };
 

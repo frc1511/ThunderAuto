@@ -124,6 +124,12 @@ void App::present_menu_bar() {
       present_edit_menu();
       present_view_menu();
       present_path_menu();
+
+      if (ImGui::MenuItem("Export All Paths")) {
+        m_document_manager.history()->current_state().export_all_paths_to_csv(
+            m_document_manager.settings());
+      }
+
       present_tools_menu();
     }
 
@@ -196,11 +202,14 @@ void App::present_view_menu() {
 }
 
 void App::present_path_menu() {
-  bool item_reverse = false, item_duplicate = false, item_delete = false;
+  bool item_export = false, item_reverse = false, item_duplicate = false,
+       item_delete = false;
 
   ProjectState state = m_document_manager.history()->current_state();
 
   if (ImGui::BeginMenu("Path")) {
+    ImGui::MenuItem(ICON_FA_FILE_CSV "  Export to CSV", nullptr, &item_export);
+
     ImGui::MenuItem("\xef\x8d\xa3"
                     "  Reverse Direction",
                     nullptr, &item_reverse);
@@ -211,6 +220,11 @@ void App::present_path_menu() {
       ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete", nullptr, &item_delete);
     }
     ImGui::EndMenu();
+  }
+
+  if (item_export) {
+    m_document_manager.history()->current_state().export_current_path_to_csv(
+        m_document_manager.settings());
   }
 
   if (item_reverse) {

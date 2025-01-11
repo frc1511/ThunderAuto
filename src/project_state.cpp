@@ -61,6 +61,45 @@ void ProjectState::update_point_from_linked_waypoints(int point_index) {
   }
 }
 
+void ProjectState::export_path_to_csv(std::size_t path_index,
+                          const ProjectSettings& settings) const {
+
+  const auto& [path_name, curve] = m_paths.at(path_index);
+
+  // Build the high resolution output curve.
+  OutputCurve output;
+  curve.output(output, high_res_output_curve_settings);
+
+  // Write to file.
+  std::filesystem::path path =
+      settings.path.parent_path() / (path_name + ".csv");
+
+  std::ofstream file(path);
+  if (!file.is_open()) {
+    puts("Failed to open CSV file");
+    return;
+  }
+
+  file << "time,x_pos,y_pos,velocity,rotation,action\n";
+
+  for (const OutputCurvePoint& point : output.points) {
+    file << point.time << ",";
+    file << point.position.x << ",";
+    file << point.position.y << ",";
+    file << point.velocity << ",";
+    file << point.rotation << ",";
+    file << point.actions << "\n";
+  }
+
+  printf("Exported to %s\n", path.string().c_str());
+}
+
+void ProjectState::export_all_paths_to_csv(const ProjectSettings& settings) const {
+  for (std::size_t i = 0; i < m_paths.size(); ++i) {
+    export_path_to_csv(i, settings);
+  }
+}
+
 void to_json(nlohmann::json& json, const ProjectState& project) {
   json = nlohmann::json {
       {"paths", project.paths()},

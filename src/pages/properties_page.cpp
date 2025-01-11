@@ -130,7 +130,7 @@ void PropertiesPage::present_path_properties(ProjectState& state) {
     ImGuiScopedField field("Export to CSV", COLUMN_WIDTH);
 
     if (ImGui::Button("Export")) {
-      export_to_csv();
+      state.export_current_path_to_csv(*m_settings);
     }
   }
 
@@ -330,6 +330,7 @@ void PropertiesPage::present_link_popup(ProjectState& state,
   }
 
   ImGui::SetWindowSize(ImVec2(300.f, -1.f));
+
   {
     ImGuiScopedField field("Link", 80.f);
 
@@ -520,40 +521,5 @@ bool PropertiesPage::present_slider(const char* id, float& value,
   }
 
   return active;
-}
-
-void PropertiesPage::export_to_csv() {
-  assert(m_settings);
-
-  const ProjectState& state = m_history.current_state();
-
-  // Build the high resolution output curve.
-  OutputCurve output;
-  state.current_path().output(output, high_res_output_curve_settings);
-
-  // Write to file.
-  const std::string& curve_name = state.current_path_name();
-
-  std::filesystem::path path =
-      m_settings->path.parent_path() / (curve_name + ".csv");
-
-  std::ofstream file(path);
-  if (!file.is_open()) {
-    puts("Failed to open CSV file");
-    return;
-  }
-
-  file << "time,x_pos,y_pos,velocity,rotation,action\n";
-
-  for (const OutputCurvePoint& point : output.points) {
-    file << point.time << ",";
-    file << point.position.x << ",";
-    file << point.position.y << ",";
-    file << point.velocity << ",";
-    file << point.rotation << ",";
-    file << point.actions << "\n";
-  }
-
-  printf("Exported to %s\n", path.string().c_str());
 }
 
