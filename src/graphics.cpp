@@ -109,6 +109,15 @@ void Graphics::init() {
 #if TH_DIRECTX11
   ImGui_ImplGlfw_InitForOther(m_window, true);
   ImGui_ImplDX11_Init(m_device, m_device_context);
+
+  glfwSetWindowSizeCallback(m_window, [](GLFWwindow*, int width, int height) {
+    if (width > 0 && height > 0) {
+      Graphics::get().deinit_render_target();
+      Graphics::get().m_swap_chain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0);
+      Graphics::get().init_render_target();
+    }
+  });
+
 #else // TH_OPENGL
   ImGui_ImplGlfw_InitForOpenGL(m_window, true);
   ImGui_ImplOpenGL3_Init(GLSL_VERSION);
