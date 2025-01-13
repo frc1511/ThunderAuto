@@ -24,8 +24,6 @@ endif()
 option(TH_DIRECTX11 "Enable DirectX 11" OFF)
 option(TH_OPENGL "Enable OpenGL" OFF)
 
-set(TH_WINDRES_EXECUTABLE "windres" CACHE STRING "Path to windres executable")
-
 #
 # Project configuration.
 #
@@ -172,16 +170,7 @@ add_subdirectory("${TH_THIRDPARTY_DIR}/json")
 #
 
 if(TH_WINDOWS)
-  # build .rc file to .o with windres.
-  #set(RC_FILE "${TH_RES_DIR}/windows/thunderauto.rc")
-  #set(RC_OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/thunderauto.rc.o")
-  #add_custom_command(
-  #  COMMAND ${TH_WINDRES_EXECUTABLE} ${RC_FILE} -o ${RC_OUTPUT_FILE}
-  #  OUTPUT ${RC_OUTPUT_FILE}
-  #  DEPENDS ${RC_FILE}
-  #)
-
-  add_executable(${PROJECT_NAME} WIN32 ${TH_SRC} ${RC_OUTPUT_FILE})
+  add_executable(${PROJECT_NAME} WIN32 ${TH_SRC})
 elseif(TH_MACOS)
   set(ICON_FILE "${TH_RES_DIR}/macos/app_icon.icns")
 
