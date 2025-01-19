@@ -162,7 +162,7 @@ void PropertiesPage::present_path_properties(ProjectState& state) {
       if (ImGui::Selectable(std::to_string(i).c_str(),
                             int(i) == state.selected_point_index())) {
         state.selected_point_index() = i;
-        m_history.add_state(state);
+        m_history.add_state(state, false);
       }
 
       if (pt.link_index() != -1) {
