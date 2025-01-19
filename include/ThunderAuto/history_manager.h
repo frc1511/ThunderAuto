@@ -3,6 +3,8 @@
 #include <ThunderAuto/project_state.h>
 #include <ThunderAuto/thunder_auto.h>
 
+class DocumentManager;
+
 class HistoryManager {
   std::deque<ProjectState> m_history;
   std::deque<ProjectState>::const_iterator m_current_state;
@@ -11,13 +13,14 @@ class HistoryManager {
   bool m_locked = false;
 
 public:
-  constexpr void mark_saved() { m_unsaved = false; }
+  void mark_unsaved() { m_unsaved = true; }
+  void mark_saved() { m_unsaved = false; }
 
-  constexpr bool is_unsaved() const { return m_unsaved; }
+  bool is_unsaved() const { return m_unsaved; }
 
   void reset(ProjectState state, bool unsaved = false);
 
-  inline const ProjectState& current_state() const { return *m_current_state; }
+  const ProjectState& current_state() const { return *m_current_state; }
 
   void add_state(ProjectState state, bool unsaved = true);
 
@@ -28,8 +31,9 @@ private:
   friend class DocumentEditManager;
 
   // Lock undo/redo actions.
-  constexpr void lock() { m_locked = true; }
-  constexpr void unlock() { m_locked = false; }
+  void lock() { m_locked = true; }
+  void unlock() { m_locked = false; }
 
-  constexpr bool is_locked() const { return m_locked; }
+  bool is_locked() const { return m_locked; }
 };
+

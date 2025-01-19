@@ -54,6 +54,7 @@ int _main(int argc, char** argv) {
 
     app.process_input();
 
+    static bool was_focused = true;
     bool is_focused = false;
 
     auto platform_io = ImGui::GetPlatformIO();
@@ -61,6 +62,11 @@ int _main(int argc, char** argv) {
       if (vp->PlatformWindowCreated) {
         is_focused |= ImGui::GetPlatformIO().Platform_GetWindowFocus(vp);
       }
+    }
+
+    if (is_focused != was_focused) {
+      app.focus_was_changed(is_focused);
+      was_focused = is_focused;
     }
 
     if (!is_focused) {

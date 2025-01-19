@@ -38,6 +38,19 @@ void App::setup_dockspace(ImGuiID dockspace_id) {
   }
 }
 
+void App::focus_was_changed(bool focused) {
+  bool auto_export = m_document_manager.settings().auto_export;
+
+  if (focused || !auto_export) return;
+
+  m_export_success =
+      m_document_edit_manager.current_state().export_all_paths_to_csv(
+          m_document_manager.settings());
+
+  m_export_popup = true;
+  m_exported_index = -1;
+}
+
 void App::present() {
   present_menu_bar();
 
@@ -77,9 +90,14 @@ void App::present() {
   if (m_document_manager.is_open()) {
     std::string title(m_document_manager.name());
     if (m_document_manager.is_unsaved()) {
-      title += " - Unsaved";
+      if (m_document_manager.settings().auto_save) {
+        m_document_manager.save();
+      } else {
+        title += " - Unsaved";
+      }
     }
     Graphics::get().window_set_title(title.c_str());
+
   } else {
     Graphics::get().window_set_title("ThunderAuto");
   }
@@ -128,10 +146,12 @@ void App::present_menu_bar() {
       present_path_menu();
 
       if (ImGui::MenuItem("Export All Paths")) {
-        m_document_edit_manager.current_state().export_all_paths_to_csv(
-            m_document_manager.settings());
+        m_export_success =
+            m_document_edit_manager.current_state().export_all_paths_to_csv(
+                m_document_manager.settings());
 
         m_export_popup = true;
+        m_exported_index = -1;
       }
 
       present_tools_menu();
@@ -153,6 +173,8 @@ void App::present_file_menu() {
   bool item_new = false, item_open = false, item_save = false,
        item_save_as = false, item_close = false;
 
+  ProjectSettings& settings = m_document_manager.settings();
+
   if (ImGui::BeginMenu("File")) {
     ImGui::MenuItem(ICON_FA_FILE "  New", CTRL_STR "N", &item_new);
     ImGui::MenuItem(ICON_FA_FOLDER_OPEN "  Open", CTRL_STR "O", &item_open);
@@ -163,6 +185,30 @@ void App::present_file_menu() {
       ImGui::MenuItem(ICON_FA_SAVE "  Save", CTRL_STR "S", &item_save);
       ImGui::MenuItem(ICON_FA_SAVE "  Save As", CTRL_SHIFT_STR "S",
                       &item_save_as);
+
+      ImGui::Separator();
+
+      if (ImGui::MenuItem(ICON_FA_SAVE "  Auto Save", nullptr, &settings.auto_save)) {
+        if (settings.auto_save) {
+          m_document_manager.save();
+        }
+      }
+      if (ImGui::MenuItem(ICON_FA_FILE_CSV "  Auto Export", nullptr,
+                      &settings.auto_export)) {
+        if (settings.auto_export) {
+          m_document_manager.history()->mark_unsaved();
+
+          m_export_success =
+              m_document_edit_manager.current_state().export_all_paths_to_csv(
+                  settings);
+
+          m_export_popup = true;
+          m_exported_index = -1;
+        }
+      }
+
+      ImGui::Separator();
+
       ImGui::MenuItem(ICON_FA_WINDOW_CLOSE "  Close", CTRL_STR "W",
                       &item_close);
     }
@@ -226,8 +272,13 @@ void App::present_path_menu() {
   }
 
   if (item_export) {
-    m_document_manager.history()->current_state().export_current_path_to_csv(
-        m_document_manager.settings());
+    m_export_success =
+        m_document_manager.history()
+            ->current_state()
+            .export_current_path_to_csv(m_document_manager.settings());
+
+    m_export_popup = true;
+    m_exported_index = state.current_path_index();
   }
 
   if (item_reverse) {
@@ -280,9 +331,11 @@ void App::present_export_popup() {
     const std::vector<std::pair<std::string, Curve>>& paths =
         m_document_manager.history()->current_state().paths();
 
-    if (!m_export_success) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
+    if (!m_export_success)
+      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
 
-    ImGui::Text("%s export CSV file(s):", m_export_success ? "Successfully" : "FAILED to");
+    ImGui::Text("%s export CSV file(s):",
+                m_export_success ? "Successfully" : "FAILED to");
 
     if (!m_export_success) ImGui::PopStyleColor();
 
@@ -293,12 +346,10 @@ void App::present_export_popup() {
         const char* name = paths.at(i).first.c_str();
         ImGui::Text("%s.csv", name);
       }
-    }
-    else {
+    } else {
       const char* name = paths.at(m_exported_index).first.c_str();
       ImGui::Text("%s.csv", name);
     }
-
 
     ImGui::Unindent(10.0);
 
@@ -546,8 +597,9 @@ void App::process_input() {
 
     } else if (CTRL_DOWN &&
                (KEY_DOWN(ImGuiKey_E) || KEY_DOWN(ImGuiKey_Apostrophe))) {
-      m_export_success = m_document_edit_manager.current_state().export_all_paths_to_csv(
-          m_document_manager.settings());
+      m_export_success =
+          m_document_edit_manager.current_state().export_all_paths_to_csv(
+              m_document_manager.settings());
 
       m_export_popup = true;
       m_exported_index = -1;

@@ -61,12 +61,12 @@ public:
     update_point_from_linked_waypoints(m_selected_point_index);
   }
 
-  void export_path_to_csv(std::size_t path_index,
+  bool export_path_to_csv(std::size_t path_index,
                           const ProjectSettings& settings) const;
-  inline void export_current_path_to_csv(const ProjectSettings& settings) const {
-    export_path_to_csv(m_current_path_index, settings);
+  inline bool export_current_path_to_csv(const ProjectSettings& settings) const {
+    return export_path_to_csv(m_current_path_index, settings);
   }
-  void export_all_paths_to_csv(const ProjectSettings& settings) const;
+  bool export_all_paths_to_csv(const ProjectSettings& settings) const;
 };
 
 void to_json(nlohmann::json& json, const ProjectState& project);

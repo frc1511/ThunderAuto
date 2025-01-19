@@ -74,6 +74,8 @@ public:
 
   void setup_dockspace(ImGuiID dockspace_id);
 
+  void focus_was_changed(bool focused);
+
   void process_input();
   void present();
 

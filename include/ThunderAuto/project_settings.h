@@ -17,7 +17,11 @@ struct ProjectSettings {
 
   float robot_length; // m
   float robot_width;  // m
+
+  bool auto_save = false;
+  bool auto_export = false;
 };
 
 void to_json(nlohmann::json& json, const ProjectSettings& settings);
 void from_json(const nlohmann::json& json, ProjectSettings& settings);
+
