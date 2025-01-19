@@ -716,20 +716,22 @@ void PathEditorPage::handle_curve_input(ProjectState& state, ImRect bb) {
     const ImVec2 point_position =
         to_screen_coordinate(point->position, m_settings->field, bb);
 
-    if (m_show_tooltip && !hovered &&
+    if (!hovered &&
         is_mouse_hovering_point(point_position, LINE_THICKNESS(bb) * 2.f)) {
       hovered = true;
       hovered_point = point;
 
-      // Tooltip
-      ImGui::BeginTooltip();
-      ImGui::Text("Time: %.2f", point->time);
-      ImGui::Text("Velocity: %.2f", point->velocity);
-      ImGui::Text("Centripetal Accel: %.2f", point->centripetal_accel);
-      ImGui::Text("Menger Curvature: %.2f", point->curvature);
-      ImGui::Text("Radius of Curvature: %.2f", std::pow(point->curvature, -1));
+      if (m_show_tooltip) {
+        ImGui::BeginTooltip();
+        ImGui::Text("Time: %.2f", point->time);
+        ImGui::Text("Velocity: %.2f", point->velocity);
+        ImGui::Text("Centripetal Accel: %.2f", point->centripetal_accel);
+        ImGui::Text("Menger Curvature: %.2f", point->curvature);
+        ImGui::Text("Radius of Curvature: %.2f",
+                    std::pow(point->curvature, -1));
 
-      ImGui::EndTooltip();
+        ImGui::EndTooltip();
+      }
     }
   }
 
