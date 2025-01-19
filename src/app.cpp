@@ -193,6 +193,11 @@ void App::present_file_menu() {
           m_document_manager.save();
         }
       }
+      if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Automatically save project\n"
+                          "when changes are made");
+      }
+
       if (ImGui::MenuItem(ICON_FA_FILE_CSV "  Auto Export", nullptr,
                       &settings.auto_export)) {
         if (settings.auto_export) {
@@ -205,6 +210,10 @@ void App::present_file_menu() {
           m_export_popup = true;
           m_exported_index = -1;
         }
+      }
+      if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Automatically export all paths\n"
+                          "when focus is lost");
       }
 
       ImGui::Separator();
