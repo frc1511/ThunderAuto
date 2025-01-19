@@ -4,6 +4,8 @@
 
 #include <ThunderAuto/graphics.h>
 
+#include <thread>
+
 static void apply_imgui_style();
 static FontLibrary load_fonts();
 static void setup_data_handler(App& app);
@@ -51,6 +53,20 @@ int _main(int argc, char** argv) {
     }
 
     app.process_input();
+
+    bool is_focused = false;
+
+    auto platform_io = ImGui::GetPlatformIO();
+    for (ImGuiViewport* vp : platform_io.Viewports) {
+      if (vp->PlatformWindowCreated) {
+        is_focused |= ImGui::GetPlatformIO().Platform_GetWindowFocus(vp);
+      }
+    }
+
+    if (!is_focused) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000/60));
+      continue;
+    }
 
     // New Frame.
     Graphics::get().begin_frame();
