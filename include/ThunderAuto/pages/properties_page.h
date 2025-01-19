@@ -7,6 +7,8 @@
 #include <ThunderAuto/project_settings.h>
 #include <ThunderAuto/thunder_auto.h>
 
+class App;
+
 class PropertiesPage : public Page {
   DocumentEditManager& m_history;
 
@@ -16,12 +18,15 @@ class PropertiesPage : public Page {
 
   const ProjectSettings* m_settings = nullptr;
 
+  App* m_app;
+
 public:
   inline PropertiesPage(DocumentEditManager& history, OutputCurve& cached_curve,
-                        PathEditorPage& path_editor_page)
+                        PathEditorPage& path_editor_page, App* app)
     : m_history(history),
       m_cached_curve(cached_curve),
-      m_path_editor_page(path_editor_page) {}
+      m_path_editor_page(path_editor_page),
+  m_app(app) {}
 
   constexpr void setup(const ProjectSettings& settings) {
     m_settings = &settings;

@@ -1,5 +1,7 @@
 #include <ThunderAuto/pages/properties_page.h>
 
+#include <ThunderAuto/app.h>
+
 #include <IconsFontAwesome5.h>
 #include <ThunderAuto/imgui_util.h>
 #include <ThunderAuto/platform/platform.h>
@@ -130,7 +132,8 @@ void PropertiesPage::present_path_properties(ProjectState& state) {
     ImGuiScopedField field("Export to CSV", COLUMN_WIDTH);
 
     if (ImGui::Button("Export")) {
-      state.export_current_path_to_csv(*m_settings);
+      bool success = state.export_current_path_to_csv(*m_settings);
+      m_app->open_export_popup(state.current_path_index(), success);
     }
   }
 

@@ -39,6 +39,10 @@ class App {
     UNSAVED,
   };
 
+  bool m_export_popup = false;
+  int m_exported_index = -1;
+  bool m_export_success = true;
+
   EventState m_event_state = EventState::WELCOME;
   EventState m_next_event_state = EventState::NONE;
 
@@ -56,7 +60,7 @@ class App {
 
   PathEditorPage m_path_editor_page {m_document_edit_manager, m_cached_curve};
   PropertiesPage m_properties_page {m_document_edit_manager, m_cached_curve,
-                                    m_path_editor_page};
+                                    m_path_editor_page, this};
   PathManagerPage m_path_manager_page {m_document_edit_manager, m_cached_curve};
   ActionsPage m_actions_page {m_document_edit_manager};
 
@@ -83,6 +87,12 @@ public:
 
   void open_from_path(std::string path);
 
+  void open_export_popup(int export_index = -1, bool export_success = true) {
+    m_export_popup = true;
+    m_exported_index = export_index;
+    m_export_success = export_success;
+  }
+
 private:
   void present_menu_bar();
   void present_file_menu();
@@ -91,12 +101,16 @@ private:
   void present_path_menu();
   void present_tools_menu();
 
+  void present_export_popup();
+
   bool try_change_state(EventState event_state);
 
   void welcome();
   void new_project();
   void new_field();
   void open_project();
+
+  void save_as();
 
   void unsaved();
 

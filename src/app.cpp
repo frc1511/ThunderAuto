@@ -41,6 +41,8 @@ void App::setup_dockspace(ImGuiID dockspace_id) {
 void App::present() {
   present_menu_bar();
 
+  present_export_popup();
+
   switch (m_event_state) {
     using enum EventState;
   case NONE:
@@ -126,8 +128,10 @@ void App::present_menu_bar() {
       present_path_menu();
 
       if (ImGui::MenuItem("Export All Paths")) {
-        m_document_manager.history()->current_state().export_all_paths_to_csv(
+        m_document_edit_manager.current_state().export_all_paths_to_csv(
             m_document_manager.settings());
+
+        m_export_popup = true;
       }
 
       present_tools_menu();
@@ -169,8 +173,7 @@ void App::present_file_menu() {
   if (item_new) try_change_state(EventState::NEW_PROJECT);
   if (item_open) try_change_state(EventState::OPEN_PROJECT);
   if (item_save) m_document_manager.save();
-  if (item_save_as) {
-  }
+  if (item_save_as) save_as();
   if (item_close) try_change_state(EventState::CLOSE_PROJECT);
 }
 
@@ -259,6 +262,54 @@ void App::present_tools_menu() {
   if (show_properties) m_properties_page.present(&show_properties);
   if (show_path_manager) m_path_manager_page.present(&show_path_manager);
   if (show_path_editor) m_path_editor_page.present(&show_path_editor);
+}
+
+void App::present_export_popup() {
+  if (m_export_popup) {
+    ImGui::OpenPopup("Export Done");
+    ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), false,
+                            ImVec2(0.5f, 0.5f));
+    m_export_popup = false;
+  }
+
+  if (ImGui::BeginPopupModal("Export Done", nullptr,
+                             ImGuiWindowFlags_NoResize |
+                                 ImGuiWindowFlags_NoMove)) {
+    ImGui::SetWindowSize(ImVec2(-1.f, -1.f));
+
+    const std::vector<std::pair<std::string, Curve>>& paths =
+        m_document_manager.history()->current_state().paths();
+
+    if (!m_export_success) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
+
+    ImGui::Text("%s export CSV file(s):", m_export_success ? "Successfully" : "FAILED to");
+
+    if (!m_export_success) ImGui::PopStyleColor();
+
+    ImGui::Indent(10.0);
+
+    if (m_exported_index < 0 || size_t(m_exported_index) >= paths.size()) {
+      for (size_t i = 0; i < paths.size(); ++i) {
+        const char* name = paths.at(i).first.c_str();
+        ImGui::Text("%s.csv", name);
+      }
+    }
+    else {
+      const char* name = paths.at(m_exported_index).first.c_str();
+      ImGui::Text("%s.csv", name);
+    }
+
+
+    ImGui::Unindent(10.0);
+
+    if (ImGui::Button("Ok") || ImGui::IsKeyPressed(ImGuiKey_Escape) ||
+        ImGui::IsKeyPressed(ImGuiKey_Enter) ||
+        ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+      ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::EndPopup();
+  }
 }
 
 bool App::try_change_state(EventState desired_state) {
@@ -396,6 +447,14 @@ void App::open_from_path(std::string path) {
   m_recent_projects.push_front(path);
 }
 
+void App::save_as() {
+  std::string path =
+      m_platform_manager.save_file_dialog({THUNDERAUTO_FILE_FILTER});
+  if (!path.empty()) {
+    m_document_manager.save_as(path);
+  }
+}
+
 void App::unsaved() {
   if (!m_document_manager.is_unsaved()) {
     m_event_state = m_next_event_state;
@@ -471,14 +530,8 @@ void App::process_input() {
     if (CTRL_DOWN && KEY_DOWN(ImGuiKey_S)) { // Ctrl+S
       m_document_manager.save();
 
-    } else if (CTRL_DOWN && io.KeyShift &&
-               KEY_DOWN(ImGuiKey_S)) { // Ctrl+Shift+S
-
-      std::string path =
-          m_platform_manager.save_file_dialog({THUNDERAUTO_FILE_FILTER});
-      if (!path.empty()) {
-        m_document_manager.save_as(path);
-      }
+    } else if (CTRL_SHIFT_DOWN && KEY_DOWN(ImGuiKey_S)) { // Ctrl+Shift+S
+      save_as();
 
     } else if (CTRL_DOWN && KEY_DOWN(ImGuiKey_W)) { // Ctrl+W
       try_change_state(EventState::CLOSE_PROJECT);
@@ -490,6 +543,14 @@ void App::process_input() {
                (CTRL_SHIFT_DOWN &&
                 KEY_DOWN_OR_REPEAT(ImGuiKey_Z))) { // Ctrl+Shift+Z
       redo();
+
+    } else if (CTRL_DOWN &&
+               (KEY_DOWN(ImGuiKey_E) || KEY_DOWN(ImGuiKey_Apostrophe))) {
+      m_export_success = m_document_edit_manager.current_state().export_all_paths_to_csv(
+          m_document_manager.settings());
+
+      m_export_popup = true;
+      m_exported_index = -1;
 
     } else if (CTRL_DOWN && KEY_DOWN(ImGuiKey_0)) { // Ctrl+0
       m_path_editor_page.reset_view();
