@@ -343,8 +343,8 @@ void App::present_export_popup() {
     if (!m_export_success)
       ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
 
-    ImGui::Text("%s export CSV file(s):",
-                m_export_success ? "Successfully" : "FAILED to");
+    ImGui::Text("%s CSV file(s):",
+                m_export_success ? "Successfully exported" : "FAILED to export");
 
     if (!m_export_success) ImGui::PopStyleColor();
 
