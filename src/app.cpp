@@ -56,6 +56,8 @@ void App::present() {
 
   present_export_popup();
 
+  const ProjectSettings& settings = m_document_manager.settings();
+
   switch (m_event_state) {
     using enum EventState;
   case NONE:
@@ -76,6 +78,10 @@ void App::present() {
     open_project();
     break;
   case CLOSE_PROJECT:
+    if (settings.auto_export) {
+      (void)m_document_edit_manager.current_state().export_all_paths_to_csv(
+          settings);
+    }
     m_document_manager.close();
     m_event_state = WELCOME;
     break;
@@ -105,6 +111,12 @@ void App::present() {
 
 void App::close() {
   if (try_change_state(EventState::CLOSE_EVERYTHING)) {
+    const ProjectSettings& settings = m_document_manager.settings();
+    if (settings.auto_export) {
+      (void)m_document_edit_manager.current_state().export_all_paths_to_csv(
+          settings);
+    }
+
     m_document_manager.close();
   }
 }
@@ -188,7 +200,8 @@ void App::present_file_menu() {
 
       ImGui::Separator();
 
-      if (ImGui::MenuItem(ICON_FA_SAVE "  Auto Save", nullptr, &settings.auto_save)) {
+      if (ImGui::MenuItem(ICON_FA_SAVE "  Auto Save", nullptr,
+                          &settings.auto_save)) {
         if (settings.auto_save) {
           m_document_manager.save();
         }
@@ -199,7 +212,7 @@ void App::present_file_menu() {
       }
 
       if (ImGui::MenuItem(ICON_FA_FILE_CSV "  Auto Export", nullptr,
-                      &settings.auto_export)) {
+                          &settings.auto_export)) {
         if (settings.auto_export) {
           m_document_manager.history()->mark_unsaved();
 
@@ -343,8 +356,8 @@ void App::present_export_popup() {
     if (!m_export_success)
       ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
 
-    ImGui::Text("%s CSV file(s):",
-                m_export_success ? "Successfully exported" : "FAILED to export");
+    ImGui::Text("%s CSV file(s):", m_export_success ? "Successfully exported"
+                                                    : "FAILED to export");
 
     if (!m_export_success) ImGui::PopStyleColor();
 
@@ -379,12 +392,6 @@ bool App::try_change_state(EventState desired_state) {
 
     return false;
   }
-
-  if (m_event_state == EventState::CLOSE_EVERYTHING) {
-    return false;
-  }
-
-  if (m_document_manager.is_open()) m_document_manager.close();
 
   m_event_state = desired_state;
   return true;
