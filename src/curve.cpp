@@ -70,6 +70,7 @@ void Curve::output(OutputCurve& output,
   output.points.clear();
 
   std::map<int, float> max_velocities;
+  std::vector<OutputCurveSegment> segments;
 
   for (std::size_t i = 0; i < m_points.size() - 1; ++i) {
     const CurvePoint& begin = m_points.at(i);
@@ -83,9 +84,17 @@ void Curve::output(OutputCurve& output,
         calc_segment_length(equation, settings.length_samples);
 
     std::size_t segment_points =
-        output_segment(equation, segment_length, settings.samples_per_meter,
-                       begin.rotation().radians(), end.rotation().radians(), i,
+        output_segment(equation, segment_length, settings.samples_per_meter, i,
                        max_velocities, output);
+
+    segments.push_back({
+        // .distance = segment_length,
+        .time = 0.f,
+        .begin_rotation = begin.rotation(),
+        .end_rotation = end.rotation(),
+        .begin_index = output.points.size() - segment_points,
+        .end_index = output.points.size() - 1,
+    });
 
     std::vector<OutputCurvePoint>::iterator segment_begin =
         output.points.end() - segment_points;
@@ -98,8 +107,11 @@ void Curve::output(OutputCurve& output,
 
     output.total_distance += segment_length;
   }
+
   // Initial rotation.
-  output.points.front().rotation = m_points.front().rotation().radians();
+  output.points.front().rotation = m_points.front().rotation();
+  output.points.front().rotation.set_bounds(Angle::Bounds::NEG_180_TO_POS_180);
+
   // Final actions.
   output.points.back().actions = m_points.back().actions();
 
@@ -107,8 +119,9 @@ void Curve::output(OutputCurve& output,
   max_velocities[0] = 0.f;
   max_velocities[output.points.size() - 1] = 0.f;
 
-  calc_velocities(max_velocities, output);
-  calc_other_values(output);
+  calc_linear_velocities(max_velocities, output);
+  calc_other_values(segments, output);
+  calc_angular_velocities(segments, output);
 }
 
 float Curve::calc_segment_length(const EquationFunc equation,
@@ -136,23 +149,17 @@ float Curve::calc_segment_length(const EquationFunc equation,
   return length;
 }
 
-std::size_t Curve::output_segment(
-    const EquationFunc equation, const float length,
-    const std::size_t samples_per_meter, const float begin_rotation,
-    const float end_rotation, const std::size_t segment_index,
-    std::map<int, float>& max_velocities, OutputCurve& output) const {
+std::size_t Curve::output_segment(const EquationFunc equation,
+                                  const float length,
+                                  const std::size_t samples_per_meter,
+                                  const std::size_t segment_index,
+                                  std::map<int, float>& max_velocities,
+                                  OutputCurve& output) const {
 
-  const std::size_t samples = std::size_t(length * float(samples_per_meter));
+  const std::size_t samples =
+      std::size_t(length * float(samples_per_meter)) - 1;
 
-  const float delta = 1.f / float(samples - 1);
-
-  float rotation_delta = (end_rotation - begin_rotation);
-  if (rotation_delta > std::numbers::pi_v<float>) {
-    rotation_delta -= 2.f * std::numbers::pi_v<float>;
-  } else if (rotation_delta < -std::numbers::pi_v<float>) {
-    rotation_delta += 2.f * std::numbers::pi_v<float>;
-  }
-  rotation_delta /= samples;
+  const float delta = 1.f / float(samples + 1);
 
   ImVec2 prev_position;
   ImVec2 next_position = equation(0.f);
@@ -167,7 +174,7 @@ std::size_t Curve::output_segment(
     // Position.
     const ImVec2 position = next_position;
     if (i != samples - 1) {
-      next_position = equation(t + delta);
+      next_position = equation(t);
     }
 
     float curvature = 0.f;
@@ -192,14 +199,10 @@ std::size_t Curve::output_segment(
       }
     }
 
-    // Rotation
-    float actual_rotation = begin_rotation + i * rotation_delta;
-
     output.points.push_back({
         .position = position,
         .velocity = m_settings.max_linear_vel,
-        .rotation = end_rotation,
-        .actual_rotation = actual_rotation,
+        .rotation = Angle::radians(0, Angle::Bounds::NEG_180_TO_POS_180),
         .distance = distance,
         .curvature = curvature,
         .segment_index = segment_index,
@@ -211,8 +214,8 @@ std::size_t Curve::output_segment(
   return samples;
 }
 
-void Curve::calc_velocities(const std::map<int, float>& max_velocities,
-                            OutputCurve& curve) const {
+void Curve::calc_linear_velocities(const std::map<int, float>& max_velocities,
+                                   OutputCurve& curve) const {
   const float delta_distance = curve.total_distance / curve.points.size();
 
   for (auto [index, velocity] : max_velocities) {
@@ -249,27 +252,96 @@ void Curve::calc_velocities(const std::map<int, float>& max_velocities,
   }
 }
 
-void Curve::calc_other_values(OutputCurve& curve) const {
+void Curve::calc_angular_velocities(
+    const std::vector<OutputCurveSegment>& segments, OutputCurve& curve) const {
+
+  for (const OutputCurveSegment& segment : segments) {
+    const float begin_rotation_rad = segment.begin_rotation.radians();
+    const float end_rotation_rad = segment.end_rotation.radians();
+    float rotation_delta_rad = end_rotation_rad - begin_rotation_rad;
+
+    {
+      const float pi = std::numbers::pi_v<float>;
+
+      if (rotation_delta_rad > pi) {
+        rotation_delta_rad -= 2.f * pi;
+      } else if (rotation_delta_rad < -pi) {
+        rotation_delta_rad += 2.f * pi;
+      }
+    }
+
+    // Calculate minimum acceleration needed to reach target angle.
+    float a = 4.f * abs(rotation_delta_rad) / std::pow(segment.time, 2);
+    float v_max = std::sqrt(a * abs(rotation_delta_rad));
+    float t_accel = segment.time / 2.f;
+
+    if (rotation_delta_rad < 0.f) {
+      a = -a;
+      v_max = -v_max;
+    }
+
+    const float d_accel =
+        (abs(a) > 0.0001f) ? (v_max * v_max) / (2.f * a) : 0.f;
+
+    const float time_start = curve.points.at(segment.begin_index).time;
+    for (size_t i = segment.begin_index; i <= segment.end_index; ++i) {
+      OutputCurvePoint& point = curve.points.at(i);
+      float t = point.time - time_start;
+
+      if (t > t_accel * 2) {
+        point.rotation.set_radians(end_rotation_rad);
+        point.angular_velocity = 0.f;
+      } else {
+
+        if (t < t_accel) {
+          point.rotation.set_radians(begin_rotation_rad + 0.5f * a * t * t);
+          point.angular_velocity = a * t;
+        } else {
+          t -= t_accel;
+          point.rotation.set_radians(begin_rotation_rad + d_accel +
+                                     0.5f * a * t * t);
+          point.angular_velocity = v_max - a * t;
+        }
+      }
+
+      assert(std::isfinite(point.rotation.radians()));
+    }
+  }
+}
+
+void Curve::calc_other_values(std::vector<OutputCurveSegment>& segments,
+                              OutputCurve& curve) const {
   curve.points.at(0).time = 0.f;
 
   float last_distance = 0.f;
   float last_time = 0.f;
+  float last_velocity = 0.f;
+
   for (std::size_t i = 0; i < curve.points.size(); ++i) {
     OutputCurvePoint& point = curve.points.at(i);
+
+    auto segment_it = std::find_if(
+        segments.begin(), segments.end(), [i](const OutputCurveSegment& s) {
+          return (i >= s.begin_index && i <= s.end_index);
+        });
+    assert(segment_it != segments.end());
+    OutputCurveSegment& segment = *segment_it;
 
     // Time.
     {
       const float delta_distance = point.distance - last_distance;
 
-      float delta_time = 0.f;
-      if (!float_eq(point.velocity, 0.f)) {
-        delta_time = delta_distance / point.velocity;
+      float delta_time = 0.0001f;
+      if (!float_eq(last_velocity, 0.f)) {
+        delta_time = delta_distance / last_velocity;
       }
 
       point.time = last_time + delta_time;
+      segment.time += delta_time;
 
       last_distance = point.distance;
       last_time = point.time;
+      last_velocity = point.velocity;
     }
 
     // Centripetal acceleration.

@@ -10,8 +10,8 @@ struct OutputCurvePoint {
   float time;
   ImVec2 position;
   float velocity;
-  float rotation;
-  float actual_rotation;
+  Angle rotation;
+  float angular_velocity;
   uint32_t actions;
 
   float distance;
@@ -19,6 +19,15 @@ struct OutputCurvePoint {
   float centripetal_accel;
 
   std::size_t segment_index;
+};
+
+struct OutputCurveSegment {
+  // float distance;
+  float time;
+  Angle begin_rotation;
+  Angle end_rotation;
+  size_t begin_index;
+  size_t end_index;
 };
 
 struct OutputCurve {
@@ -44,11 +53,11 @@ class Curve {
   std::vector<CurvePoint> m_points;
 
 public:
-  inline Curve(CurveSettings settings = {})
+  inline explicit Curve(CurveSettings settings = {})
     : m_settings(settings) {}
 
-  inline Curve(std::initializer_list<CurvePoint> points,
-               CurveSettings settings = {})
+  inline explicit Curve(std::initializer_list<CurvePoint> points,
+                        CurveSettings settings = {})
     : m_settings(settings),
       m_points(points) {}
 
@@ -69,16 +78,18 @@ private:
 
   std::size_t output_segment(EquationFunc equation, float length,
                              std::size_t samples_per_meter,
-                             float begin_rotation, float end_rotation,
                              std::size_t segment_index,
                              std::map<int, float>& max_velocities,
                              OutputCurve& output) const;
 
-  void calc_velocities(const std::map<int, float>& max_velocities,
-                       OutputCurve& output) const;
+  void calc_linear_velocities(const std::map<int, float>& max_velocities,
+                              OutputCurve& output) const;
+  void calc_angular_velocities(const std::vector<OutputCurveSegment>& segments,
+                               OutputCurve& output) const;
 
   // The rest of the values (times, centripetal accelerations, etc.).
-  void calc_other_values(OutputCurve& output) const;
+  void calc_other_values(std::vector<OutputCurveSegment>& segments,
+                         OutputCurve& output) const;
 };
 
 extern const Curve default_new_curve;

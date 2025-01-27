@@ -34,13 +34,18 @@ public:
 //
 class ImGuiScopedField {
 public:
-  inline ImGuiScopedField(const char* name, unsigned int column_width)
-    : ImGuiScopedField(name, name, column_width) {}
+  inline ImGuiScopedField(const char* name, unsigned int column_width,
+                          const char* tooltip = NULL)
+    : ImGuiScopedField(name, name, column_width, tooltip) {}
 
   inline ImGuiScopedField(const char* id, const char* text,
-                          unsigned int column_width)
-    : ImGuiScopedField(id, column_width,
-                       [text]() { ImGui::Text("%s", text); }) {}
+                          unsigned int column_width, const char* tooltip = NULL)
+    : ImGuiScopedField(id, column_width, [text, tooltip] {
+        ImGui::Text("%s", text);
+        if (tooltip && ImGui::IsItemHovered()) {
+          ImGui::SetTooltip(tooltip);
+        }
+      }) {}
 
   inline ImGuiScopedField(const char* id, unsigned int column_width,
                           std::function<void()> make_left_column) {

@@ -62,7 +62,7 @@ void ProjectState::update_point_from_linked_waypoints(int point_index) {
 }
 
 bool ProjectState::export_path_to_csv(std::size_t path_index,
-                          const ProjectSettings& settings) const {
+                                      const ProjectSettings& settings) const {
 
   const auto& [path_name, curve] = m_paths.at(path_index);
 
@@ -82,12 +82,14 @@ bool ProjectState::export_path_to_csv(std::size_t path_index,
 
   file << "time,x_pos,y_pos,velocity,rotation,action\n";
 
+  file << std::fixed << std::setprecision(5);
+
   for (const OutputCurvePoint& point : output.points) {
     file << point.time << ",";
     file << point.position.x << ",";
     file << point.position.y << ",";
     file << point.velocity << ",";
-    file << point.rotation << ",";
+    file << point.rotation.radians() << ",";
     file << point.actions << "\n";
   }
 
@@ -96,10 +98,11 @@ bool ProjectState::export_path_to_csv(std::size_t path_index,
   return true;
 }
 
-bool ProjectState::export_all_paths_to_csv(const ProjectSettings& settings) const {
+bool ProjectState::export_all_paths_to_csv(
+    const ProjectSettings& settings) const {
   bool failed = false;
   for (std::size_t i = 0; i < m_paths.size(); ++i) {
-     failed |= !export_path_to_csv(i, settings);
+    failed |= !export_path_to_csv(i, settings);
   }
 
   return !failed;

@@ -448,29 +448,54 @@ void PathEditorPage::present_robot_preview(ImRect bb) {
                        });
   std::vector<OutputCurvePoint>::iterator upper_it;
 
+  float playback_time = m_playback_time;
+
   if (lower_it == points.end()) {
-    lower_it = std::prev(lower_it);
-    upper_it = lower_it;
-  } else {
+    upper_it = std::prev(lower_it);
+    lower_it = std::prev(upper_it);
+
+  } else if (lower_it == points.begin()) {
     upper_it = std::next(lower_it);
     if (upper_it == points.end()) {
       upper_it = lower_it;
     }
+    playback_time = lower_it->time;
+
+  } else {
+    upper_it = lower_it;
+    lower_it = std::prev(lower_it);
   }
+
   assert(lower_it != points.end());
   assert(upper_it != points.end());
 
   const OutputCurvePoint& lower_point = *lower_it;
   const OutputCurvePoint& upper_point = *upper_it;
 
-  const float t = (m_playback_time - lower_point.time) /
-                  (upper_point.time - lower_point.time);
+  const float dt = upper_point.time - lower_point.time;
+  const float t = dt > 0.01f ? (playback_time - lower_point.time) / dt : 0.f;
 
   const ImVec2 position =
       ImVec2(std::lerp(lower_point.position.x, upper_point.position.x, t),
              std::lerp(lower_point.position.y, upper_point.position.y, t));
 
-  Angle rotation = Angle::radians(lower_point.actual_rotation);
+  Angle rotation;
+  {
+    float rotation_delta_rad =
+        upper_point.rotation.radians() - lower_point.rotation.radians();
+
+    const float pi = std::numbers::pi_v<float>;
+    if (rotation_delta_rad > pi) {
+      rotation_delta_rad -= 2.f * pi;
+    } else if (rotation_delta_rad < -pi) {
+      rotation_delta_rad += 2.f * pi;
+    }
+
+    float rotation_rad =
+        lower_point.rotation.radians() + rotation_delta_rad * t;
+
+    rotation = Angle::radians(rotation_rad, Angle::Bounds::NEG_180_TO_POS_180);
+  }
 
   ImVec2 rotation_pt = to_screen_coordinate(
       pt_extend_at_angle(position, rotation, m_settings->robot_length / 2.f),
@@ -723,12 +748,14 @@ void PathEditorPage::handle_curve_input(ProjectState& state, ImRect bb) {
 
       if (m_show_tooltip) {
         ImGui::BeginTooltip();
-        ImGui::Text("Time: %.2f", point->time);
-        ImGui::Text("Velocity: %.2f", point->velocity);
-        ImGui::Text("Centripetal Accel: %.2f", point->centripetal_accel);
+        ImGui::Text("Time: %.2f s", point->time);
+        ImGui::Text("Linear Velocity: %.2f m/s", point->velocity);
+        ImGui::Text("Centripetal Accel: %.2f m/s²", point->centripetal_accel);
         ImGui::Text("Menger Curvature: %.2f", point->curvature);
-        ImGui::Text("Radius of Curvature: %.2f",
+        ImGui::Text("Radius of Curvature: %.2f m",
                     std::pow(point->curvature, -1));
+        ImGui::Text("Rotation: %.2f deg", point->rotation.degrees());
+        ImGui::Text("Angular Velocity: %.2f deg/s", point->angular_velocity);
 
         ImGui::EndTooltip();
       }
