@@ -12,6 +12,7 @@
 #include <ThunderAuto/popups/welcome_popup.h>
 
 #include <ThunderAuto/pages/actions_page.h>
+#include <ThunderAuto/pages/settings_page.h>
 #include <ThunderAuto/pages/path_editor_page.h>
 #include <ThunderAuto/pages/path_manager_page.h>
 #include <ThunderAuto/pages/properties_page.h>
@@ -63,6 +64,7 @@ class App {
                                     m_path_editor_page, this};
   PathManagerPage m_path_manager_page {m_document_edit_manager, m_cached_curve};
   ActionsPage m_actions_page {m_document_edit_manager};
+  SettingsPage m_settings_page {m_document_manager};
 
 public:
   inline explicit App(FontLibrary& font_lib)

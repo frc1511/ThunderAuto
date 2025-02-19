@@ -318,15 +318,15 @@ void App::present_path_menu() {
 
 void App::present_tools_menu() {
   static bool show_path_editor = true, show_path_manager = true,
-              show_properties = true, show_actions = true;
+              show_properties = true, show_actions = true,
+              show_settings = false;
 
   if (ImGui::BeginMenu("Tools")) {
     ImGui::MenuItem(ICON_FA_LIST "  Paths", nullptr, &show_path_manager);
-    ImGui::MenuItem(ICON_FA_BEZIER_CURVE "  Editor", nullptr,
-                    &show_path_editor);
-    ImGui::MenuItem(ICON_FA_SLIDERS_H "  Properties", nullptr,
-                    &show_properties);
-    ImGui::MenuItem(ICON_FA_COG "  Actions", nullptr, &show_actions);
+    ImGui::MenuItem(ICON_FA_BEZIER_CURVE "  Editor", nullptr, &show_path_editor);
+    ImGui::MenuItem(ICON_FA_SLIDERS_H "  Properties", nullptr, &show_properties);
+    ImGui::MenuItem(ICON_FA_PAPERCLIP "  Actions", nullptr, &show_actions);
+    ImGui::MenuItem(ICON_FA_COG "  Settings", nullptr, &show_settings);
 
     ImGui::EndMenu();
   }
@@ -335,6 +335,7 @@ void App::present_tools_menu() {
   if (show_properties) m_properties_page.present(&show_properties);
   if (show_path_manager) m_path_manager_page.present(&show_path_manager);
   if (show_path_editor) m_path_editor_page.present(&show_path_editor);
+  if (show_settings) m_settings_page.present(&show_settings);
 }
 
 void App::present_export_popup() {

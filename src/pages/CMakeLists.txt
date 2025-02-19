@@ -5,4 +5,5 @@ add_thunder_auto_sources(
   "${TH_PAGES_DIR}/path_manager_page.cpp"
   "${TH_PAGES_DIR}/properties_page.cpp"
   "${TH_PAGES_DIR}/actions_page.cpp"
+  "${TH_PAGES_DIR}/settings_page.cpp"
 )
