@@ -289,8 +289,12 @@ void PathEditorPage::present_context_menus(ProjectState& state) {
   }
 
   if (ImGui::BeginPopup("EditorPointContextMenu")) {
-    if (ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete Point")) {
-      remove_selected_point(state);
+    {
+      ImGuiScopedDisabled disabled(state.current_path().points().size() <= 2);
+
+      if (ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete Point")) {
+        remove_selected_point(state);
+      }
     }
     ImGui::EndPopup();
   }
@@ -833,6 +837,8 @@ void PathEditorPage::select_previous_point(ProjectState& state) {
 
 void PathEditorPage::remove_selected_point(ProjectState& state) {
   Curve& curve = state.current_path();
+
+  if (curve.points().size() <= 2) return;
 
   curve.remove_point(state.selected_point_index());
   if (state.selected_point_index()) {
