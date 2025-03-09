@@ -47,7 +47,7 @@ void CurvePoint::set_heading_control_point(const ImVec2 pt, const bool which) {
     *other_heading = primary_heading->supplementary();
   }
 
-  *weight = std::hypotf(dx, dy);
+  *weight = max(std::hypotf(dx, dy), 0.1f);
 }
 
 ImVec2 CurvePoint::rotation_control_point(const float robot_length) const {
