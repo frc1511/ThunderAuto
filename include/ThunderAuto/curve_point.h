@@ -14,7 +14,7 @@ struct HeadingAngles {
 };
 
 struct HeadingWeights {
-  float incoming, outgoing;
+  float incoming = 1.f, outgoing = 1.f;
 };
 
 class CurvePoint {
@@ -32,6 +32,9 @@ class CurvePoint {
   Angle m_rotation;
 
   bool m_stop = false;
+
+  // Percent of the previous segment that the robot should be rotating.
+  float m_previous_segment_rotation_time_percent = 1.f;
 
   // Bit-field of actions to perform at this point.
   uint32_t m_actions = 0;
@@ -114,6 +117,13 @@ public:
       else if (which_to_keep == OUTGOING)
         m_headings.incoming = m_headings.outgoing.supplementary();
     }
+  }
+
+  inline float previous_segment_rotation_time_percent() const {
+    return m_previous_segment_rotation_time_percent;
+  }
+  inline void set_previous_segment_rotation_time_percent(float percent) {
+    m_previous_segment_rotation_time_percent = percent;
   }
 
   inline bool editor_locked() const { return m_editor_locked; }

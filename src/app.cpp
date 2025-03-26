@@ -54,7 +54,7 @@ void App::focus_was_changed(bool focused) {
 void App::present() {
   present_menu_bar();
 
-  present_export_popup();
+  present_popups();
 
   const ProjectSettings& settings = m_document_manager.settings();
 
@@ -90,6 +90,8 @@ void App::present() {
     break;
   case UNSAVED:
     unsaved();
+    break;
+  default:
     break;
   }
 
@@ -323,8 +325,10 @@ void App::present_tools_menu() {
 
   if (ImGui::BeginMenu("Tools")) {
     ImGui::MenuItem(ICON_FA_LIST "  Paths", nullptr, &show_path_manager);
-    ImGui::MenuItem(ICON_FA_BEZIER_CURVE "  Editor", nullptr, &show_path_editor);
-    ImGui::MenuItem(ICON_FA_SLIDERS_H "  Properties", nullptr, &show_properties);
+    ImGui::MenuItem(ICON_FA_BEZIER_CURVE "  Editor", nullptr,
+                    &show_path_editor);
+    ImGui::MenuItem(ICON_FA_SLIDERS_H "  Properties", nullptr,
+                    &show_properties);
     ImGui::MenuItem(ICON_FA_PAPERCLIP "  Actions", nullptr, &show_actions);
     ImGui::MenuItem(ICON_FA_COG "  Settings", nullptr, &show_settings);
 
@@ -336,6 +340,12 @@ void App::present_tools_menu() {
   if (show_path_manager) m_path_manager_page.present(&show_path_manager);
   if (show_path_editor) m_path_editor_page.present(&show_path_editor);
   if (show_settings) m_settings_page.present(&show_settings);
+}
+
+void App::present_popups() {
+  present_export_popup();
+  present_project_open_error_popup();
+  present_project_version_popup();
 }
 
 void App::present_export_popup() {
@@ -380,6 +390,112 @@ void App::present_export_popup() {
         ImGui::IsKeyPressed(ImGuiKey_Enter) ||
         ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
       ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::EndPopup();
+  }
+}
+
+void App::present_project_open_error_popup() {
+  if (m_project_open_error_popup) {
+    ImGui::OpenPopup("Project Open Error");
+    ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), false,
+                            ImVec2(0.5f, 0.5f));
+    m_project_open_error_popup = false;
+  }
+
+  if (ImGui::BeginPopupModal("Project Open Error", nullptr,
+                             ImGuiWindowFlags_NoResize |
+                                 ImGuiWindowFlags_NoMove)) {
+    ImGui::SetWindowSize(ImVec2(-1.f, -1.f));
+
+    ImGui::Text("Failed to open project: \"%s\"",
+                m_document_manager.path().c_str());
+
+    switch (m_project_open_error) {
+      using enum OpenProjectStatus;
+    case OK:
+      break;
+    case FILE_NOT_FOUND:
+      ImGui::Text("File not found");
+      break;
+    case FAILED_TO_OPEN:
+      ImGui::Text("Failed to open file");
+      break;
+    case VERSION_TOO_NEW: {
+      const ProjectSettings& settings = m_document_manager.settings();
+      ImGui::Text("Project major version (%d.%d) is newer than current "
+                  "ThunderAuto version (%d.%d)",
+                  settings.version_major, settings.version_minor,
+                  TH_VERSION_MAJOR, TH_VERSION_MINOR);
+      ImGui::Text("Please update ThunderAuto to the latest version");
+    } break;
+    case INVALID_CONTENTS:
+      ImGui::Text("Invalid file contents (corrupted?)");
+      break;
+    }
+
+    if (ImGui::Button("Ok") || ImGui::IsKeyPressed(ImGuiKey_Escape) ||
+        ImGui::IsKeyPressed(ImGuiKey_Enter)) {
+      ImGui::CloseCurrentPopup();
+      m_event_state = EventState::NONE;
+    }
+
+    ImGui::EndPopup();
+  }
+}
+
+void App::present_project_version_popup() {
+  if (m_project_version_popup) {
+    ImGui::OpenPopup("Project Version");
+    ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), false,
+                            ImVec2(0.5f, 0.5f));
+    m_project_version_popup = false;
+  }
+
+  if (ImGui::BeginPopupModal("Project Version", nullptr,
+                             ImGuiWindowFlags_NoResize |
+                                 ImGuiWindowFlags_NoMove)) {
+    ImGui::SetWindowSize(ImVec2(-1.f, -1.f));
+
+    const ProjectSettings& settings = m_document_manager.settings();
+
+    bool minor_newer = settings.version_minor > TH_VERSION_MINOR;
+    bool major_older = settings.version_major < TH_VERSION_MAJOR;
+
+    ImGui::Text("Project Version (%d.%d) is %s than current ThunderAuto "
+                "version (%d.%d)",
+                settings.version_major, settings.version_minor,
+                minor_newer ? "newer" : "older", TH_VERSION_MAJOR,
+                TH_VERSION_MINOR);
+
+    if (major_older) {
+      ImGui::Text("Upon saving, this project will be updated to the current "
+                  "ThunderAuto version. This may break compatibility with "
+                  "older ThunderAuto versions.");
+    } else if (minor_newer) {
+      ImGui::Text(
+          "The project's minor version is newer than current ThunderAuto "
+          "version.\n"
+          "Newer minor versions may introduce new features or change the save "
+          "format, although any changes should be backwards compatible.\n");
+
+      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0.5, 0, 1));
+      ImGui::Text("It is still recommended to update ThunderAuto to the latest "
+                  "version to ensure compatibility, and to not loose any "
+                  "project data when saving.");
+      ImGui::PopStyleColor();
+    }
+
+    if (ImGui::Button("Ok") || ImGui::IsKeyPressed(ImGuiKey_Escape) ||
+        ImGui::IsKeyPressed(ImGuiKey_Enter)) {
+      ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Exit")) {
+      close();
     }
 
     ImGui::EndPopup();
@@ -501,18 +617,26 @@ void App::open_from_path(std::string path) {
     }
   }
 
+  OpenProjectStatus status = m_document_manager.open_project(path);
+  if (status != OpenProjectStatus::OK) {
+    m_project_open_error_popup = true;
+    m_project_open_error = status;
+    m_event_state = EventState::OPEN_PROJECT_ERROR;
+    return;
+  }
+
   m_event_state = EventState::NONE;
 
-  if (path.empty()) return;
-  if (!std::filesystem::exists(path) || !std::filesystem::is_regular_file(path))
-    return;
-
-  m_document_manager.open_project(path);
   const ProjectSettings& settings = m_document_manager.settings();
   m_path_editor_page.setup_field(settings);
   m_properties_page.setup(settings);
 
   m_recent_projects.push_front(path);
+
+  if (settings.version_major != TH_VERSION_MAJOR ||
+      settings.version_minor != TH_VERSION_MINOR) {
+    m_project_version_popup = true;
+  }
 }
 
 void App::save_as() {

@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
 
 set(TH_VERSION_MAJOR "2025")
-set(TH_VERSION_MINOR "3")
-set(TH_VERSION_PATCH "2")
+set(TH_VERSION_MINOR "4")
+set(TH_VERSION_PATCH "0")
 
 set(TH_VERSION "${TH_VERSION_MAJOR}.${TH_VERSION_MINOR}.${TH_VERSION_PATCH}")
 set(TH_VERSION_SHORT "${TH_VERSION_MAJOR}.${TH_VERSION_MINOR}")
@@ -213,7 +213,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/
 if(TH_OPENGL)
   target_link_libraries(${PROJECT_NAME} glad)
 endif()
-target_link_libraries(${PROJECT_NAME} glfw)
 target_link_libraries(${PROJECT_NAME} fmt)
 target_link_libraries(${PROJECT_NAME} imgui)
 target_link_libraries(${PROJECT_NAME} stb_image)

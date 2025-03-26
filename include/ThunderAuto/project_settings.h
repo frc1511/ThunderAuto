@@ -11,12 +11,16 @@ enum class DriveController {
 struct ProjectSettings {
   std::filesystem::path path;
 
+  int version_major = TH_VERSION_MAJOR;
+  int version_minor = TH_VERSION_MINOR;
+  int version_patch = TH_VERSION_PATCH;
+
   Field field;
 
-  DriveController drive_controller;
+  DriveController drive_controller = DriveController::HOLONOMIC;
 
-  float robot_length; // m
-  float robot_width;  // m
+  float robot_length = 0.8; // m
+  float robot_width = 0.8;  // m
 
   bool auto_save = false;
   bool auto_export = false;

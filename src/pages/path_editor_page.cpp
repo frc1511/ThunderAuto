@@ -33,6 +33,8 @@ static const int32_t HANDLE_COLOR_SELECTED = IM_COL32(178, 169, 0, 255);
 static const int32_t POINT_COLOR_PREVIEW = IM_COL32(128, 128, 128, 255);
 static const int32_t POINT_COLOR_LOCKED = IM_COL32(192, 192, 192, 255);
 
+static const int32_t ROTATION_DONE_COLOR = IM_COL32(255, 128, 0, 255);
+
 static const ImVec2 to_screen_coordinate(const ImVec2& field_pt,
                                          const Field& field, const ImRect& bb) {
   ImVec2 pt = field_pt / field.size();
@@ -348,6 +350,16 @@ void PathEditorPage::present_curve(ImRect bb) {
 
     draw_list->AddLine(last_point_position, point_position,
                        ImColor::HSV(hue, 1.f, 1.f), LINE_THICKNESS(bb));
+  }
+
+  for (std::size_t i = 0; i < points.size(); ++i) {
+    const OutputCurvePoint* point = &points.at(i);
+    const ImVec2 point_position =
+        to_screen_coordinate(point->position, m_settings->field, bb);
+    if (point->flags & OUTPUT_CURVE_POINT_FLAG_ROTATION_DONE) {
+      draw_list->AddCircleFilled(point_position, POINT_RADIUS(bb),
+                                 ROTATION_DONE_COLOR, 4);
+    }
   }
 }
 
@@ -759,7 +771,8 @@ void PathEditorPage::handle_curve_input(ProjectState& state, ImRect bb) {
         ImGui::Text("Radius of Curvature: %.2f m",
                     std::pow(point->curvature, -1));
         ImGui::Text("Rotation: %.2f deg", point->rotation.degrees());
-        ImGui::Text("Angular Velocity: %.2f deg/s", point->angular_velocity);
+        ImGui::Text("Angular Velocity: %.2f deg/s",
+                    point->angular_velocity * 180 / std::numbers::pi_v<float>);
 
         ImGui::EndTooltip();
       }

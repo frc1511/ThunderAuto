@@ -94,6 +94,7 @@ void Curve::output(OutputCurve& output,
         .end_rotation = end.rotation(),
         .begin_index = output.points.size() - segment_points,
         .end_index = output.points.size() - 1,
+        .rotation_time_percent = end.previous_segment_rotation_time_percent(),
     });
 
     std::vector<OutputCurvePoint>::iterator segment_begin =
@@ -270,10 +271,14 @@ void Curve::calc_angular_velocities(
       }
     }
 
+    assert(segment.rotation_time_percent > 0.f &&
+           segment.rotation_time_percent <= 1.f);
+    const float segment_time = segment.time * segment.rotation_time_percent;
+
     // Calculate minimum acceleration needed to reach target angle.
-    float a = 4.f * abs(rotation_delta_rad) / std::pow(segment.time, 2);
+    float a = 4.f * abs(rotation_delta_rad) / std::pow(segment_time, 2);
     float v_max = std::sqrt(a * abs(rotation_delta_rad));
-    float t_accel = segment.time / 2.f;
+    float t_accel = segment_time / 2.f;
 
     if (rotation_delta_rad < 0.f) {
       a = -a;
@@ -283,6 +288,7 @@ void Curve::calc_angular_velocities(
     const float d_accel =
         (abs(a) > 0.0001f) ? (v_max * v_max) / (2.f * a) : 0.f;
 
+    bool rotation_done = false;
     const float time_start = curve.points.at(segment.begin_index).time;
     for (size_t i = segment.begin_index; i <= segment.end_index; ++i) {
       OutputCurvePoint& point = curve.points.at(i);
@@ -291,14 +297,18 @@ void Curve::calc_angular_velocities(
       if (t > t_accel * 2) {
         point.rotation.set_radians(end_rotation_rad);
         point.angular_velocity = 0.f;
+        if (!rotation_done) {
+          point.flags |= OUTPUT_CURVE_POINT_FLAG_ROTATION_DONE;
+          rotation_done = true;
+        }
       } else {
-
-        if (t < t_accel) {
+        if (t < t_accel) { // Accelerating.
           point.rotation.set_radians(begin_rotation_rad + 0.5f * a * t * t);
           point.angular_velocity = a * t;
-        } else {
+        } else { // Decelerating.
           t -= t_accel;
-          point.rotation.set_radians(begin_rotation_rad + d_accel +
+
+          point.rotation.set_radians(begin_rotation_rad + d_accel + v_max * t -
                                      0.5f * a * t * t);
           point.angular_velocity = v_max - a * t;
         }
@@ -368,7 +378,12 @@ void to_json(nlohmann::json& json, const Curve& curve) {
 }
 
 void from_json(const nlohmann::json& json, Curve& curve) {
-  curve.settings() = json.at("settings").get<CurveSettings>();
-  curve.points() = json.at("points").get<std::vector<CurvePoint>>();
+  if (json.contains("settings")) {
+    curve.settings() = json.at("settings").get<CurveSettings>();
+  }
+
+  if (json.contains("points")) {
+    curve.points() = json.at("points").get<std::vector<CurvePoint>>();
+  }
 }
 

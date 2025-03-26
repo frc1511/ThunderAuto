@@ -9,29 +9,46 @@ void DocumentManager::new_project(ProjectSettings settings) {
   m_name = std::filesystem::path(m_settings.path).filename().string();
   m_open = true;
 
-  m_history.reset(ProjectState{}, true);
+  m_history.reset(ProjectState {}, true);
 }
 
-void DocumentManager::open_project(std::filesystem::path path) {
+OpenProjectStatus DocumentManager::open_project(std::filesystem::path path) {
   if (m_open) close();
 
   puts("Open project");
 
-  std::ifstream file(path);
-  assert(file.is_open());
+  using enum OpenProjectStatus;
 
-  nlohmann::json json;
-  file >> json;
-
-  m_settings = json.at("settings").get<ProjectSettings>();
   m_settings.path = path;
-  m_name = path.filename().string();
 
-  ProjectState state = json.at("state").get<ProjectState>();
+  if (path.empty() || !std::filesystem::exists(path)) return FILE_NOT_FOUND;
+
+  std::ifstream file(path);
+  if (!file.is_open()) return FAILED_TO_OPEN;
+
+  ProjectState state;
+
+  try {
+    nlohmann::json json;
+    file >> json;
+
+    m_settings = json.at("settings").get<ProjectSettings>();
+    m_settings.path = path;
+
+    if (m_settings.version_major > TH_VERSION_MAJOR) return VERSION_TOO_NEW;
+
+    m_name = path.filename().string();
+    state = json.at("state").get<ProjectState>();
+
+  } catch (...) {
+    return INVALID_CONTENTS;
+  }
 
   m_open = true;
 
   m_history.reset(state);
+
+  return OK;
 }
 
 void DocumentManager::save() {
@@ -61,3 +78,4 @@ void DocumentManager::close() {
   m_settings = {};
   m_name = "";
 }
+

@@ -38,11 +38,17 @@ class App {
     CLOSE_PROJECT,
     CLOSE_EVERYTHING,
     UNSAVED,
+    OPEN_PROJECT_ERROR,
   };
 
   bool m_export_popup = false;
   int m_exported_index = -1;
   bool m_export_success = true;
+
+  bool m_project_version_popup = false;
+
+  bool m_project_open_error_popup = false;
+  OpenProjectStatus m_project_open_error = OpenProjectStatus::OK;
 
   EventState m_event_state = EventState::WELCOME;
   EventState m_next_event_state = EventState::NONE;
@@ -105,7 +111,10 @@ private:
   void present_path_menu();
   void present_tools_menu();
 
+  void present_popups();
   void present_export_popup();
+  void present_project_open_error_popup();
+  void present_project_version_popup();
 
   bool try_change_state(EventState event_state);
 

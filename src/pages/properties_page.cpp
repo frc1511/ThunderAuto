@@ -77,6 +77,11 @@ void PropertiesPage::present_point_properties(ProjectState& state) {
   // Rotation.
   changed |= edit_point_rotation(pt);
 
+  // Segment rotation time percent.
+  if (!is_first) {
+    changed |= edit_point_previous_segment_rotation_time_percent(pt);
+  }
+
   // Stop.
   if (!is_first && !is_last) {
     ImGui::Separator();
@@ -495,6 +500,20 @@ bool PropertiesPage::edit_point_rotation(CurvePoint& pt) {
   pt.set_rotation(Angle::degrees(rotation));
 
   return changed;
+}
+
+bool PropertiesPage::edit_point_previous_segment_rotation_time_percent(CurvePoint& point) {
+  ImGuiScopedField field("Previous Segment\nRotation Time %", COLUMN_WIDTH, "Percent of the incoming segment's drive time spent rotating");
+
+  float percent = point.previous_segment_rotation_time_percent() * 100.f;
+  bool changed = present_slider("##Rotation Time %", percent, 1.f, "%.0f %%");
+
+  percent = std::clamp(percent, 10.f, 100.f);
+
+  point.set_previous_segment_rotation_time_percent(percent / 100.f);
+
+  return changed;
+
 }
 
 bool PropertiesPage::edit_point_stop(CurvePoint& pt) {

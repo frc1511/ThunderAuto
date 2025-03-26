@@ -107,22 +107,55 @@ void to_json(nlohmann::json& json, const CurvePoint& point) {
                          {"w1", weights.outgoing},
                          {"rotation", rotation.radians()},
                          {"stop", stop},
+                         {"segment_rotation_time_percent",
+                          point.previous_segment_rotation_time_percent()},
                          {"actions", actions},
                          {"locked", point.editor_locked()},
                          {"link_index", point.link_index()}};
 }
 
 void from_json(const nlohmann::json& json, CurvePoint& point) {
-  ImVec2 pos(json.at("x").get<float>(), json.at("y").get<float>());
-  HeadingAngles headings {Angle::radians(json.at("h0").get<float>()),
-                          Angle::radians(json.at("h1").get<float>())};
-  HeadingWeights weights {json.at("w0").get<float>(),
-                          json.at("w1").get<float>()};
-  Angle rotation = Angle::radians(json.at("rotation").get<float>());
-  bool stop = json.at("stop").get<bool>();
-  unsigned actions = json.at("actions").get<unsigned>();
+  ImVec2 pos;
+  pos.x = json.at("x").get<float>();
+  pos.y = json.at("y").get<float>();
+
+  HeadingAngles headings;
+  if (json.contains("h0")) {
+    headings.incoming = Angle::radians(json.at("h0").get<float>());
+  }
+  if (json.contains("h1")) {
+    headings.outgoing = Angle::radians(json.at("h1").get<float>());
+  }
+
+  HeadingWeights weights;
+  if (json.contains("w0")) {
+    weights.incoming = json.at("w0").get<float>();
+  }
+  if (json.contains("w1")) {
+    weights.outgoing = json.at("w1").get<float>();
+  }
+
+  Angle rotation;
+  if (json.contains("rotation")) {
+    rotation = Angle::radians(json.at("rotation").get<float>());
+  }
+
+  bool stop = false;
+  if (json.contains("stop")) {
+    stop = json.at("stop").get<bool>();
+  }
+
+  unsigned actions = 0;
+  if (json.contains("actions")) {
+    actions = json.at("actions").get<unsigned>();
+  }
 
   point = CurvePoint(pos, headings, weights, rotation, stop, actions);
+
+  if (json.contains("segment_rotation_time_percent")) {
+    point.set_previous_segment_rotation_time_percent(
+        json.at("segment_rotation_time_percent").get<float>());
+  }
 
   if (json.contains("locked")) {
     point.set_editor_locked(json.at("locked").get<bool>());

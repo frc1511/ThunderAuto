@@ -50,6 +50,7 @@ private:
   bool edit_point_heading_weights(CurvePoint& point, bool incoming,
                                   bool outgoing);
   bool edit_point_rotation(CurvePoint& point);
+  bool edit_point_previous_segment_rotation_time_percent(CurvePoint& point);
   bool edit_point_stop(CurvePoint& point);
   bool edit_point_actions(CurvePoint& point);
 

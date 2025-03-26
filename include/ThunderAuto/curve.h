@@ -6,6 +6,10 @@
 #include <ThunderAuto/curve_point.h>
 #include <ThunderAuto/curve_settings.h>
 
+enum OutputCurvePointFlags {
+  OUTPUT_CURVE_POINT_FLAG_ROTATION_DONE = 1 << 0,
+};
+
 struct OutputCurvePoint {
   float time;
   ImVec2 position;
@@ -18,6 +22,8 @@ struct OutputCurvePoint {
   float curvature;
   float centripetal_accel;
 
+  uint32_t flags;
+
   std::size_t segment_index;
 };
 
@@ -28,6 +34,7 @@ struct OutputCurveSegment {
   Angle end_rotation;
   size_t begin_index;
   size_t end_index;
+  float rotation_time_percent;
 };
 
 struct OutputCurve {

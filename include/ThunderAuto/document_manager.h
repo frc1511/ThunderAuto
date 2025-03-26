@@ -4,6 +4,14 @@
 #include <ThunderAuto/project_state.h>
 #include <ThunderAuto/thunder_auto.h>
 
+enum class OpenProjectStatus {
+  OK,
+  FILE_NOT_FOUND,
+  FAILED_TO_OPEN,
+  VERSION_TOO_NEW,
+  INVALID_CONTENTS,
+};
+
 class DocumentManager {
   ProjectSettings m_settings;
   HistoryManager m_history;
@@ -37,7 +45,7 @@ public:
   const std::string& name() const { return m_name; }
 
   void new_project(ProjectSettings settings);
-  void open_project(std::filesystem::path path);
+  OpenProjectStatus open_project(std::filesystem::path path);
 
   void save();
 
