@@ -5,7 +5,7 @@
 #define WINDOW_WIDTH  1300
 #define WINDOW_HEIGHT 800
 
-#define WINDOW_TITLE "ThunderAuto"
+#define WINDOW_TITLE "ThunderAuto " TH_VERSION_STR
 
 #if TH_DIRECTX11
 #include <uxtheme.h>
@@ -72,9 +72,9 @@ void Graphics::init() {
   const DWORD ws =
       WS_THICKFRAME | WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_VISIBLE;
 
-  m_hwnd = CreateWindowExW(WS_EX_APPWINDOW, m_wc.lpszClassName, L"", ws, 100,
-                           100, WINDOW_WIDTH, WINDOW_HEIGHT, nullptr, nullptr,
-                           m_wc.hInstance, nullptr);
+  m_hwnd = CreateWindowExW(
+      WS_EX_APPWINDOW, m_wc.lpszClassName, L"" WINDOW_TITLE, ws, 100, 100,
+      WINDOW_WIDTH, WINDOW_HEIGHT, nullptr, nullptr, m_wc.hInstance, nullptr);
 
   // Initialize Direct3D
   if (!init_device()) {
@@ -107,7 +107,7 @@ void Graphics::init() {
 #endif
 
   // Initialize window.
-  m_window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "loo" WINDOW_TITLE,
+  m_window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE,
                               nullptr, nullptr);
   if (!m_window) exit(1);
 
@@ -658,7 +658,7 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam,
   }
   }
 
-  return DefWindowProc(hwnd, msg, wparam, lparam);
+  return DefWindowProcW(hwnd, msg, wparam, lparam);
 }
 
 #endif

@@ -87,6 +87,7 @@ void App::present() {
           settings);
     }
     m_document_manager.close();
+    update_titlebar_title();
     m_event_state = WELCOME;
     break;
   case CLOSE_EVERYTHING:
@@ -99,20 +100,18 @@ void App::present() {
     break;
   }
 
-  if (m_document_manager.is_open()) {
-    std::string title(m_document_manager.name());
-    if (m_document_manager.is_unsaved()) {
-      if (m_document_manager.settings().auto_save) {
-        m_document_manager.save();
-      } else {
-        title += " - Unsaved";
-      }
-    }
-    Graphics::get().window_set_title(title.c_str());
+  bool is_unsaved = m_document_manager.is_unsaved();
 
-  } else {
-    Graphics::get().window_set_title("ThunderAuto");
+  if (is_unsaved && m_document_manager.settings().auto_save) {
+    m_document_manager.save();
+    is_unsaved = false;
   }
+
+  if (is_unsaved != m_was_unsaved) {
+    update_titlebar_title();
+  }
+
+  m_was_unsaved = is_unsaved;
 }
 
 void App::close() {
@@ -155,8 +154,6 @@ void App::data_write(const char* type_name, ImGuiTextBuffer* buf) {
 }
 
 void App::present_menu_bar() {
-  ImGuiStyle& style = ImGui::GetStyle();
-
   ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,
                       ImVec2(0.f, TITLEBAR_HEIGHT / 2));
 
@@ -202,14 +199,99 @@ void App::present_menu_bar() {
 
       const ImVec2 button_size(WINDOW_BUTTON_WIDTH, TITLEBAR_HEIGHT);
 
-      float spacer_width = ImGui::GetContentRegionAvail().x - 3 * button_size.x;
-      ImRect spacer(win->DC.CursorPos,
-                    win->DC.CursorPos + ImVec2(spacer_width, 1.f));
+      // Spacer + Title
+      {
+        const float spacer_width =
+            ImGui::GetContentRegionAvail().x - 3 * button_size.x;
 
-      ImGui::PushID("Menu Spacer");
-      ImGui::ItemSize(spacer);
-      ImGui::ItemAdd(spacer, 0);
-      ImGui::PopID();
+        float title_width = 0.f;
+        float filename_width = 0.f;
+        float app_name_width = 0.f;
+
+        const ImVec2 spacer_min(win->DC.CursorPos.x,
+                                win->DC.CursorPos.y +
+                                    win->DC.CurrLineTextBaseOffset);
+
+        std::string begin_title;
+        std::string end_title;
+
+        const char* filename = m_titlebar_filename.c_str();
+        const ImVec2 filename_size = ImGui::CalcTextSize(filename);
+
+        static const char* elipsis = "...";
+        const ImVec2 elipsis_size = ImGui::CalcTextSize(elipsis);
+
+        static const char* dash = " - ";
+        const ImVec2 dash_size = ImGui::CalcTextSize(dash);
+
+        static const char* app_name = "ThunderAuto " TH_VERSION_STR;
+        const ImVec2 app_name_size = ImGui::CalcTextSize(app_name);
+
+        if (app_name_size.x >= spacer_width) { // Nothing will fit.
+        } else if (elipsis_size.x + dash_size.x + app_name_size.x >=
+                       spacer_width ||
+                   !*filename) { // Just app name will fit
+          title_width = app_name_size.x;
+          app_name_width = app_name_size.x;
+
+          end_title = app_name;
+        } else if (filename_size.x + dash_size.x + app_name_size.x >=
+                   spacer_width) { // Some of the filename and app name will fit
+          title_width = spacer_width;
+          app_name_width = elipsis_size.x + dash_size.x + app_name_size.x;
+          filename_width = spacer_width - app_name_width;
+
+          begin_title = filename;
+          end_title = std::string(elipsis) + dash + app_name;
+
+        } else { // Filename and app name will fit
+          title_width = filename_size.x + dash_size.x + app_name_size.x;
+          filename_width = filename_size.x;
+          app_name_width = dash_size.x + app_name_size.x;
+
+          begin_title = filename;
+          end_title = std::string(dash) + app_name;
+        }
+
+        const float spacer_edge_width = (spacer_width - title_width) / 2.f;
+        const float text_height = ImGui::GetTextLineHeight();
+
+        const ImVec2 begin_min(spacer_min.x + spacer_edge_width, spacer_min.y);
+        const ImVec2 begin_max(begin_min.x + filename_width,
+                               spacer_min.y + text_height);
+
+        const ImVec2 begin_size = begin_max - begin_min;
+
+        const ImVec2 end_min(begin_min.x + filename_width, spacer_min.y);
+        const ImVec2 end_max(end_min.x + app_name_width,
+                             spacer_min.y + text_height);
+
+        const ImVec2 end_size = end_max - end_min;
+
+        ImGui::PushID("Menu Spacer");
+
+        const ImRect spacer(spacer_min,
+                            spacer_min + ImVec2(spacer_width, text_height));
+        ImGui::ItemSize(spacer);
+        ImGui::ItemAdd(spacer, 0);
+
+        const char* begin_title_str = begin_title.c_str();
+        const char* end_title_str = end_title.c_str();
+
+        ImGui::PushStyleColor(ImGuiCol_Text,
+                              style.Colors[ImGuiCol_TextDisabled]);
+
+        ImGui::RenderTextClipped(begin_min, begin_max, begin_title_str,
+                                 begin_title_str + strlen(begin_title_str),
+                                 &begin_size);
+        ImGui::RenderTextClipped(end_min, end_max, end_title_str,
+                                 end_title_str + strlen(end_title_str),
+                                 &end_size);
+
+        ImGui::PopStyleColor();
+
+        ImGui::PopID();
+      }
 
       bool min_selected = false;
       bool max_selected = false;
@@ -242,9 +324,9 @@ void App::present_menu_bar() {
         ImVec2 button_center_pos =
             ImGui::GetItemRectMin() + ImGui::GetItemRectSize() / 2.f;
 
-            bool maximized = Graphics::get().is_maximized();
+        bool maximized = Graphics::get().is_maximized();
 
-            ImVec2 offset = maximized ? ImVec2(-1.f, +1.f) : ImVec2(0.f, 0.f);
+        ImVec2 offset = maximized ? ImVec2(-1.f, +1.f) : ImVec2(0.f, 0.f);
 
         draw_list->AddRect(button_center_pos - ImVec2(5.f, 5.f) + offset,
                            button_center_pos + ImVec2(5.f, 5.f) + offset,
@@ -252,8 +334,8 @@ void App::present_menu_bar() {
 
         if (maximized) {
           draw_list->AddRect(button_center_pos - ImVec2(5.f, 5.f) - offset,
-                            button_center_pos + ImVec2(5.f, 5.f) - offset,
-                            IM_COL32(255, 255, 255, 255), 1.f);
+                             button_center_pos + ImVec2(5.f, 5.f) - offset,
+                             IM_COL32(255, 255, 255, 255), 1.f);
         }
 
         ImGui::PopID();
@@ -706,6 +788,7 @@ void App::new_project() {
     m_document_manager.new_project(m_new_project_popup.result_project());
     m_path_editor_page.setup_field(m_document_manager.settings());
     m_properties_page.setup(m_document_manager.settings());
+    update_titlebar_title();
 
     m_recent_projects.push_front(m_document_manager.path().string());
     break;
@@ -745,6 +828,11 @@ void App::open_project() {
   std::string path = m_platform_manager.open_file_dialog(
       FileType::FILE, {THUNDERAUTO_FILE_FILTER});
 
+  if (path.empty()) { // Open cancelled.
+    m_event_state = EventState::NONE;
+    return;
+  }
+
   open_from_path(path);
 }
 
@@ -777,6 +865,8 @@ void App::open_from_path(std::string path) {
       settings.version_minor != TH_VERSION_MINOR) {
     m_project_version_popup = true;
   }
+
+  update_titlebar_title();
 }
 
 void App::save_as() {
@@ -785,6 +875,8 @@ void App::save_as() {
   if (!path.empty()) {
     m_document_manager.save_as(path);
   }
+
+  update_titlebar_title();
 }
 
 void App::unsaved() {
@@ -834,6 +926,24 @@ void App::redo() {
 
   m_document_edit_manager.current_state().current_path().output(
       m_cached_curve, preview_output_curve_settings);
+}
+
+void App::update_titlebar_title() {
+  if (!m_document_manager.is_open()) {
+    m_titlebar_filename = "";
+    Graphics::get().window_set_title("");
+    return;
+  }
+
+  std::string title;
+  if (m_document_manager.is_unsaved() &&
+      !m_document_manager.settings().auto_save) {
+    title += "* ";
+  }
+  title += m_document_manager.name();
+
+  m_titlebar_filename = title;
+  Graphics::get().window_set_title(m_titlebar_filename.c_str());
 }
 
 #if TH_MACOS

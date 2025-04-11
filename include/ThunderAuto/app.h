@@ -76,6 +76,9 @@ class App {
   bool m_show_actions = true;
   bool m_show_settings = false;
 
+  bool m_was_unsaved = false;
+  std::string m_titlebar_filename;
+
   // Graphics stuff
 
   int m_menu_bar_width = 0;
@@ -154,6 +157,8 @@ private:
 
   void undo();
   void redo();
+
+  void update_titlebar_title();
 
 public:
   int menu_bar_width() const { return m_menu_bar_width; }
