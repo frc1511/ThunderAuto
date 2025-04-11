@@ -72,9 +72,9 @@ void Graphics::init() {
   const DWORD ws =
       WS_THICKFRAME | WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_VISIBLE;
 
-  m_hwnd = CreateWindowExW(
-      WS_EX_APPWINDOW, m_wc.lpszClassName, L"", ws, 100, 100,
-      WINDOW_WIDTH, WINDOW_HEIGHT, nullptr, nullptr, m_wc.hInstance, nullptr);
+  m_hwnd = CreateWindowExW(WS_EX_APPWINDOW, m_wc.lpszClassName, L"", ws, 100,
+                           100, WINDOW_WIDTH, WINDOW_HEIGHT, nullptr, nullptr,
+                           m_wc.hInstance, nullptr);
 
   // Initialize Direct3D
   if (!init_device()) {
@@ -555,7 +555,10 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam,
     int button_width = dpi_scale(47, dpi);
 
     MINMAXINFO* minmax = reinterpret_cast<MINMAXINFO*>(lparam);
-    minmax->ptMinTrackSize.x = menu_bar_width + 3 * button_width + dpi_scale(47, dpi);
+    minmax->ptMinTrackSize.x =
+        max(menu_bar_width + 3 * button_width + dpi_scale(30, dpi),
+            dpi_scale(500, dpi));
+    minmax->ptMinTrackSize.y = dpi_scale(400, dpi);
     return 0;
   }
   case WM_NCMOUSEMOVE: {
