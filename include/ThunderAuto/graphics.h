@@ -3,14 +3,20 @@
 #include <ThunderAuto/thunder_auto.h>
 
 class Graphics {
-#ifdef TH_DIRECTX11
+#if TH_DIRECTX11
   ID3D11Device* m_device = nullptr;
   ID3D11DeviceContext* m_device_context = nullptr;
   IDXGISwapChain* m_swap_chain = nullptr;
   ID3D11RenderTargetView* m_main_render_target_view = nullptr;
-#endif
 
+  HWND m_hwnd;
+  WNDCLASSEXW m_wc = {};
+
+  bool m_swap_chain_occluded = false;
+
+#else
   GLFWwindow* m_window = nullptr;
+#endif
 
 private:
   Graphics() = default;
@@ -43,6 +49,8 @@ public:
 
   ImVec2 window_size() const;
   ImVec2 window_pos() const;
+
+  bool is_maximized();
 
   void window_set_size(int width, int height);
   void window_set_pos(int x, int y);

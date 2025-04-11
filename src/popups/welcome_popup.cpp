@@ -9,15 +9,15 @@ void WelcomePopup::present(bool* running) {
   // Center window.
   ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), false,
                           ImVec2(0.5f, 0.5f));
-  if (!ImGui::BeginPopupModal(m_name, nullptr,
-                              ImGuiWindowFlags_AlwaysAutoResize)) {
+  if (!ImGui::Begin(m_name, running,
+                              ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoDocking)) {
     return;
   }
 
   m_result = Result::NONE;
   m_recent_project = nullptr;
 
-  ImGui::PushFont(m_font_lib.big_font);
+  ImGui::PushFont(FontLibrary::get().big_font);
   ImGui::Text("Welcome to ThunderAuto");
   ImGui::PopFont();
 
@@ -85,7 +85,7 @@ void WelcomePopup::present(bool* running) {
     ImGui::PopID();
   }
 
-  ImGui::EndPopup();
+  ImGui::End();
 
   if (m_result != Result::NONE) {
     *running = false;

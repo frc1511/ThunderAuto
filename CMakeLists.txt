@@ -152,19 +152,20 @@ build_thunder_auto_resource("${TH_RES_DIR}/fonts/Font-Awesome/fa-solid-900.ttf" 
 # Thirdparty libraries.
 #
 
-set(GLFW_BUILD_EXAMPLES OFF)
-set(GLFW_BUILD_TESTS OFF)
-set(GLFW_BUILD_DOCS OFF)
-set(GLFW_INSTALL OFF)
-add_subdirectory("${TH_THIRDPARTY_DIR}/glfw")
 if(TH_OPENGL)
+  set(GLFW_BUILD_EXAMPLES OFF)
+  set(GLFW_BUILD_TESTS OFF)
+  set(GLFW_BUILD_DOCS OFF)
+  set(GLFW_INSTALL OFF)
+  add_subdirectory("${TH_THIRDPARTY_DIR}/glfw")
   add_subdirectory("${TH_THIRDPARTY_DIR}/glad")
 endif()
 
-add_subdirectory("${TH_THIRDPARTY_DIR}/fmt")
 if(TH_DIRECTX11)
   set(IMGUI_DIRECTX11 ON)
 endif()
+
+add_subdirectory("${TH_THIRDPARTY_DIR}/fmt")
 add_subdirectory("${TH_THIRDPARTY_DIR}/imgui")
 add_subdirectory("${TH_THIRDPARTY_DIR}/stb_image")
 add_subdirectory("${TH_THIRDPARTY_DIR}/IconFontCppHeaders")

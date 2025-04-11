@@ -7,8 +7,8 @@
 #include <thread>
 
 static void apply_imgui_style();
-static FontLibrary load_fonts();
-static void setup_data_handler(App& app);
+static void load_fonts();
+static void setup_data_handler();
 
 int _main(int argc, char** argv) {
   std::optional<std::filesystem::path> start_project_path;
@@ -34,11 +34,11 @@ int _main(int argc, char** argv) {
   Graphics::get().init();
 
   apply_imgui_style();
-  FontLibrary font_lib = load_fonts();
+  load_fonts();
 
-  App app(font_lib);
+  App& app = App::get();
 
-  setup_data_handler(app);
+  setup_data_handler();
 
   if (start_project_path.has_value()) {
     app.open_from_path(start_project_path.value().string());
@@ -70,8 +70,7 @@ int _main(int argc, char** argv) {
     }
 
     if (!is_focused) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(1000/60));
-      continue;
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000 / 60));
     }
 
     // New Frame.
@@ -85,6 +84,7 @@ int _main(int argc, char** argv) {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 10.f)); // Half titlebar size
 
     bool running = app.is_running();
 
@@ -105,7 +105,7 @@ int _main(int argc, char** argv) {
       break;
     }
 
-    ImGui::PopStyleVar(3);
+    ImGui::PopStyleVar(4);
 
     ImGuiIO* io = &ImGui::GetIO();
 
@@ -257,8 +257,8 @@ static void apply_imgui_style() {
   style.Colors[ImGuiCol_DockingPreview] = red_low;
 }
 
-static FontLibrary load_fonts() {
-  FontLibrary font_lib;
+static void load_fonts() {
+  FontLibrary& font_lib = FontLibrary::get();
 
   ImGuiIO* io = &ImGui::GetIO();
 
@@ -294,13 +294,11 @@ static FontLibrary load_fonts() {
       &font_cfg, glyph_ranges);
 
   io->ConfigWindowsMoveFromTitleBarOnly = true;
-
-  return font_lib;
 }
 
-static void setup_data_handler(App& app) {
+static void setup_data_handler() {
   ImGuiSettingsHandler ini_handler;
-  ini_handler.UserData = reinterpret_cast<void*>(&app);
+  ini_handler.UserData = reinterpret_cast<void*>(&App::get());
 
   ini_handler.ClearAllFn = [](ImGuiContext*, ImGuiSettingsHandler* handler) {
     App* app = reinterpret_cast<App*>(handler->UserData);
@@ -338,4 +336,3 @@ static void setup_data_handler(App& app) {
   ImGuiContext* context = ImGui::GetCurrentContext();
   context->SettingsHandlers.push_back(ini_handler);
 }
-

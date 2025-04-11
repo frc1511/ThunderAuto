@@ -8,13 +8,10 @@ class WelcomePopup : public Popup {
 
   std::list<std::string>& m_recent_projects;
   std::string* m_recent_project = nullptr;
-  FontLibrary& m_font_lib;
 
 public:
-  inline WelcomePopup(std::list<std::string>& recent_projects,
-                      FontLibrary& font_lib)
-    : m_recent_projects(recent_projects),
-      m_font_lib(font_lib) {}
+  inline WelcomePopup(std::list<std::string>& recent_projects)
+    : m_recent_projects(recent_projects) {}
 
   void present(bool* running) override;
 

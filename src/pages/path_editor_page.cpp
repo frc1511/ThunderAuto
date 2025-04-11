@@ -584,9 +584,6 @@ void PathEditorPage::handle_input(ProjectState& state, ImRect bb) {
     if (!m_show_context_menu && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
       ImVec2 mouse_pos = ImGui::GetIO().MousePos;
       ImGui::OpenPopup("EditorContextMenu");
-      ImGui::SetNextWindowPos(mouse_pos);
-      m_context_menu_position =
-          to_field_coordinate(mouse_pos, m_settings->field, bb);
       m_show_context_menu = true;
     }
   }
@@ -669,7 +666,6 @@ void PathEditorPage::handle_point_input(ProjectState& state, ImRect bb) {
 
     if (right_click && !m_show_context_menu && (hovered_point_index != -1)) {
       ImGui::OpenPopup("EditorPointContextMenu");
-      ImGui::SetNextWindowPos(ImGui::GetIO().MousePos);
       m_show_context_menu = true;
     }
   }
@@ -808,7 +804,6 @@ void PathEditorPage::handle_curve_input(ProjectState& state, ImRect bb) {
         to_field_coordinate(mouse_pos, m_settings->field, bb);
     m_context_menu_hovered_curve_point_index = hovered_point_index;
     ImGui::OpenPopup("EditorCurveContextMenu");
-    ImGui::SetNextWindowPos(mouse_pos);
     m_show_context_menu = true;
   }
 

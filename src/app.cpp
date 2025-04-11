@@ -6,6 +6,9 @@
 
 #include <ThunderAuto/graphics.h>
 
+#define TITLEBAR_HEIGHT     20.f
+#define WINDOW_BUTTON_WIDTH 47.f
+
 void App::setup_dockspace(ImGuiID dockspace_id) {
   ImGuiViewport* viewport = ImGui::GetMainViewport();
 
@@ -53,6 +56,7 @@ void App::focus_was_changed(bool focused) {
 
 void App::present() {
   present_menu_bar();
+  present_pages();
 
   present_popups();
 
@@ -151,6 +155,11 @@ void App::data_write(const char* type_name, ImGuiTextBuffer* buf) {
 }
 
 void App::present_menu_bar() {
+  ImGuiStyle& style = ImGui::GetStyle();
+
+  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,
+                      ImVec2(0.f, TITLEBAR_HEIGHT / 2));
+
   if (ImGui::BeginMenuBar()) {
     present_file_menu();
 
@@ -159,7 +168,13 @@ void App::present_menu_bar() {
       present_view_menu();
       present_path_menu();
 
-      if (ImGui::MenuItem("Export All Paths")) {
+      ImGui::PushStyleVar(
+          ImGuiStyleVar_ItemSpacing,
+          ImVec2(ImGui::GetStyle().ItemSpacing.x, TITLEBAR_HEIGHT));
+      bool export_all_paths = ImGui::MenuItem("Export All Paths");
+      ImGui::PopStyleVar();
+
+      if (export_all_paths) {
         m_export_success =
             m_document_edit_manager.current_state().export_all_paths_to_csv(
                 m_document_manager.settings());
@@ -171,7 +186,120 @@ void App::present_menu_bar() {
       present_tools_menu();
     }
 
+    m_menu_bar_width = ImGui::GetCursorPosX();
+
+#ifdef TH_DIRECTX11
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
+                        ImVec2(0.f, TITLEBAR_HEIGHT));
+
+    // Draw custom minimize/maximize/close buttons
+    do {
+      ImGuiWindow* win = ImGui::GetCurrentWindow();
+      if (win->SkipItems) break;
+
+      ImDrawList* draw_list = ImGui::GetWindowDrawList();
+      ImGuiStyle& style = ImGui::GetStyle();
+
+      const ImVec2 button_size(WINDOW_BUTTON_WIDTH, TITLEBAR_HEIGHT);
+
+      float spacer_width = ImGui::GetContentRegionAvail().x - 3 * button_size.x;
+      ImRect spacer(win->DC.CursorPos,
+                    win->DC.CursorPos + ImVec2(spacer_width, 1.f));
+
+      ImGui::PushID("Menu Spacer");
+      ImGui::ItemSize(spacer);
+      ImGui::ItemAdd(spacer, 0);
+      ImGui::PopID();
+
+      bool min_selected = false;
+      bool max_selected = false;
+      bool close_selected = false;
+
+      const ImGuiSelectableFlags selectable_flags =
+          ImGuiSelectableFlags_SelectOnRelease |
+          ImGuiSelectableFlags_NoSetKeyOwner |
+          ImGuiSelectableFlags_SetNavIdOnHover;
+      const ImGuiMenuColumns* offsets = &win->DC.MenuColumns;
+
+      {
+        ImGui::PushID("App Min");
+        ImGui::Selectable("", &min_selected, selectable_flags,
+                          ImVec2(button_size.x, 0.0f));
+
+        ImVec2 button_center_pos =
+            ImGui::GetItemRectMin() + ImGui::GetItemRectSize() / 2.f;
+
+        draw_list->AddLine(button_center_pos - ImVec2(5.f, 0.f),
+                           button_center_pos + ImVec2(5.f, 0.f),
+                           IM_COL32(255, 255, 255, 255), 1.f);
+
+        ImGui::PopID();
+      }
+      {
+        ImGui::PushID("App Max");
+        ImGui::Selectable("", &max_selected, selectable_flags,
+                          ImVec2(button_size.x, 0.0f));
+        ImVec2 button_center_pos =
+            ImGui::GetItemRectMin() + ImGui::GetItemRectSize() / 2.f;
+
+            bool maximized = Graphics::get().is_maximized();
+
+            ImVec2 offset = maximized ? ImVec2(-1.f, +1.f) : ImVec2(0.f, 0.f);
+
+        draw_list->AddRect(button_center_pos - ImVec2(5.f, 5.f) + offset,
+                           button_center_pos + ImVec2(5.f, 5.f) + offset,
+                           IM_COL32(255, 255, 255, 255), 1.f);
+
+        if (maximized) {
+          draw_list->AddRect(button_center_pos - ImVec2(5.f, 5.f) - offset,
+                            button_center_pos + ImVec2(5.f, 5.f) - offset,
+                            IM_COL32(255, 255, 255, 255), 1.f);
+        }
+
+        ImGui::PopID();
+      }
+      {
+
+        ImGui::PushID("App Close");
+
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered,
+                              ImVec4(1.f, 0.f, 0.f, 1.f));
+        ImGui::Selectable("", &close_selected, selectable_flags,
+                          ImVec2(button_size.x, 0.0f));
+        ImGui::PopStyleColor();
+
+        ImVec2 button_center_pos =
+            ImGui::GetItemRectMin() + ImGui::GetItemRectSize() / 2.f;
+
+        draw_list->AddLine(button_center_pos - ImVec2(5.f, 5.f),
+                           button_center_pos + ImVec2(5.f, 5.f),
+                           IM_COL32(255, 255, 255, 255), 1.f);
+
+        draw_list->AddLine(button_center_pos - ImVec2(5.f, -5.f),
+                           button_center_pos + ImVec2(5.f, -5.f),
+                           IM_COL32(255, 255, 255, 255), 1.f);
+
+        ImGui::PopID();
+      }
+    } while (false);
+
+    ImGui::PopStyleVar();
+
+#endif
+
     ImGui::EndMenuBar();
+  }
+
+  ImGui::PopStyleVar();
+}
+
+void App::present_pages() {
+  if (m_document_manager.is_open()) {
+    if (m_show_actions) m_actions_page.present(&m_show_actions);
+    if (m_show_properties) m_properties_page.present(&m_show_properties);
+    if (m_show_path_manager) m_path_manager_page.present(&m_show_path_manager);
+    if (m_show_path_editor) m_path_editor_page.present(&m_show_path_editor);
+    if (m_show_settings) m_settings_page.present(&m_show_settings);
   }
 }
 
@@ -189,7 +317,12 @@ void App::present_file_menu() {
 
   ProjectSettings& settings = m_document_manager.settings();
 
-  if (ImGui::BeginMenu("File")) {
+  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
+                      ImVec2(ImGui::GetStyle().ItemSpacing.x, TITLEBAR_HEIGHT));
+  bool show_menu = ImGui::BeginMenu("File");
+  ImGui::PopStyleVar();
+
+  if (show_menu) {
     ImGui::MenuItem(ICON_FA_FILE "  New", CTRL_STR "N", &item_new);
     ImGui::MenuItem(ICON_FA_FOLDER_OPEN "  Open", CTRL_STR "O", &item_open);
 
@@ -248,7 +381,12 @@ void App::present_file_menu() {
 }
 
 void App::present_edit_menu() {
-  if (ImGui::BeginMenu("Edit")) {
+  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
+                      ImVec2(ImGui::GetStyle().ItemSpacing.x, TITLEBAR_HEIGHT));
+  bool show_menu = ImGui::BeginMenu("Edit");
+  ImGui::PopStyleVar();
+
+  if (show_menu) {
     if (ImGui::MenuItem(ICON_FA_UNDO "  Undo", CTRL_STR "Z")) {
       undo();
     }
@@ -266,7 +404,12 @@ void App::present_edit_menu() {
 }
 
 void App::present_view_menu() {
-  if (ImGui::BeginMenu("View")) {
+  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
+                      ImVec2(ImGui::GetStyle().ItemSpacing.x, TITLEBAR_HEIGHT));
+  bool show_menu = ImGui::BeginMenu("View");
+  ImGui::PopStyleVar();
+
+  if (show_menu) {
     if (ImGui::MenuItem(ICON_FA_REDO "  Reset View", CTRL_STR "0")) {
       m_path_editor_page.reset_view();
     }
@@ -280,7 +423,12 @@ void App::present_path_menu() {
 
   ProjectState state = m_document_manager.history()->current_state();
 
-  if (ImGui::BeginMenu("Path")) {
+  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
+                      ImVec2(ImGui::GetStyle().ItemSpacing.x, TITLEBAR_HEIGHT));
+  bool show_menu = ImGui::BeginMenu("Path");
+  ImGui::PopStyleVar();
+
+  if (show_menu) {
     ImGui::MenuItem(ICON_FA_FILE_CSV "  Export to CSV", nullptr, &item_export);
 
     ImGui::MenuItem("\xef\x8d\xa3"
@@ -319,27 +467,22 @@ void App::present_path_menu() {
 }
 
 void App::present_tools_menu() {
-  static bool show_path_editor = true, show_path_manager = true,
-              show_properties = true, show_actions = true,
-              show_settings = false;
+  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
+                      ImVec2(ImGui::GetStyle().ItemSpacing.x, TITLEBAR_HEIGHT));
+  bool show_menu = ImGui::BeginMenu("Tools");
+  ImGui::PopStyleVar();
 
-  if (ImGui::BeginMenu("Tools")) {
-    ImGui::MenuItem(ICON_FA_LIST "  Paths", nullptr, &show_path_manager);
+  if (show_menu) {
+    ImGui::MenuItem(ICON_FA_LIST "  Paths", nullptr, &m_show_path_manager);
     ImGui::MenuItem(ICON_FA_BEZIER_CURVE "  Editor", nullptr,
-                    &show_path_editor);
+                    &m_show_path_editor);
     ImGui::MenuItem(ICON_FA_SLIDERS_H "  Properties", nullptr,
-                    &show_properties);
-    ImGui::MenuItem(ICON_FA_PAPERCLIP "  Actions", nullptr, &show_actions);
-    ImGui::MenuItem(ICON_FA_COG "  Settings", nullptr, &show_settings);
+                    &m_show_properties);
+    ImGui::MenuItem(ICON_FA_PAPERCLIP "  Actions", nullptr, &m_show_actions);
+    ImGui::MenuItem(ICON_FA_COG "  Settings", nullptr, &m_show_settings);
 
     ImGui::EndMenu();
   }
-
-  if (show_actions) m_actions_page.present(&show_actions);
-  if (show_properties) m_properties_page.present(&show_properties);
-  if (show_path_manager) m_path_manager_page.present(&show_path_manager);
-  if (show_path_editor) m_path_editor_page.present(&show_path_editor);
-  if (show_settings) m_settings_page.present(&show_settings);
 }
 
 void App::present_popups() {
@@ -515,10 +658,7 @@ bool App::try_change_state(EventState desired_state) {
 }
 
 void App::welcome() {
-  ImGui::OpenPopup(m_welcome_popup.name());
-
   bool showing_popup = true;
-
   m_welcome_popup.present(&showing_popup);
 
   if (showing_popup) return;
@@ -763,4 +903,3 @@ void App::process_input() {
     }
   }
 }
-

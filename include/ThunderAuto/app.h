@@ -12,18 +12,16 @@
 #include <ThunderAuto/popups/welcome_popup.h>
 
 #include <ThunderAuto/pages/actions_page.h>
-#include <ThunderAuto/pages/settings_page.h>
 #include <ThunderAuto/pages/path_editor_page.h>
 #include <ThunderAuto/pages/path_manager_page.h>
 #include <ThunderAuto/pages/properties_page.h>
+#include <ThunderAuto/pages/settings_page.h>
 
 #include <ThunderAuto/curve.h>
 
 struct GLFWwindow;
 
 class App {
-  FontLibrary& m_font_lib;
-
   bool m_running = true;
 
   PlatformManager m_platform_manager;
@@ -61,7 +59,7 @@ class App {
   NewFieldPopup m_new_field_popup {m_platform_manager};
   NewProjectPopup m_new_project_popup {m_platform_manager};
   UnsavedPopup m_unsaved_popup;
-  WelcomePopup m_welcome_popup {m_recent_projects, m_font_lib};
+  WelcomePopup m_welcome_popup {m_recent_projects};
 
   OutputCurve m_cached_curve;
 
@@ -72,12 +70,29 @@ class App {
   ActionsPage m_actions_page {m_document_edit_manager};
   SettingsPage m_settings_page {m_document_manager};
 
+  bool m_show_path_editor = true;
+  bool m_show_path_manager = true;
+  bool m_show_properties = true;
+  bool m_show_actions = true;
+  bool m_show_settings = false;
+
+  // Graphics stuff
+
+  int m_menu_bar_width = 0;
+
+private:
+  App() = default;
+
 public:
-  inline explicit App(FontLibrary& font_lib)
-    : m_font_lib(font_lib) {}
+  static App& get() {
+    static App instance;
+    return instance;
+  }
 
-  ~App() = default;
+  App(App const&) = delete;
+  void operator=(App const&) = delete;
 
+public:
   constexpr bool is_running() const { return m_running; }
 
   void setup_dockspace(ImGuiID dockspace_id);
@@ -116,6 +131,8 @@ private:
   void present_project_open_error_popup();
   void present_project_version_popup();
 
+  void present_pages();
+
   bool try_change_state(EventState event_state);
 
   void welcome();
@@ -129,5 +146,7 @@ private:
 
   void undo();
   void redo();
-};
 
+public:
+  int menu_bar_width() const { return m_menu_bar_width; }
+};

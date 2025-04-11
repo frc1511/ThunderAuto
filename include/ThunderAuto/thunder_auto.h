@@ -40,9 +40,14 @@ using std::min;
 #include <d3d11.h>
 #include <tchar.h>
 #include <wrl/client.h>
+#include <Windows.h>
+#include <windowsx.h>
 #else // TH_OPENGL
 #include <glad/glad.h>
-#endif
-
 #include <GLFW/glfw3.h>
+#if TH_WINDOWS
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+#endif
+#endif
 
