@@ -31,8 +31,6 @@ else()
     list(APPEND IMGUI_SRC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_osx.mm")
   elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   endif()
-
-  target_link_libraries(${PROJECT_NAME} PUBLIC glfw)
 endif()
 
 add_library(${PROJECT_NAME} ${IMGUI_SRC})
@@ -41,10 +39,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/i
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/")
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND IMGUI_DIRECTX11)
-  target_link_libraries(${PROJECT_NAME} PUBLIC d3d11 d3dcompiler dwmapi)
+  target_link_libraries(${PROJECT_NAME} PUBLIC d3d11 d3dcompiler dwmapi user32 gdi32 uxtheme)
 
 else()
   find_package(OpenGL REQUIRED)
 
   target_link_libraries(${PROJECT_NAME} PUBLIC OpenGL::GL)
+  target_link_libraries(${PROJECT_NAME} PUBLIC glfw)
 endif()

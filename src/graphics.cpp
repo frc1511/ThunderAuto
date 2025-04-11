@@ -10,9 +10,6 @@
 #if TH_DIRECTX11
 #include <uxtheme.h>
 #include <vssym32.h>
-#pragma comment(lib, "user32.lib")
-#pragma comment(lib, "gdi32.lib")
-#pragma comment(lib, "uxtheme.lib")
 
 #include <imgui_impl_dx11.h>
 #include <imgui_impl_win32.h>
@@ -76,7 +73,7 @@ void Graphics::init() {
       WS_THICKFRAME | WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_VISIBLE;
 
   m_hwnd = CreateWindowExW(
-      WS_EX_APPWINDOW, m_wc.lpszClassName, L"" WINDOW_TITLE, ws, 100, 100,
+      WS_EX_APPWINDOW, m_wc.lpszClassName, L"", ws, 100, 100,
       WINDOW_WIDTH, WINDOW_HEIGHT, nullptr, nullptr, m_wc.hInstance, nullptr);
 
   // Initialize Direct3D
@@ -292,6 +289,8 @@ ImVec2 Graphics::window_pos() const {
 
 void Graphics::window_set_size(int width, int height) {
 #if TH_DIRECTX11
+  (void)width;
+  (void)height;
 #else // TH_OPENGL
   glfwSetWindowSize(m_window, width, height);
 #endif
@@ -299,6 +298,8 @@ void Graphics::window_set_size(int width, int height) {
 
 void Graphics::window_set_pos(int x, int y) {
 #if TH_DIRECTX11
+  (void)x;
+  (void)y;
 #else // TH_OPENGL
   glfwSetWindowPos(m_window, x, y);
 #endif
@@ -306,6 +307,7 @@ void Graphics::window_set_pos(int x, int y) {
 
 void Graphics::window_set_title(const char* title) {
 #if TH_DIRECTX11
+  SetWindowTextA(m_hwnd, title);
 #else // TH_OPENGL
   glfwSetWindowTitle(m_window, title);
 #endif
@@ -320,6 +322,8 @@ void Graphics::window_focus() {
 
 void Graphics::window_set_should_close(bool value) {
 #if TH_DIRECTX11
+  (void)value;
+  // TODO
 #else // TH_OPENGL
   glfwSetWindowShouldClose(m_window, value);
 #endif
@@ -413,7 +417,7 @@ static void set_menu_item_state(HMENU menu, MENUITEMINFO* menuItemInfo,
 }
 
 static RECT get_titlebar_rect(HWND hwnd) {
-  SIZE title_bar_size = {0};
+  SIZE title_bar_size;
   const int top_and_bottom_borders = 2;
   HTHEME theme = OpenThemeData(hwnd, L"WINDOW");
   UINT dpi = GetDpiForWindow(hwnd);
@@ -426,15 +430,6 @@ static RECT get_titlebar_rect(HWND hwnd) {
   RECT rect;
   GetClientRect(hwnd, &rect);
   rect.bottom = rect.top + height;
-  return rect;
-}
-
-#define FAKE_SHADOW_HEIGHT 1
-
-static RECT get_fake_shadow_rect(HWND hwnd) {
-  RECT rect;
-  GetClientRect(hwnd, &rect);
-  rect.bottom = rect.top + FAKE_SHADOW_HEIGHT;
   return rect;
 }
 
@@ -458,7 +453,6 @@ get_title_bar_button_rects(HWND hwnd, const RECT* title_bar_rect) {
 
   int button_width = dpi_scale(47, dpi);
   button_rects.close = *title_bar_rect;
-  button_rects.close.top += FAKE_SHADOW_HEIGHT;
 
   button_rects.close.left = button_rects.close.right - button_width;
   button_rects.maximize = button_rects.close;
@@ -471,7 +465,7 @@ get_title_bar_button_rects(HWND hwnd, const RECT* title_bar_rect) {
 }
 
 static bool is_window_maximized(HWND hwnd) {
-  WINDOWPLACEMENT placement = {0};
+  WINDOWPLACEMENT placement;
   placement.length = sizeof(WINDOWPLACEMENT);
   if (GetWindowPlacement(hwnd, &placement)) {
     return placement.showCmd == SW_MAXIMIZE;
@@ -536,7 +530,7 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam,
     UINT dpi = GetDpiForWindow(hwnd);
     int frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
     int padding = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
-    POINT cursor_point = {0};
+    POINT cursor_point;
     cursor_point.x = GET_X_LPARAM(lparam);
     cursor_point.y = GET_Y_LPARAM(lparam);
     ScreenToClient(hwnd, &cursor_point);
@@ -547,16 +541,22 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam,
     int menu_bar_width = App::get().menu_bar_width(); // dpi?
 
     RECT title_bar_rect = get_titlebar_rect(hwnd);
-    TitleBarButtonRects button_rects =
-        get_title_bar_button_rects(hwnd, &title_bar_rect);
     if (cursor_point.y < title_bar_rect.bottom &&
         cursor_point.x > title_bar_rect.left + menu_bar_width) {
       return HTCAPTION;
     }
 
-    // PETER TODO MAKE SIZE LIMITS: MENU_BAR_WIDTH + 3 * BUTTON_WIDTH
-
     return HTCLIENT;
+  }
+  case WM_GETMINMAXINFO: {
+    UINT dpi = GetDpiForWindow(hwnd);
+    App* app = App::get_maybe_uninitialized();
+    int menu_bar_width = app ? app->menu_bar_width() : 0; // dpi?
+    int button_width = dpi_scale(47, dpi);
+
+    MINMAXINFO* minmax = reinterpret_cast<MINMAXINFO*>(lparam);
+    minmax->ptMinTrackSize.x = menu_bar_width + 3 * button_width + dpi_scale(47, dpi);
+    return 0;
   }
   case WM_NCMOUSEMOVE: {
     POINT cursor_point;
@@ -596,7 +596,6 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam,
   }
   case WM_NCLBUTTONUP: {
     if (hovered_button == TitleBarButton::CLOSE) {
-      // PostMessageW(hwnd, WM_CLOSE, 0, 0);
       App::get().close();
       return 0;
     } else if (hovered_button == TitleBarButton::MINIMIZE) {
@@ -612,8 +611,12 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam,
   case WM_NCRBUTTONUP: {
     if (wparam == HTCAPTION) {
       BOOL const isMaximized = IsZoomed(hwnd);
-      MENUITEMINFO menu_item_info = {.cbSize = sizeof(menu_item_info),
-                                     .fMask = MIIM_STATE};
+
+      MENUITEMINFO menu_item_info;
+      ZeroMemory(&menu_item_info, sizeof(menu_item_info));
+      menu_item_info.cbSize = sizeof(menu_item_info);
+      menu_item_info.fMask = MIIM_STATE;
+
       HMENU const sys_menu = GetSystemMenu(hwnd, false);
       set_menu_item_state(sys_menu, &menu_item_info, SC_RESTORE, isMaximized);
       set_menu_item_state(sys_menu, &menu_item_info, SC_MOVE, !isMaximized);

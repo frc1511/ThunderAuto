@@ -83,10 +83,18 @@ class App {
 private:
   App() = default;
 
+  static inline bool s_init = false;
+
 public:
   static App& get() {
     static App instance;
+    s_init = true;
     return instance;
+  }
+
+  // Get the singleton instance if the application has been initialized, nullptr otherwise.
+  static App* get_maybe_uninitialized() {
+    return s_init ? &get() : nullptr;
   }
 
   App(App const&) = delete;
