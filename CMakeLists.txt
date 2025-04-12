@@ -87,14 +87,12 @@ elseif(TH_DIRECTX11)
     message(FATAL_ERROR "DirectX 11 is only supported on Windows")
   endif()
   list(APPEND TH_DEF_LIST "TH_DIRECTX11=1")
+elseif(TH_WINDOWS AND NOT TH_OPENGL)
+  set(TH_DIRECTX11 ON)
+  list(APPEND TH_DEF_LIST "TH_DIRECTX11=1")
 else()
-  if(TH_WINDOWS)
-    set(TH_DIRECTX11 ON)
-    list(APPEND TH_DEF_LIST "TH_DIRECTX11=1")
-  else()
-    set(TH_OPENGL ON)
-    list(APPEND TH_DEF_LIST "TH_OPENGL=1")
-  endif()
+  set(TH_OPENGL ON)
+  list(APPEND TH_DEF_LIST "TH_OPENGL=1")
 endif()
 
 if(TH_MACOS)
@@ -192,6 +190,7 @@ elseif(TH_MACOS)
   add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${TH_SRC} ${ICON_FILE})
   set_target_properties(${PROJECT_NAME} PROPERTIES
     MACOSX_BUNDLE_INFO_PLIST          "${TH_RES_DIR}/macos/Info.plist.in"
+    XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${TH_RES_DIR}/macos/ThunderAuto.entitlements"
     RESOURCE                          "${ICON_FILE}"
   )
   # set_source_files_properties(${ICON_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
