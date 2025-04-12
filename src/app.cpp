@@ -154,38 +154,40 @@ void App::data_write(const char* type_name, ImGuiTextBuffer* buf) {
 }
 
 void App::present_menu_bar() {
-  ImGuiScopedDisabled disabled(!Graphics::get().is_focused());
-
   ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,
                       ImVec2(0.f, TITLEBAR_HEIGHT / 2));
 
   if (ImGui::BeginMenuBar()) {
-    present_file_menu();
+    {
+      ImGuiScopedDisabled disabled(!Graphics::get().is_focused());
 
-    if (m_document_manager.is_open()) {
-      present_edit_menu();
-      present_view_menu();
-      present_path_menu();
+      present_file_menu();
 
-      ImGui::PushStyleVar(
-          ImGuiStyleVar_ItemSpacing,
-          ImVec2(ImGui::GetStyle().ItemSpacing.x, TITLEBAR_HEIGHT));
-      bool export_all_paths = ImGui::MenuItem("Export All Paths");
-      ImGui::PopStyleVar();
+      if (m_document_manager.is_open()) {
+        present_edit_menu();
+        present_view_menu();
+        present_path_menu();
 
-      if (export_all_paths) {
-        m_export_success =
-            m_document_edit_manager.current_state().export_all_paths_to_csv(
-                m_document_manager.settings());
+        ImGui::PushStyleVar(
+            ImGuiStyleVar_ItemSpacing,
+            ImVec2(ImGui::GetStyle().ItemSpacing.x, TITLEBAR_HEIGHT));
+        bool export_all_paths = ImGui::MenuItem("Export All Paths");
+        ImGui::PopStyleVar();
 
-        m_export_popup = true;
-        m_exported_index = -1;
+        if (export_all_paths) {
+          m_export_success =
+              m_document_edit_manager.current_state().export_all_paths_to_csv(
+                  m_document_manager.settings());
+
+          m_export_popup = true;
+          m_exported_index = -1;
+        }
+
+        present_tools_menu();
       }
 
-      present_tools_menu();
+      m_menu_bar_width = ImGui::GetCursorPosX();
     }
-
-    m_menu_bar_width = ImGui::GetCursorPosX();
 
 #ifdef TH_DIRECTX11
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
@@ -202,6 +204,7 @@ void App::present_menu_bar() {
 
       // Spacer + Title
       {
+        ImGuiScopedDisabled disabled(!Graphics::get().is_focused());
         ImGui::PushFont(FontLibrary::get().bold_font);
 
         const float spacer_width =
