@@ -154,6 +154,8 @@ void App::data_write(const char* type_name, ImGuiTextBuffer* buf) {
 }
 
 void App::present_menu_bar() {
+  ImGuiScopedDisabled disabled(!Graphics::get().is_focused());
+
   ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,
                       ImVec2(0.f, TITLEBAR_HEIGHT / 2));
 
@@ -195,12 +197,13 @@ void App::present_menu_bar() {
       if (win->SkipItems) break;
 
       ImDrawList* draw_list = ImGui::GetWindowDrawList();
-      ImGuiStyle& style = ImGui::GetStyle();
 
       const ImVec2 button_size(WINDOW_BUTTON_WIDTH, TITLEBAR_HEIGHT);
 
       // Spacer + Title
       {
+        ImGui::PushFont(FontLibrary::get().bold_font);
+
         const float spacer_width =
             ImGui::GetContentRegionAvail().x - 3 * button_size.x;
 
@@ -278,9 +281,6 @@ void App::present_menu_bar() {
         const char* begin_title_str = begin_title.c_str();
         const char* end_title_str = end_title.c_str();
 
-        ImGui::PushStyleColor(ImGuiCol_Text,
-                              style.Colors[ImGuiCol_TextDisabled]);
-
         ImGui::RenderTextClipped(begin_min, begin_max, begin_title_str,
                                  begin_title_str + strlen(begin_title_str),
                                  &begin_size);
@@ -288,9 +288,9 @@ void App::present_menu_bar() {
                                  end_title_str + strlen(end_title_str),
                                  &end_size);
 
-        ImGui::PopStyleColor();
-
         ImGui::PopID();
+
+        ImGui::PopFont();
       }
 
       bool min_selected = false;
@@ -301,7 +301,6 @@ void App::present_menu_bar() {
           ImGuiSelectableFlags_SelectOnRelease |
           ImGuiSelectableFlags_NoSetKeyOwner |
           ImGuiSelectableFlags_SetNavIdOnHover;
-      const ImGuiMenuColumns* offsets = &win->DC.MenuColumns;
 
       {
         ImGui::PushID("App Min");
@@ -532,7 +531,7 @@ void App::present_path_menu() {
             .export_current_path_to_csv(m_document_manager.settings());
 
     m_export_popup = true;
-    m_exported_index = state.current_path_index();
+    m_exported_index = static_cast<int>(state.current_path_index());
   }
 
   if (item_reverse) {

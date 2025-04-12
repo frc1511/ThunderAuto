@@ -170,15 +170,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine,
 int main(int argc, char** argv) { return _main(argc, argv); }
 #endif
 
-#include <Ubuntu_Bold_ttf.h>
-#include <Ubuntu_Regular_ttf.h>
-// #include <Roboto_Regular_ttf.h>
-// #include <Roboto_Bold_ttf.h>
-#include <FontAwesome_Regular_ttf.h>
-#include <FontAwesome_Solid_ttf.h>
-
-#include <IconsFontAwesome5.h>
-
 static void apply_imgui_style() {
 
   //
@@ -257,6 +248,15 @@ static void apply_imgui_style() {
   style.Colors[ImGuiCol_DockingPreview] = red_low;
 }
 
+#include <Ubuntu_Bold_ttf.h>
+#include <Ubuntu_Regular_ttf.h>
+// #include <Roboto_Regular_ttf.h>
+// #include <Roboto_Bold_ttf.h>
+#include <FontAwesome_Regular_ttf.h>
+#include <FontAwesome_Solid_ttf.h>
+
+#include <IconsFontAwesome5.h>
+
 static void load_fonts() {
   FontLibrary& font_lib = FontLibrary::get();
 
@@ -267,6 +267,11 @@ static void load_fonts() {
   font_cfg.FontDataOwnedByAtlas = false;
 
   static const ImWchar* glyph_ranges = io->Fonts->GetGlyphRangesDefault();
+
+  // Bold font.
+  font_lib.bold_font = io->Fonts->AddFontFromMemoryTTF(
+      reinterpret_cast<void*>(Ubuntu_Bold_ttf), Ubuntu_Bold_ttf_size, 15.0f,
+      &font_cfg, glyph_ranges);
 
   // Regular font.
   font_lib.regular_font = io->Fonts->AddFontFromMemoryTTF(
@@ -294,6 +299,8 @@ static void load_fonts() {
       &font_cfg, glyph_ranges);
 
   io->ConfigWindowsMoveFromTitleBarOnly = true;
+
+  io->FontDefault = font_lib.regular_font;
 }
 
 static void setup_data_handler() {

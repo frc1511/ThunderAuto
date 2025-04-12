@@ -278,6 +278,14 @@ bool Graphics::is_maximized() {
   return false;
 }
 
+bool Graphics::is_focused() {
+#if TH_DIRECTX11
+  return GetFocus() == m_hwnd;
+#else // TH_OPENGL
+  return glfwGetWindowAttrib(m_window, GLFW_FOCUSED) != 0;
+#endif
+}
+
 ImVec2 Graphics::window_pos() const {
   int x = 0, y = 0;
 #if TH_DIRECTX11

@@ -51,6 +51,7 @@ public:
   ImVec2 window_pos() const;
 
   bool is_maximized();
+  bool is_focused();
 
   void window_set_size(int width, int height);
   void window_set_pos(int x, int y);

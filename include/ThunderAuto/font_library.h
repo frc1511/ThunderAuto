@@ -4,6 +4,7 @@
 
 struct FontLibrary {
   ImFont* regular_font = nullptr;
+  ImFont* bold_font = nullptr;
   ImFont* big_font = nullptr;
 
 private:
