@@ -151,20 +151,19 @@ build_thunder_auto_resource("${TH_RES_DIR}/fonts/Font-Awesome/fa-solid-900.ttf" 
 #
 
 if(TH_OPENGL)
-  set(GLFW_BUILD_EXAMPLES OFF)
-  set(GLFW_BUILD_TESTS OFF)
-  set(GLFW_BUILD_DOCS OFF)
-  set(GLFW_INSTALL OFF)
-  add_subdirectory("${TH_THIRDPARTY_DIR}/glfw")
   add_subdirectory("${TH_THIRDPARTY_DIR}/glad")
 endif()
 
+set(IMGUI_DEFINE_MATH_OPERATORS ON)
 if(TH_DIRECTX11)
-  set(IMGUI_DIRECTX11 ON)
+  set(IMGUI_BACKEND_RENDERER "dx11")
+  set(IMGUI_BACKEND_PLATFORM "win32")
+else()
+  set(IMGUI_BACKEND_RENDERER "opengl3")
+  set(IMGUI_BACKEND_PLATFORM "glfw")
 endif()
-
-add_subdirectory("${TH_THIRDPARTY_DIR}/fmt")
 add_subdirectory("${TH_THIRDPARTY_DIR}/imgui")
+add_subdirectory("${TH_THIRDPARTY_DIR}/fmt")
 add_subdirectory("${TH_THIRDPARTY_DIR}/stb_image")
 add_subdirectory("${TH_THIRDPARTY_DIR}/IconFontCppHeaders")
 add_subdirectory("${TH_THIRDPARTY_DIR}/json")
@@ -210,7 +209,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/
 # Link libraries.
 #
 
-if(TH_OPENGL)
+if (TH_DIRECTX11)
+  target_link_libraries(${PROJECT_NAME} user32 gdi32 uxtheme)
+else()
   target_link_libraries(${PROJECT_NAME} glad)
 endif()
 target_link_libraries(${PROJECT_NAME} fmt)

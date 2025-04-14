@@ -31,6 +31,13 @@ void NewProjectPopup::present(bool* running) {
   {
     ImGuiScopedField field("Path", ICON_FA_FILE "  Path", COLUMN_WIDTH);
 
+    // Shrink the input text to make space for the browse button.
+    {
+      const ImGuiStyle& style = ImGui::GetStyle();
+      float browse_button_width = ImGui::CalcTextSize("Browse").x + style.FramePadding.x * 2.f;
+      ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - style.ItemSpacing.x - browse_button_width);
+    }
+
     ImGui::InputText("##Path", deploy_path_buf, 256, ImGuiInputTextFlags_None);
     std::string deploy_path_str = deploy_path_buf;
 
@@ -57,7 +64,7 @@ void NewProjectPopup::present(bool* running) {
                             "2023 - Charged Up", "2022 - Rapid React",
                             "Custom"};
 
-    if (current_field != 4 && !m_field) {
+    if (!m_field) {
       m_field = Field(static_cast<Field::BuiltinImage>(current_field));
     }
 
@@ -173,6 +180,7 @@ void NewProjectPopup::present(bool* running) {
 
   // --- Create Button ---
 
+  bool show_tooltip = false;
   {
     ImGuiScopedDisabled disabled(create_disabled);
 
@@ -203,10 +211,11 @@ void NewProjectPopup::present(bool* running) {
                                    .robot_width = robot_width};
     }
 
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) &&
-        error_text) {
-      ImGui::SetTooltip("* %s", error_text);
-    }
+    show_tooltip = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) &&
+        error_text;
+  }
+  if (show_tooltip) {
+    ImGui::SetTooltip("* %s", error_text);
   }
 
   ImGui::EndPopup();

@@ -1,5 +1,7 @@
 #include <ThunderAuto/pages/path_manager_page.h>
 
+#include <ThunderAuto/font_library.h>
+
 #include <IconsFontAwesome5.h>
 #include <ThunderAuto/imgui_util.h>
 
@@ -43,7 +45,8 @@ void PathManagerPage::present(bool* running) {
       }
     }
     if (ImGui::BeginPopupContextItem()) {
-      if (ImGui::MenuItem("\xef\x8d\xa3" "  Reverse Direction")) {
+      if (ImGui::MenuItem("\xef\x8d\xa3"
+                          "  Reverse Direction")) {
         reverse_path(state, i);
         done = true;
       }
@@ -80,9 +83,15 @@ void PathManagerPage::present(bool* running) {
     ImGui::PopID();
   }
 
-  if (ImGui::Selectable("+ New Path", false)) {
-    state.paths().emplace_back("new_path", default_new_curve);
-    m_history.add_state(state);
+  {
+    ImGui::PushFont(FontLibrary::get().bold_font);
+
+    if (ImGui::Selectable("+ New Path", false)) {
+      state.paths().emplace_back("new_path", default_new_curve);
+      m_history.add_state(state);
+    }
+
+    ImGui::PopFont();
   }
 
   ImGui::End();
@@ -137,7 +146,7 @@ bool PathManagerPage::selectable_input(const char* label, bool selected,
   ImGui::PushID(label);
   bool ret = ImGui::Selectable("##Selectable", selected,
                                ImGuiSelectableFlags_AllowDoubleClick |
-                                   ImGuiSelectableFlags_AllowItemOverlap,
+                                   ImGuiSelectableFlags_AllowOverlap,
                                ImVec2(0.0f, 20.0f));
 
   const ImGuiID id = window->GetID("##Input");
@@ -158,13 +167,14 @@ bool PathManagerPage::selectable_input(const char* label, bool selected,
       return std::isalnum(data->EventChar) || data->EventChar == '_' ? 0 : 1;
     };
 
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
     ImGui::InputText("##Input", buf, buf_size,
                      ImGuiInputTextFlags_CallbackCharFilter |
                          ImGuiInputTextFlags_AllowTabInput,
                      text_validate);
     window->DC.CursorPos = pos_after;
 
-    if (ImGui::IsItemDeactivated()) {
+    if (!input_start && ImGui::IsItemDeactivated()) {
       input_active = false;
     }
   } else {

@@ -56,6 +56,8 @@ public:
     make_left_column();
 
     ImGui::NextColumn();
+
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
   }
 
   inline ~ImGuiScopedField() {

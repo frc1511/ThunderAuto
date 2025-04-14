@@ -241,9 +241,9 @@ static void apply_imgui_style() {
 
   style.Colors[ImGuiCol_Tab] = grey_mid;
   style.Colors[ImGuiCol_TabHovered] = red_mid;
-  style.Colors[ImGuiCol_TabActive] = red_high;
-  style.Colors[ImGuiCol_TabUnfocused] = grey_low;
-  style.Colors[ImGuiCol_TabUnfocusedActive] = red_low;
+  style.Colors[ImGuiCol_TabSelected] = red_high;
+  style.Colors[ImGuiCol_TabDimmed] = grey_low;
+  style.Colors[ImGuiCol_TabDimmedSelected] = red_low;
 
   style.Colors[ImGuiCol_DockingPreview] = red_low;
 }

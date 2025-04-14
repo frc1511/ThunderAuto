@@ -10,6 +10,8 @@ void ActionsPage::present(bool* running) {
     return;
   }
 
+  ImGuiStyle& style = ImGui::GetStyle();
+
   ProjectState state = m_history.current_state();
 
   std::vector<std::string>& actions = state.actions();
@@ -21,7 +23,8 @@ void ActionsPage::present(bool* running) {
     strncpy(buf, name.c_str(), name.length());
     buf[name.length()] = '\0';
 
-    ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - 80.0f);
+    // D:
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 75.f - style.ItemSpacing.x);
 
     ImGui::InputText(("##action_name_" + std::to_string(i)).c_str(), buf, 256,
 
@@ -45,10 +48,13 @@ void ActionsPage::present(bool* running) {
         m_history.discard_long_edit();
     }
 
-    ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 75.0f);
+    // TODO: This sucks.
+    ImVec2 region_max = ImGui::GetContentRegionAvail();
+
+    ImGui::SameLine(region_max.x - 75.0f);
     ImGui::Text("1 << %d", (int)i);
 
-    ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 25.0f);
+    ImGui::SameLine(region_max.x - 25.0f);
     ImGui::PushID((void*)(intptr_t)i);
 
     if (ImGui::Button(ICON_FA_TRASH)) {

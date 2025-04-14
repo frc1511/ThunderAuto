@@ -949,7 +949,7 @@ void App::update_titlebar_title() {
 }
 
 #if TH_MACOS
-#define CTRL_KEY (io.KeySuper)
+#define CTRL_KEY (io.KeyCtrl) // Not io.KeySuper anymore?
 #else
 #define CTRL_KEY (io.KeyCtrl)
 #endif
@@ -957,7 +957,7 @@ void App::update_titlebar_title() {
 #define CTRL_DOWN       (CTRL_KEY && !io.KeyAlt && !io.KeyShift)
 #define CTRL_SHIFT_DOWN (CTRL_KEY && !io.KeyAlt && io.KeyShift)
 
-#define KEY_DOWN(key) (io.KeysData[key].DownDuration == 0.0f)
+#define KEY_DOWN(key) ImGui::IsKeyDown(key)
 
 #define KEY_DOWN_OR_REPEAT(key) ImGui::IsKeyPressed(key, true)
 

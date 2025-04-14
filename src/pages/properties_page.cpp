@@ -118,10 +118,20 @@ void PropertiesPage::present_point_properties(ProjectState& state) {
 
         ImGui::Text("%s", actions.at(i).c_str());
 
-        // Align to the right.
-        ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 45.0f);
+        ImGui::SameLine();
+
+        // Align to the right (TODO: Fix, this is terrible).
+        {
+          float window_width = ImGui::GetWindowWidth();
+          float text_width = ImGui::CalcTextSize("1 << 00").x;
+          const ImGuiStyle& style = ImGui::GetStyle();
+
+          ImGui::SetCursorPosX(window_width - style.FramePadding.x * 2.0f - text_width - style.ItemSpacing.x);
+        }
 
         ImGui::Text("1 << %d", (int)i);
+
+
       }
 
       ImGui::TreePop();
@@ -529,6 +539,7 @@ bool PropertiesPage::edit_point_stop(CurvePoint& pt) {
 
 bool PropertiesPage::present_slider(const char* id, float& value,
                                     const float speed, const char* format) {
+
   bool active = ImGui::DragFloat(id, &value, speed, 0.f, 0.f, format);
 
   if (ImGui::IsItemActivated()) {
