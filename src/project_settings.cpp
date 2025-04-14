@@ -2,9 +2,9 @@
 
 void to_json(nlohmann::json& json, const ProjectSettings& settings) {
   json = nlohmann::json {
-      {"version_major", TH_VERSION_MAJOR},
-      {"version_minor", TH_VERSION_MINOR},
-      {"version_patch", TH_VERSION_PATCH},
+      {"version_major", THUNDER_AUTO_VERSION_MAJOR},
+      {"version_minor", THUNDER_AUTO_VERSION_MINOR},
+      {"version_patch", THUNDER_AUTO_VERSION_PATCH},
       {"field", settings.field},
       {"drive_ctrl", static_cast<std::size_t>(settings.drive_controller)},
       {"robot_length", settings.robot_length},

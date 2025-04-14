@@ -129,7 +129,7 @@ int _main(int argc, char** argv) {
   return exit_code;
 }
 
-#if TH_WINDOWS
+#if THUNDER_AUTO_WINDOWS
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine,
             int nShowCmd) {
   (void)hInstance;

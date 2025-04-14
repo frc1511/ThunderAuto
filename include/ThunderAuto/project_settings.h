@@ -11,9 +11,10 @@ enum class DriveController {
 struct ProjectSettings {
   std::filesystem::path path;
 
-  int version_major = TH_VERSION_MAJOR;
-  int version_minor = TH_VERSION_MINOR;
-  int version_patch = TH_VERSION_PATCH;
+  // Default to the version before the version number was added to the settings.
+  int version_major = 2025;
+  int version_minor = 3;
+  int version_patch = 0;
 
   Field field;
 

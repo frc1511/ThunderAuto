@@ -3,7 +3,7 @@
 #include <ThunderAuto/thunder_auto.h>
 
 class Graphics {
-#if TH_DIRECTX11
+#if THUNDER_AUTO_DIRECTX11
   ID3D11Device* m_device = nullptr;
   ID3D11DeviceContext* m_device_context = nullptr;
   IDXGISwapChain* m_swap_chain = nullptr;
@@ -30,12 +30,12 @@ public:
   Graphics(Graphics const&) = delete;
   void operator=(Graphics const&) = delete;
 
-#if TH_DIRECTX11
+#if THUNDER_AUTO_DIRECTX11
   ID3D11Device* device() { return m_device; }
   ID3D11DeviceContext* context() { return m_device_context; }
 #endif
 
-#if TH_WINDOWS
+#if THUNDER_AUTO_WINDOWS
   HWND hwnd();
 #endif
 
@@ -60,7 +60,7 @@ public:
   void window_set_should_close(bool value);
 
 private:
-#ifdef TH_DIRECTX11 // DirectX 11 helper functions.
+#ifdef THUNDER_AUTO_DIRECTX11 // DirectX 11 helper functions.
   bool init_device();
   void deinit_device();
   void init_render_target();

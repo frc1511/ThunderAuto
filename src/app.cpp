@@ -189,7 +189,7 @@ void App::present_menu_bar() {
       m_menu_bar_width = ImGui::GetCursorPosX();
     }
 
-#ifdef TH_DIRECTX11
+#ifdef THUNDER_AUTO_DIRECTX11
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
                         ImVec2(0.f, TITLEBAR_HEIGHT));
 
@@ -230,7 +230,7 @@ void App::present_menu_bar() {
         static const char* dash = " - ";
         const ImVec2 dash_size = ImGui::CalcTextSize(dash);
 
-        static const char* app_name = "ThunderAuto " TH_VERSION_STR;
+        static const char* app_name = "ThunderAuto " THUNDER_AUTO_VERSION_STR;
         const ImVec2 app_name_size = ImGui::CalcTextSize(app_name);
 
         if (app_name_size.x >= spacer_width) { // Nothing will fit.
@@ -387,7 +387,7 @@ void App::present_pages() {
   }
 }
 
-#ifdef TH_MACOS
+#ifdef THUNDER_AUTO_MACOS
 #define CTRL_STR       "Cmd+"
 #define CTRL_SHIFT_STR "Cmd+Shift+"
 #else
@@ -654,7 +654,7 @@ void App::present_project_open_error_popup() {
       ImGui::Text("Project major version (%d.%d) is newer than current "
                   "ThunderAuto version (%d.%d)",
                   settings.version_major, settings.version_minor,
-                  TH_VERSION_MAJOR, TH_VERSION_MINOR);
+                  THUNDER_AUTO_VERSION_MAJOR, THUNDER_AUTO_VERSION_MINOR);
       ImGui::Text("Please update ThunderAuto to the latest version");
     } break;
     case INVALID_CONTENTS:
@@ -687,14 +687,14 @@ void App::present_project_version_popup() {
 
     const ProjectSettings& settings = m_document_manager.settings();
 
-    bool minor_newer = settings.version_minor > TH_VERSION_MINOR;
-    bool major_older = settings.version_major < TH_VERSION_MAJOR;
+    bool minor_newer = settings.version_minor > THUNDER_AUTO_VERSION_MINOR;
+    bool major_older = settings.version_major < THUNDER_AUTO_VERSION_MAJOR;
 
     ImGui::Text("Project Version (%d.%d) is %s than current ThunderAuto "
                 "version (%d.%d)",
                 settings.version_major, settings.version_minor,
-                minor_newer ? "newer" : "older", TH_VERSION_MAJOR,
-                TH_VERSION_MINOR);
+                minor_newer ? "newer" : "older", THUNDER_AUTO_VERSION_MAJOR,
+                THUNDER_AUTO_VERSION_MINOR);
 
     if (major_older) {
       ImGui::Text("Upon saving, this project will be updated to the current "
@@ -863,8 +863,8 @@ void App::open_from_path(std::string path) {
 
   m_recent_projects.push_front(path);
 
-  if (settings.version_major != TH_VERSION_MAJOR ||
-      settings.version_minor != TH_VERSION_MINOR) {
+  if (settings.version_major != THUNDER_AUTO_VERSION_MAJOR ||
+      settings.version_minor != THUNDER_AUTO_VERSION_MINOR) {
     m_project_version_popup = true;
   }
 
@@ -948,7 +948,7 @@ void App::update_titlebar_title() {
   Graphics::get().window_set_title(m_titlebar_filename.c_str());
 }
 
-#if TH_MACOS
+#if THUNDER_AUTO_MACOS
 #define CTRL_KEY (io.KeyCtrl) // Not io.KeySuper anymore?
 #else
 #define CTRL_KEY (io.KeyCtrl)

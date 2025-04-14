@@ -28,23 +28,23 @@
 
 inline bool float_eq(float x, float y) { return std::fabs(x - y) < 1e-6; }
 
-#if TH_WINDOWS
+#if THUNDER_AUTO_WINDOWS
 #include <Windows.h>
 #else
 #endif
 using std::max;
 using std::min;
 
-#if TH_DIRECTX11
+#if THUNDER_AUTO_DIRECTX11
 #include <d3d11.h>
 #include <tchar.h>
 #include <wrl/client.h>
 #include <Windows.h>
 #include <windowsx.h>
-#else // TH_OPENGL
+#else // THUNDER_AUTO_OPENGL
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#if TH_WINDOWS
+#if THUNDER_AUTO_WINDOWS
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
 #endif

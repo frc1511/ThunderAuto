@@ -2,7 +2,7 @@
 
 #include <ThunderAuto/graphics.h>
 
-#if TH_OPENGL
+#if THUNDER_AUTO_OPENGL
 #include <glad/glad.h>
 #endif
 
@@ -41,16 +41,16 @@ void Texture::init(const char* path) {
 }
 
 Texture::~Texture() {
-#if TH_DIRECTX11
+#if THUNDER_AUTO_DIRECTX11
   m_texture_view.Reset();
   m_texture.Reset();
-#else // TH_OPENGL
+#else // THUNDER_AUTO_OPENGL
   glDeleteTextures(1, &m_texture);
 #endif
 }
 
 void Texture::setup() {
-#if TH_DIRECTX11
+#if THUNDER_AUTO_DIRECTX11
   m_texture = nullptr;
   m_texture_view = nullptr;
 
@@ -81,7 +81,7 @@ void Texture::setup() {
       m_texture.Get(), &srvDesc, &m_texture_view);
   if (FAILED(hr)) return;
 
-#else // TH_OPENGL
+#else // THUNDER_AUTO_OPENGL
   glGenTextures(1, &m_texture);
   glBindTexture(GL_TEXTURE_2D, m_texture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -94,14 +94,14 @@ void Texture::setup() {
 
 void Texture::set_data(unsigned char* data, int width, int height,
                        int nr_channels) {
-#if TH_DIRECTX11
+#if THUNDER_AUTO_DIRECTX11
   assert(nr_channels == 4);
   if (width != m_width || height != m_height) {
 #endif
     m_width = width;
     m_height = height;
     m_nr_channels = nr_channels;
-#if TH_DIRECTX11
+#if THUNDER_AUTO_DIRECTX11
     setup();
   }
 
@@ -120,7 +120,7 @@ void Texture::set_data(unsigned char* data, int width, int height,
 
   context->Unmap(m_texture.Get(), 0);
 
-#else // TH_OPENGL
+#else // THUNDER_AUTO_OPENGL
   const int tex_channels = (m_nr_channels == 3 ? GL_RGB : GL_RGBA);
 
   glBindTexture(GL_TEXTURE_2D, m_texture);

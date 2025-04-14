@@ -2,13 +2,13 @@
 
 #include <ThunderAuto/graphics.h>
 
-#if TH_MACOS
+#if THUNDER_AUTO_MACOS
 #include <ThunderAuto/platform/platform_macos.h>
 using Platform = PlatformMacOS;
-#elif TH_WINDOWS
+#elif THUNDER_AUTO_WINDOWS
 #include <ThunderAuto/platform/platform_windows.h>
 using Platform = PlatformWindows;
-#elif TH_LINUX
+#elif THUNDER_AUTO_LINUX
 #include <ThunderAuto/platform/platform_linux.h>
 using Platform = PlatformLinux;
 #endif

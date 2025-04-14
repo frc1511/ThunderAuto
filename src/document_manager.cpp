@@ -35,7 +35,7 @@ OpenProjectStatus DocumentManager::open_project(std::filesystem::path path) {
     m_settings = json.at("settings").get<ProjectSettings>();
     m_settings.path = path;
 
-    if (m_settings.version_major > TH_VERSION_MAJOR) return VERSION_TOO_NEW;
+    if (m_settings.version_major > THUNDER_AUTO_VERSION_MAJOR) return VERSION_TOO_NEW;
 
     m_name = path.filename().string();
     state = json.at("state").get<ProjectState>();

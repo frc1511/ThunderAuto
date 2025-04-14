@@ -3,10 +3,10 @@
 #include <ThunderAuto/thunder_auto.h>
 
 class Texture {
-#if TH_DIRECTX11
+#if THUNDER_AUTO_DIRECTX11
   Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_texture_view;
   Microsoft::WRL::ComPtr<ID3D11Texture2D> m_texture;
-#else // TH_OPENGL
+#else // THUNDER_AUTO_OPENGL
   unsigned int m_texture;
 #endif
 
@@ -33,9 +33,9 @@ public:
 
   ImTextureID id() const {
     return reinterpret_cast<void*>(
-#if TH_DIRECTX11
+#if THUNDER_AUTO_DIRECTX11
         m_texture_view.Get()
-#else // TH_OPENGL
+#else // THUNDER_AUTO_OPENGL
         m_texture
 #endif
     );
