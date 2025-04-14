@@ -1,6 +1,3 @@
-[submodule "thirdparty/fmt"]
-	path = thirdparty/fmt
-	url = https://github.com/fmtlib/fmt
 [submodule "thirdparty/imgui"]
 	path = thirdparty/imgui
 	url = https://github.com/petelilley/imgui
