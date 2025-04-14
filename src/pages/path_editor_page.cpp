@@ -1,7 +1,7 @@
-#include <ThunderAuto/pages/path_editor_page.h>
+#include <ThunderAuto/pages/path_editor_page.hpp>
 
-#include <ThunderAuto/imgui_util.h>
-#include <ThunderAuto/macro_util.h>
+#include <ThunderAuto/imgui_util.hpp>
+#include <ThunderAuto/macro_util.hpp>
 
 #include <IconsFontAwesome5.h>
 #include <stb_image.h>

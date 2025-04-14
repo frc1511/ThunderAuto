@@ -1,4 +1,4 @@
-#include <ThunderAuto/curve_settings.h>
+#include <ThunderAuto/curve_settings.hpp>
 
 void to_json(nlohmann::json& json, const CurveSettings& settings) {
   json = nlohmann::json {

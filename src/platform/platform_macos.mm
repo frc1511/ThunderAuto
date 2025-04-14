@@ -1,4 +1,4 @@
-#include <ThunderAuto/platform/platform_macos.h>
+#include <ThunderAuto/platform/platform_macos.hpp>
 #import <Foundation/Foundation.h>
 #import <AppKit/AppKit.h>
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>

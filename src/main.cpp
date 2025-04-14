@@ -1,10 +1,8 @@
-#include <ThunderAuto/app.h>
-#include <ThunderAuto/font_library.h>
-#include <ThunderAuto/thunder_auto.h>
+#include <ThunderAuto/app.hpp>
+#include <ThunderAuto/font_library.hpp>
+#include <ThunderAuto/thunder_auto.hpp>
 
-#include <ThunderAuto/graphics.h>
-
-#include <thread>
+#include <ThunderAuto/graphics.hpp>
 
 static void apply_imgui_style();
 static void load_fonts();

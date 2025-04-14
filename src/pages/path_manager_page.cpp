@@ -1,9 +1,9 @@
-#include <ThunderAuto/pages/path_manager_page.h>
+#include <ThunderAuto/pages/path_manager_page.hpp>
 
-#include <ThunderAuto/font_library.h>
+#include <ThunderAuto/font_library.hpp>
 
 #include <IconsFontAwesome5.h>
-#include <ThunderAuto/imgui_util.h>
+#include <ThunderAuto/imgui_util.hpp>
 
 void PathManagerPage::present(bool* running) {
   ImGui::SetNextWindowSize(ImVec2(400, 400), ImGuiCond_FirstUseEver);

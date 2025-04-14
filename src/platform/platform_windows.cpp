@@ -1,6 +1,6 @@
-#include <ThunderAuto/platform/platform_windows.h>
+#include <ThunderAuto/platform/platform_windows.hpp>
 
-#include <ThunderAuto/graphics.h>
+#include <ThunderAuto/graphics.hpp>
 
 std::string
 PlatformWindows::open_file_dialog(FileType type,

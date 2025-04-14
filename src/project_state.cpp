@@ -1,4 +1,4 @@
-#include <ThunderAuto/project_state.h>
+#include <ThunderAuto/project_state.hpp>
 
 ProjectState::ProjectState(std::vector<std::pair<std::string, Curve>> paths)
   : m_paths(paths) {

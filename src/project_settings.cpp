@@ -1,4 +1,4 @@
-#include <ThunderAuto/project_settings.h>
+#include <ThunderAuto/project_settings.hpp>
 
 void to_json(nlohmann::json& json, const ProjectSettings& settings) {
   json = nlohmann::json {

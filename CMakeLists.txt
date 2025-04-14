@@ -125,8 +125,14 @@ function(add_thunder_auto_sources)
   set(THUNDER_AUTO_SRC ${THUNDER_AUTO_SRC} ${ARGV} PARENT_SCOPE)
 endfunction()
 
+function(add_thunder_auto_pch)
+  set(THUNDER_AUTO_PCH ${THUNDER_AUTO_PCH} ${ARGV} PARENT_SCOPE)
+endfunction()
+
 # Add sources.
 include("${THUNDER_AUTO_SRC_DIR}/CMakeLists.txt")
+# Precompiled headers.
+include("${THUNDER_AUTO_INC_DIR}/ThunderAuto/CMakeLists.txt")
 
 #
 # Build resources.
@@ -168,7 +174,6 @@ else()
   set(IMGUI_BACKEND_PLATFORM "glfw")
 endif()
 add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/imgui")
-add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/fmt")
 add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/stb_image")
 add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/IconFontCppHeaders")
 add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/json")
@@ -211,6 +216,11 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${THUNDER_AUTO_INC_DIR})
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/res")
 
 #
+# Precompiled headers.
+#
+target_precompile_headers(${PROJECT_NAME} PRIVATE ${THUNDER_AUTO_PCH})
+
+#
 # Link libraries.
 #
 
@@ -219,7 +229,6 @@ if (THUNDER_AUTO_DIRECTX11)
 else()
   target_link_libraries(${PROJECT_NAME} glad)
 endif()
-target_link_libraries(${PROJECT_NAME} fmt)
 target_link_libraries(${PROJECT_NAME} imgui)
 target_link_libraries(${PROJECT_NAME} stb_image)
 target_link_libraries(${PROJECT_NAME} icons_font_awesome)

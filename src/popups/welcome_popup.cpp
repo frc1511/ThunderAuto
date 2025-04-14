@@ -1,7 +1,7 @@
-#include <ThunderAuto/popups/welcome_popup.h>
+#include <ThunderAuto/popups/welcome_popup.hpp>
 
 #include <IconsFontAwesome5.h>
-#include <ThunderAuto/imgui_util.h>
+#include <ThunderAuto/imgui_util.hpp>
 
 #define COLUMN_WIDTH 150
 

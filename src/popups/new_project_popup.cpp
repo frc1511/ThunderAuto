@@ -1,9 +1,9 @@
-#include <ThunderAuto/popups/new_project_popup.h>
+#include <ThunderAuto/popups/new_project_popup.hpp>
 
 #include <IconsFontAwesome5.h>
-#include <ThunderAuto/file_types.h>
-#include <ThunderAuto/imgui_util.h>
-#include <ThunderAuto/macro_util.h>
+#include <ThunderAuto/file_types.hpp>
+#include <ThunderAuto/imgui_util.hpp>
+#include <ThunderAuto/macro_util.hpp>
 
 #define COLUMN_WIDTH 150.0f
 

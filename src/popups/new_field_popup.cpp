@@ -1,7 +1,7 @@
-#include <ThunderAuto/popups/new_field_popup.h>
+#include <ThunderAuto/popups/new_field_popup.hpp>
 
-#include <ThunderAuto/file_types.h>
-#include <ThunderAuto/imgui_util.h>
+#include <ThunderAuto/file_types.hpp>
+#include <ThunderAuto/imgui_util.hpp>
 #include <stb_image.h>
 
 void NewFieldPopup::present(bool* running) {

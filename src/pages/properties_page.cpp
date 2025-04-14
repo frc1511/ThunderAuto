@@ -1,10 +1,10 @@
-#include <ThunderAuto/pages/properties_page.h>
+#include <ThunderAuto/pages/properties_page.hpp>
 
-#include <ThunderAuto/app.h>
+#include <ThunderAuto/app.hpp>
 
 #include <IconsFontAwesome5.h>
-#include <ThunderAuto/imgui_util.h>
-#include <ThunderAuto/platform/platform.h>
+#include <ThunderAuto/imgui_util.hpp>
+#include <ThunderAuto/platform/platform.hpp>
 
 #define COLUMN_WIDTH 135.0f
 

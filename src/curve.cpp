@@ -1,4 +1,4 @@
-#include <ThunderAuto/curve.h>
+#include <ThunderAuto/curve.hpp>
 
 const OutputCurveSettings preview_output_curve_settings {
     .length_samples = 50,

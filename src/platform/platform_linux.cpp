@@ -1,4 +1,4 @@
-#include <ThunderAuto/platform/platform_linux.h>
+#include <ThunderAuto/platform/platform_linux.hpp>
 
 std::string
 PlatformLinux::open_file_dialog(FileType type,

@@ -1,7 +1,7 @@
-#include <ThunderAuto/pages/actions_page.h>
+#include <ThunderAuto/pages/actions_page.hpp>
 
 #include <IconsFontAwesome5.h>
-#include <ThunderAuto/imgui_util.h>
+#include <ThunderAuto/imgui_util.hpp>
 
 void ActionsPage::present(bool* running) {
   ImGui::SetNextWindowSize(ImVec2(200, 400), ImGuiCond_FirstUseEver);

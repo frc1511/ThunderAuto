@@ -1,10 +1,10 @@
-#include <ThunderAuto/app.h>
+#include <ThunderAuto/app.hpp>
 
 #include <IconsFontAwesome5.h>
-#include <ThunderAuto/file_types.h>
-#include <ThunderAuto/imgui_util.h>
+#include <ThunderAuto/file_types.hpp>
+#include <ThunderAuto/imgui_util.hpp>
 
-#include <ThunderAuto/graphics.h>
+#include <ThunderAuto/graphics.hpp>
 
 #define TITLEBAR_HEIGHT     20.f
 #define WINDOW_BUTTON_WIDTH 47.f

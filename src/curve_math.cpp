@@ -1,4 +1,4 @@
-#include <ThunderAuto/curve_math.h>
+#include <ThunderAuto/curve_math.hpp>
 
 EquationFunc build_bezier_curve_equation(const ImVec2& pt_begin,
                                          const ImVec2& control_pt_begin,

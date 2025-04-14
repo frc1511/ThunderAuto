@@ -1,15 +1,15 @@
-#include <ThunderAuto/platform/platform_manager.h>
+#include <ThunderAuto/platform/platform_manager.hpp>
 
-#include <ThunderAuto/graphics.h>
+#include <ThunderAuto/graphics.hpp>
 
 #if THUNDER_AUTO_MACOS
-#include <ThunderAuto/platform/platform_macos.h>
+#include <ThunderAuto/platform/platform_macos.hpp>
 using Platform = PlatformMacOS;
 #elif THUNDER_AUTO_WINDOWS
-#include <ThunderAuto/platform/platform_windows.h>
+#include <ThunderAuto/platform/platform_windows.hpp>
 using Platform = PlatformWindows;
 #elif THUNDER_AUTO_LINUX
-#include <ThunderAuto/platform/platform_linux.h>
+#include <ThunderAuto/platform/platform_linux.hpp>
 using Platform = PlatformLinux;
 #endif
 

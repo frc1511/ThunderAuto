@@ -1,6 +1,6 @@
-#include <ThunderAuto/curve_point.h>
+#include <ThunderAuto/curve_point.hpp>
 
-#include <ThunderAuto/imgui_util.h>
+#include <ThunderAuto/imgui_util.hpp>
 
 void CurvePoint::set_heading(Angle heading, bool which) {
   Angle *primary_heading = &m_headings.incoming,

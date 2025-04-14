@@ -1,10 +1,13 @@
-#include <ThunderAuto/macro_util.h>
+#include <ThunderAuto/macro_util.hpp>
 
-void replace_macro(std::string& str, std::string_view macro,
+void replace_macro(std::string& str,
+                   std::string_view name,
                    std::string_view value) {
   std::size_t pos;
-  while (pos = str.find(fmt::format("${{{}}}", macro)),
-         pos != std::string::npos) {
-    str.replace(pos, macro.length() + 3, value);
+  std::string macro = "${" + std::string(name) + "}";
+
+  while (pos = str.find(macro), pos != std::string::npos) {
+    str.replace(pos, macro.length(), value);
   }
 }
+

@@ -1,6 +1,6 @@
-#include <ThunderAuto/graphics.h>
+#include <ThunderAuto/graphics.hpp>
 
-#include <ThunderAuto/app.h>
+#include <ThunderAuto/app.hpp>
 
 #define WINDOW_WIDTH  1300
 #define WINDOW_HEIGHT 800

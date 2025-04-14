@@ -1,4 +1,4 @@
-#include <ThunderAuto/history_manager.h>
+#include <ThunderAuto/history_manager.hpp>
 
 #define MAX_HISTORY_SIZE 100
 

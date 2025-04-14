@@ -1,6 +1,6 @@
-#include <ThunderAuto/texture.h>
+#include <ThunderAuto/texture.hpp>
 
-#include <ThunderAuto/graphics.h>
+#include <ThunderAuto/graphics.hpp>
 
 #if THUNDER_AUTO_OPENGL
 #include <glad/glad.h>

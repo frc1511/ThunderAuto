@@ -1,7 +1,7 @@
-#include <ThunderAuto/pages/settings_page.h>
+#include <ThunderAuto/pages/settings_page.hpp>
 
 #include <IconsFontAwesome5.h>
-#include <ThunderAuto/imgui_util.h>
+#include <ThunderAuto/imgui_util.hpp>
 
 #define COLUMN_WIDTH 135.0f
 

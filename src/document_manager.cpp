@@ -1,4 +1,4 @@
-#include <ThunderAuto/document_manager.h>
+#include <ThunderAuto/document_manager.hpp>
 
 void DocumentManager::new_project(ProjectSettings settings) {
   if (m_open) close();
