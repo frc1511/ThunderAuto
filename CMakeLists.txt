@@ -192,17 +192,16 @@ elseif(THUNDER_AUTO_MACOS)
   set(THUNDER_AUTO_VERSION              "${THUNDER_AUTO_VERSION}")
   set(THUNDER_AUTO_LONG_VERSION_STRING  "${THUNDER_AUTO_VERSION}")
   set(THUNDER_AUTO_SHORT_VERSION_STRING "${THUNDER_AUTO_VERSION_SHORT}")
-  set(THUNDER_AUTO_COPYRIGHT            "Copyright © 2022-2024 Peter P Lilley III. All rights reserved.")
+  set(THUNDER_AUTO_COPYRIGHT            "Copyright © 2022-2025 Peter P Lilley III. All rights reserved.")
   set(THUNDER_AUTO_APP_CATEGORY         "public.app-category.developer-tools")
   set(THUNDER_AUTO_BUNDLE_ICON_FILE     "app_icon")
 
   add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${THUNDER_AUTO_SRC} ${ICON_FILE})
   set_target_properties(${PROJECT_NAME} PROPERTIES
-    MACOSX_BUNDLE_INFO_PLIST          "${THUNDER_AUTO_RES_DIR}/macos/Info.plist.in"
+    MACOSX_BUNDLE_INFO_PLIST               "${THUNDER_AUTO_RES_DIR}/macos/Info.plist.in"
     XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${THUNDER_AUTO_RES_DIR}/macos/ThunderAuto.entitlements"
-    RESOURCE                          "${ICON_FILE}"
+    RESOURCE                               "${ICON_FILE}"
   )
-  # set_source_files_properties(${ICON_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 
 elseif(THUNDER_AUTO_LINUX)
   add_executable(${PROJECT_NAME} ${THUNDER_AUTO_SRC})
