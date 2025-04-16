@@ -5,36 +5,33 @@
 #include <IconsFontAwesome5.h>
 #include <ThunderAuto/imgui_util.hpp>
 
+static const size_t MAX_NAME_LENGTH = 256;
+
 void PathManagerPage::present(bool* running) {
   ImGui::SetNextWindowSize(ImVec2(400, 400), ImGuiCond_FirstUseEver);
-  if (!ImGui::Begin(name(), running, ImGuiWindowFlags_NoCollapse)) {
-    ImGui::End();
+  ImGui::Scoped s = ImGui::Scoped::Window(name(), running);
+  if (!s)
     return;
-  }
 
   ProjectState state = m_history.current_state();
 
-  static bool input_active = false;
-  static bool was_input_active = false;
-
-  char buf[256] = "";
+  char buf[MAX_NAME_LENGTH] = "";
   size_t num_paths = state.paths().size();
   bool done = false;
-  for (std::size_t i = 0; i < num_paths && !done; ++i) {
+  for (size_t i = 0; i < num_paths && !done; ++i) {
+    auto id = ImGui::Scoped::ID(static_cast<int>(i));
+
     std::string& name = state.paths().at(i).first;
+    strncpy(buf, name.c_str(), MAX_NAME_LENGTH - 1);
+    buf[min(name.length(), MAX_NAME_LENGTH - 1)] = '\0';
 
-    strncpy(buf, name.c_str(), 255);
-    buf[name.length()] = 0;
+    bool is_selected = (i == state.current_path_index());
 
-    bool is_selected = i == state.current_path_index();
+    bool input_was_active = is_selected ? m_was_input_active : false;
+    bool input_active = input_was_active;
 
-    ImGui::PushID(i);
-
-    bool tmp_input_active = is_selected ? input_active : false;
-    bool tmp_input_was_active = is_selected ? was_input_active : false;
-
-    if (selectable_input(name.c_str(), is_selected, buf, 255,
-                         tmp_input_active)) {
+    if (selectable_input(name.c_str(), is_selected, buf, MAX_NAME_LENGTH,
+                         input_active)) {
       if (!is_selected) {
         state.current_path_index() = i;
         state.selected_point_index() = -1;
@@ -44,57 +41,32 @@ void PathManagerPage::present(bool* running) {
         is_selected = true;
       }
     }
-    if (ImGui::BeginPopupContextItem()) {
-      if (ImGui::MenuItem("\xef\x8d\xa3"
-                          "  Reverse Direction")) {
-        reverse_path(state, i);
-        done = true;
+    if (input_active) {
+      if (!input_was_active) {
+        m_history.start_long_edit();
       }
-
-      if (ImGui::MenuItem(ICON_FA_COPY "  Duplicate")) {
-        duplicate_path(state, i);
-        done = true;
-      }
-
-      {
-        ImGuiScopedDisabled disabled(num_paths <= 1);
-
-        if (ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete")) {
-          delete_path(state, i);
-          done = true;
+    } else {
+      if (input_was_active) {
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+          name = buf;
+          m_history.add_state(state);
+          m_history.finish_long_edit();
+        } else {
+          m_history.discard_long_edit();
         }
       }
 
-      ImGui::EndPopup();
-    }
-
-    if (!tmp_input_active && tmp_input_was_active) {
-      if (ImGui::IsItemDeactivatedAfterEdit()) {
-        name = buf;
-        m_history.add_state(state);
+      if (auto popup = ImGui::Scoped::PopupContextItem()) {
+        done = present_context_menu(state, i);
       }
     }
 
     if (is_selected) {
-      input_active = tmp_input_active;
-      was_input_active = tmp_input_active;
+      m_was_input_active = input_active;
     }
-
-    ImGui::PopID();
   }
 
-  {
-    ImGui::PushFont(FontLibrary::get().bold_font);
-
-    if (ImGui::Selectable("+ New Path", false)) {
-      state.paths().emplace_back("new_path", default_new_curve);
-      m_history.add_state(state);
-    }
-
-    ImGui::PopFont();
-  }
-
-  ImGui::End();
+  present_new_path_button(state);
 }
 
 void PathManagerPage::duplicate_path(ProjectState& state, std::size_t index) {
@@ -137,17 +109,62 @@ void PathManagerPage::reverse_path(ProjectState& state, std::size_t index) {
   state.current_path().output(m_cached_curve, preview_output_curve_settings);
 }
 
-bool PathManagerPage::selectable_input(const char* label, bool selected,
-                                       char* buf, std::size_t buf_size,
+bool PathManagerPage::present_context_menu(ProjectState& state, size_t index) {
+  if (ImGui::MenuItem("\xef\x8d\xa3"
+                      "  Reverse Direction")) {
+    reverse_path(state, index);
+    return true;
+  }
+
+  if (ImGui::MenuItem(ICON_FA_COPY "  Duplicate")) {
+    duplicate_path(state, index);
+    return true;
+  }
+
+  {
+    ImGuiScopedDisabled disabled(state.paths().size() < 2);
+
+    if (ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete")) {
+      delete_path(state, index);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+void PathManagerPage::present_new_path_button(ProjectState& state) {
+  auto bold = ImGui::Scoped::Font(FontLibrary::get().bold_font);
+
+  if (ImGui::Selectable("+ New Path", false)) {
+    state.paths().emplace_back("new_path", default_new_curve);
+    m_history.add_state(state);
+  }
+}
+
+bool PathManagerPage::selectable_input(const char* label,
+                                       bool selected,
+                                       char* buf,
+                                       std::size_t buf_size,
                                        bool& input_active) {
   ImGuiWindow* window = ImGui::GetCurrentWindow();
   ImVec2 pos_before = window->DC.CursorPos;
 
-  ImGui::PushID(label);
-  bool ret = ImGui::Selectable("##Selectable", selected,
-                               ImGuiSelectableFlags_AllowDoubleClick |
-                                   ImGuiSelectableFlags_AllowOverlap,
-                               ImVec2(0.0f, 20.0f));
+  const ImGuiStyle& style = ImGui::GetStyle();
+
+  auto s = ImGui::Scoped::ID(label);
+
+  bool ret;
+  {
+    const ImGuiSelectableFlags flags = ImGuiSelectableFlags_AllowDoubleClick |
+                                       ImGuiSelectableFlags_AllowOverlap;
+
+    const ImVec2 label_size = ImGui::CalcTextSize(label, NULL, true);
+    const ImVec2 frame_size =
+        ImVec2(0.f, label_size.y + style.FramePadding.y * 2.0f);
+
+    ret = ImGui::Selectable("##Selectable", selected, flags, frame_size);
+  }
 
   const ImGuiID id = window->GetID("##Input");
   const bool input_start =
@@ -162,16 +179,16 @@ bool PathManagerPage::selectable_input(const char* label, bool selected,
     ImVec2 pos_after = window->DC.CursorPos;
     window->DC.CursorPos = pos_before;
 
-    // Good characters for a filename.
+    const ImGuiInputTextFlags flags = ImGuiInputTextFlags_CallbackCharFilter |
+                                      ImGuiInputTextFlags_AllowTabInput;
+
     const auto text_validate = [](ImGuiInputTextCallbackData* data) -> int {
+      // Good characters for a filename.
       return std::isalnum(data->EventChar) || data->EventChar == '_' ? 0 : 1;
     };
 
     ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-    ImGui::InputText("##Input", buf, buf_size,
-                     ImGuiInputTextFlags_CallbackCharFilter |
-                         ImGuiInputTextFlags_AllowTabInput,
-                     text_validate);
+    ImGui::InputText("##Input", buf, buf_size, flags, text_validate);
     window->DC.CursorPos = pos_after;
 
     if (!input_start && ImGui::IsItemDeactivated()) {
@@ -182,7 +199,5 @@ bool PathManagerPage::selectable_input(const char* label, bool selected,
                               buf);
   }
 
-  ImGui::PopID();
   return ret;
 }
-
