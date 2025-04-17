@@ -60,7 +60,7 @@ void NewFieldPopup::present(bool* running) {
     ImGui::SameLine();
 
     if (ImGui::Button("Ok")) {
-      m_field_texture.init(img_path_buf);
+      m_field_texture.load_from_file(img_path_buf);
       if (m_field_texture) {
         m_selected_image = true;
 

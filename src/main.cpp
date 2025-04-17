@@ -6,7 +6,7 @@
 
 static void apply_imgui_style();
 static void load_fonts();
-static void setup_data_handler();
+static void setup_data_handler(App& app);
 
 int _main(int argc, char** argv) {
   std::optional<std::filesystem::path> start_project_path;
@@ -29,14 +29,13 @@ int _main(int argc, char** argv) {
 
   int exit_code = 0;
 
-  Graphics::get().init();
+  App app;
+  Graphics::get().init(app);
+
+  setup_data_handler(app);
 
   apply_imgui_style();
   load_fonts();
-
-  App& app = App::get();
-
-  setup_data_handler();
 
   if (start_project_path.has_value()) {
     app.open_from_path(start_project_path.value().string());
@@ -266,11 +265,6 @@ static void load_fonts() {
 
   static const ImWchar* glyph_ranges = io->Fonts->GetGlyphRangesDefault();
 
-  // Bold font.
-  font_lib.bold_font = io->Fonts->AddFontFromMemoryTTF(
-      reinterpret_cast<void*>(Ubuntu_Bold_ttf), Ubuntu_Bold_ttf_size, 15.0f,
-      &font_cfg, glyph_ranges);
-
   // Regular font.
   font_lib.regular_font = io->Fonts->AddFontFromMemoryTTF(
       reinterpret_cast<void*>(Ubuntu_Regular_ttf), Ubuntu_Regular_ttf_size,
@@ -296,14 +290,16 @@ static void load_fonts() {
       reinterpret_cast<void*>(Ubuntu_Bold_ttf), Ubuntu_Bold_ttf_size, 30.0f,
       &font_cfg, glyph_ranges);
 
-  io->ConfigWindowsMoveFromTitleBarOnly = true;
+  font_lib.bold_font = io->Fonts->AddFontFromMemoryTTF(
+      reinterpret_cast<void*>(Ubuntu_Bold_ttf), Ubuntu_Bold_ttf_size, 15.0f,
+      &font_cfg, glyph_ranges);
 
-  io->FontDefault = font_lib.regular_font;
+  io->ConfigWindowsMoveFromTitleBarOnly = true;
 }
 
-static void setup_data_handler() {
+static void setup_data_handler(App& app) {
   ImGuiSettingsHandler ini_handler;
-  ini_handler.UserData = reinterpret_cast<void*>(&App::get());
+  ini_handler.UserData = reinterpret_cast<void*>(&app);
 
   ini_handler.ClearAllFn = [](ImGuiContext*, ImGuiSettingsHandler* handler) {
     App* app = reinterpret_cast<App*>(handler->UserData);

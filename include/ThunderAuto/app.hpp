@@ -83,27 +83,9 @@ class App {
 
   int m_menu_bar_width = 0;
 
-private:
+public:
   App() = default;
 
-  static inline bool s_init = false;
-
-public:
-  static App& get() {
-    static App instance;
-    s_init = true;
-    return instance;
-  }
-
-  // Get the singleton instance if the application has been initialized, nullptr otherwise.
-  static App* get_maybe_uninitialized() {
-    return s_init ? &get() : nullptr;
-  }
-
-  App(App const&) = delete;
-  void operator=(App const&) = delete;
-
-public:
   constexpr bool is_running() const { return m_running; }
 
   void setup_dockspace(ImGuiID dockspace_id);

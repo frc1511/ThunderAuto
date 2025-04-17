@@ -8,15 +8,15 @@
 
 #include <stb_image.h>
 
-Texture::Texture() { setup(); }
-
-Texture::Texture(unsigned char* img, std::size_t img_size) {
-  init(img, img_size);
+Texture::Texture(unsigned char* img, size_t img_size) {
+  load_from_memory(img, img_size);
 }
 
-Texture::Texture(const char* path) { init(path); }
+Texture::Texture(const char* path) {
+  load_from_file(path);
+}
 
-void Texture::init(unsigned char* data, std::size_t size) {
+void Texture::load_from_memory(unsigned char* data, size_t size) {
   unsigned char* img_data = stbi_load_from_memory(data, int(size), &m_width,
                                                   &m_height, &m_nr_channels, 0);
 
@@ -28,11 +28,12 @@ void Texture::init(unsigned char* data, std::size_t size) {
   m_loaded = true;
 }
 
-void Texture::init(const char* path) {
+void Texture::load_from_file(const char* path) {
   unsigned char* img_data =
       stbi_load(path, &m_width, &m_height, &m_nr_channels, 0);
   m_loaded = (img_data != nullptr);
-  if (!m_loaded) return;
+  if (!m_loaded)
+    return;
 
   setup();
   set_data(img_data, m_width, m_height, m_nr_channels);
@@ -44,7 +45,7 @@ Texture::~Texture() {
 #if THUNDER_AUTO_DIRECTX11
   m_texture_view.Reset();
   m_texture.Reset();
-#else // THUNDER_AUTO_OPENGL
+#else  // THUNDER_AUTO_OPENGL
   glDeleteTextures(1, &m_texture);
 #endif
 }
@@ -68,7 +69,8 @@ void Texture::setup() {
 
   HRESULT hr =
       Graphics::get().device()->CreateTexture2D(&desc, nullptr, &m_texture);
-  if (FAILED(hr)) return;
+  if (FAILED(hr))
+    return;
 
   // Create texture view
   D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
@@ -79,9 +81,10 @@ void Texture::setup() {
   srvDesc.Texture2D.MipLevels = desc.MipLevels;
   hr = Graphics::get().device()->CreateShaderResourceView(
       m_texture.Get(), &srvDesc, &m_texture_view);
-  if (FAILED(hr)) return;
+  if (FAILED(hr))
+    return;
 
-#else // THUNDER_AUTO_OPENGL
+#else  // THUNDER_AUTO_OPENGL
   glGenTextures(1, &m_texture);
   glBindTexture(GL_TEXTURE_2D, m_texture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -92,7 +95,9 @@ void Texture::setup() {
 #endif
 }
 
-void Texture::set_data(unsigned char* data, int width, int height,
+void Texture::set_data(unsigned char* data,
+                       int width,
+                       int height,
                        int nr_channels) {
 #if THUNDER_AUTO_DIRECTX11
   assert(nr_channels == 4);
@@ -110,7 +115,8 @@ void Texture::set_data(unsigned char* data, int width, int height,
   D3D11_MAPPED_SUBRESOURCE mapped_resource;
   HRESULT hr = context->Map(m_texture.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0,
                             &mapped_resource);
-  if (FAILED(hr)) return;
+  if (FAILED(hr))
+    return;
 
   for (UINT row = 0; row < m_height; ++row) {
     memcpy(static_cast<unsigned char*>(mapped_resource.pData) +
@@ -120,7 +126,7 @@ void Texture::set_data(unsigned char* data, int width, int height,
 
   context->Unmap(m_texture.Get(), 0);
 
-#else // THUNDER_AUTO_OPENGL
+#else  // THUNDER_AUTO_OPENGL
   const int tex_channels = (m_nr_channels == 3 ? GL_RGB : GL_RGBA);
 
   glBindTexture(GL_TEXTURE_2D, m_texture);
@@ -130,3 +136,15 @@ void Texture::set_data(unsigned char* data, int width, int height,
 #endif
 }
 
+ImTextureID Texture::id() {
+  if (!m_texture)
+    setup();
+
+  return reinterpret_cast<void*>(
+#if THUNDER_AUTO_DIRECTX11
+    m_texture_view.Get()
+#else  // THUNDER_AUTO_OPENGL
+    m_texture
+#endif
+  );
+}

@@ -2,7 +2,7 @@
 
 #include <ThunderAuto/app.hpp>
 
-#define WINDOW_WIDTH  1300
+#define WINDOW_WIDTH 1300
 #define WINDOW_HEIGHT 800
 
 #define WINDOW_TITLE "ThunderAuto " THUNDER_AUTO_VERSION_STR
@@ -13,7 +13,7 @@
 
 #include <imgui_impl_dx11.h>
 #include <imgui_impl_win32.h>
-#else // THUNDER_AUTO_OPENGL
+#else  // THUNDER_AUTO_OPENGL
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #endif
@@ -22,8 +22,7 @@
 
 static UINT g_resize_width = 0, g_resize_height = 0;
 
-static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam,
-                                   LPARAM lparam);
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
 #else
 
@@ -35,11 +34,11 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam,
 #endif
 
 #if THUNDER_AUTO_MACOS || THUNDER_AUTO_WINDOWS_TEST_OPENGL_MACOS
-#define GLSL_VERSION     "#version 150"
+#define GLSL_VERSION "#version 150"
 #define GL_VERSION_MAJOR 3
 #define GL_VERSION_MINOR 2
 #else
-#define GLSL_VERSION     "#version 130"
+#define GLSL_VERSION "#version 130"
 #define GL_VERSION_MAJOR 3
 #define GL_VERSION_MINOR 0
 #endif
@@ -51,14 +50,16 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam,
 HWND Graphics::hwnd() {
 #if THUNDER_AUTO_DIRECTX11
   return m_hwnd;
-#else // THUNDER_AUTO_OPENGL
+#else  // THUNDER_AUTO_OPENGL
   return glfwGetWin32Window(m_window);
 #endif
 }
 
 #endif
 
-void Graphics::init() {
+void Graphics::init(App& app) {
+  m_app = &app;
+
 #if THUNDER_AUTO_DIRECTX11
   ZeroMemory(&m_wc, sizeof(m_wc));
   m_wc.cbSize = sizeof(WNDCLASSEXW);
@@ -86,7 +87,7 @@ void Graphics::init() {
   ShowWindow(m_hwnd, SW_SHOWDEFAULT);
   UpdateWindow(m_hwnd);
 
-#else // THUNDER_AUTO_OPENGL
+#else  // THUNDER_AUTO_OPENGL
   //
   // GLFW.
   //
@@ -102,14 +103,15 @@ void Graphics::init() {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GL_VERSION_MINOR);
 
 #if THUNDER_AUTO_MACOS || THUNDER_AUTO_WINDOWS_TEST_OPENGL_MACOS
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // 3.2+ only
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // Required on Mac
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);  // Required on Mac
 #endif
 
   // Initialize window.
   m_window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE,
                               nullptr, nullptr);
-  if (!m_window) exit(1);
+  if (!m_window)
+    exit(1);
 
   glfwSetWindowSizeLimits(m_window, 700, 500, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
@@ -141,7 +143,7 @@ void Graphics::init() {
   ImGui_ImplWin32_Init(m_hwnd);
   ImGui_ImplDX11_Init(m_device, m_device_context);
 
-#else // THUNDER_AUTO_OPENGL
+#else  // THUNDER_AUTO_OPENGL
   ImGui_ImplGlfw_InitForOpenGL(m_window, true);
   ImGui_ImplOpenGL3_Init(GLSL_VERSION);
 #endif
@@ -184,7 +186,7 @@ void Graphics::begin_frame() {
 #if THUNDER_AUTO_DIRECTX11
   ImGui_ImplDX11_NewFrame();
   ImGui_ImplWin32_NewFrame();
-#else // THUNDER_AUTO_OPENGL
+#else  // THUNDER_AUTO_OPENGL
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
 #endif
@@ -212,10 +214,10 @@ void Graphics::end_frame() {
     ImGui::RenderPlatformWindowsDefault();
   }
 
-  HRESULT hr = m_swap_chain->Present(1, 0); // Present with vsync
+  HRESULT hr = m_swap_chain->Present(1, 0);  // Present with vsync
   m_swap_chain_occluded = (hr == DXGI_STATUS_OCCLUDED);
 
-#else // THUNDER_AUTO_OPENGL
+#else  // THUNDER_AUTO_OPENGL
   int buf_width, buf_height;
   glfwGetFramebufferSize(m_window, &buf_width, &buf_height);
 
@@ -241,7 +243,7 @@ void Graphics::deinit() {
 #if THUNDER_AUTO_DIRECTX11
   ImGui_ImplDX11_Shutdown();
   ImGui_ImplWin32_Shutdown();
-#else // THUNDER_AUTO_OPENGL
+#else  // THUNDER_AUTO_OPENGL
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
 #endif
@@ -252,7 +254,7 @@ void Graphics::deinit() {
   deinit_device();
   DestroyWindow(m_hwnd);
   UnregisterClassW(m_wc.lpszClassName, m_wc.hInstance);
-#else // THUNDER_AUTO_OPENGL
+#else  // THUNDER_AUTO_OPENGL
   glfwDestroyWindow(m_window);
   glfwTerminate();
 #endif
@@ -261,7 +263,7 @@ void Graphics::deinit() {
 ImVec2 Graphics::window_size() const {
   int width = 0, height = 0;
 #if THUNDER_AUTO_DIRECTX11
-#else // THUNDER_AUTO_OPENGL
+#else  // THUNDER_AUTO_OPENGL
   glfwGetWindowSize(m_window, &width, &height);
 #endif
   return ImVec2(width, height);
@@ -281,7 +283,7 @@ bool Graphics::is_maximized() {
 bool Graphics::is_focused() {
 #if THUNDER_AUTO_DIRECTX11
   return GetFocus() == m_hwnd;
-#else // THUNDER_AUTO_OPENGL
+#else  // THUNDER_AUTO_OPENGL
   return glfwGetWindowAttrib(m_window, GLFW_FOCUSED) != 0;
 #endif
 }
@@ -289,7 +291,7 @@ bool Graphics::is_focused() {
 ImVec2 Graphics::window_pos() const {
   int x = 0, y = 0;
 #if THUNDER_AUTO_DIRECTX11
-#else // THUNDER_AUTO_OPENGL
+#else  // THUNDER_AUTO_OPENGL
   glfwGetWindowPos(m_window, &x, &y);
 #endif
   return ImVec2(x, y);
@@ -299,7 +301,7 @@ void Graphics::window_set_size(int width, int height) {
 #if THUNDER_AUTO_DIRECTX11
   (void)width;
   (void)height;
-#else // THUNDER_AUTO_OPENGL
+#else  // THUNDER_AUTO_OPENGL
   glfwSetWindowSize(m_window, width, height);
 #endif
 }
@@ -308,7 +310,7 @@ void Graphics::window_set_pos(int x, int y) {
 #if THUNDER_AUTO_DIRECTX11
   (void)x;
   (void)y;
-#else // THUNDER_AUTO_OPENGL
+#else  // THUNDER_AUTO_OPENGL
   glfwSetWindowPos(m_window, x, y);
 #endif
 }
@@ -316,14 +318,14 @@ void Graphics::window_set_pos(int x, int y) {
 void Graphics::window_set_title(const char* title) {
 #if THUNDER_AUTO_DIRECTX11
   SetWindowTextA(m_hwnd, title);
-#else // THUNDER_AUTO_OPENGL
+#else  // THUNDER_AUTO_OPENGL
   glfwSetWindowTitle(m_window, title);
 #endif
 }
 
 void Graphics::window_focus() {
 #if THUNDER_AUTO_DIRECTX11
-#else // THUNDER_AUTO_OPENGL
+#else  // THUNDER_AUTO_OPENGL
   glfwFocusWindow(m_window);
 #endif
 }
@@ -332,12 +334,12 @@ void Graphics::window_set_should_close(bool value) {
 #if THUNDER_AUTO_DIRECTX11
   (void)value;
   // TODO
-#else // THUNDER_AUTO_OPENGL
+#else  // THUNDER_AUTO_OPENGL
   glfwSetWindowShouldClose(m_window, value);
 #endif
 }
 
-#if THUNDER_AUTO_DIRECTX11 // DirectX 11 helper functions.
+#if THUNDER_AUTO_DIRECTX11  // DirectX 11 helper functions.
 
 bool Graphics::init_device() {
   // Setup swap chain
@@ -368,13 +370,14 @@ bool Graphics::init_device() {
       nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags,
       featureLevelArray, 2, D3D11_SDK_VERSION, &sd, &m_swap_chain, &m_device,
       &featureLevel, &m_device_context);
-  if (res == DXGI_ERROR_UNSUPPORTED) // Try high-performance WARP software
-                                     // driver if hardware is not available.
+  if (res == DXGI_ERROR_UNSUPPORTED)  // Try high-performance WARP software
+                                      // driver if hardware is not available.
     res = D3D11CreateDeviceAndSwapChain(
         nullptr, D3D_DRIVER_TYPE_WARP, nullptr, createDeviceFlags,
         featureLevelArray, 2, D3D11_SDK_VERSION, &sd, &m_swap_chain, &m_device,
         &featureLevel, &m_device_context);
-  if (res != S_OK) return false;
+  if (res != S_OK)
+    return false;
 
   init_render_target();
   return true;
@@ -416,10 +419,14 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd,
                                                              WPARAM wparam,
                                                              LPARAM lparam);
 
-static int dpi_scale(int value, UINT dpi) { return MulDiv(value, dpi, 96); }
+static int dpi_scale(int value, UINT dpi) {
+  return MulDiv(value, dpi, 96);
+}
 
-static void set_menu_item_state(HMENU menu, MENUITEMINFO* menuItemInfo,
-                                UINT item, bool enabled) {
+static void set_menu_item_state(HMENU menu,
+                                MENUITEMINFO* menuItemInfo,
+                                UINT item,
+                                bool enabled) {
   menuItemInfo->fState = enabled ? MF_ENABLED : MF_DISABLED;
   SetMenuItemInfo(menu, item, false, menuItemInfo);
 }
@@ -454,8 +461,9 @@ enum class TitleBarButton {
   CLOSE,
 };
 
-static TitleBarButtonRects
-get_title_bar_button_rects(HWND hwnd, const RECT* title_bar_rect) {
+static TitleBarButtonRects get_title_bar_button_rects(
+    HWND hwnd,
+    const RECT* title_bar_rect) {
   UINT dpi = GetDpiForWindow(hwnd);
   TitleBarButtonRects button_rects;
 
@@ -481,189 +489,193 @@ static bool is_window_maximized(HWND hwnd) {
   return false;
 }
 
-static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam,
-                                   LPARAM lparam) {
-  if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam)) return true;
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+  if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam))
+    return true;
+
+  App* app = Graphics::get().m_app;
 
   TitleBarButton hovered_button =
       static_cast<TitleBarButton>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
 
   switch (msg) {
-  case WM_NCCALCSIZE: {
-    if (!wparam) return DefWindowProc(hwnd, msg, wparam, lparam);
-    UINT dpi = GetDpiForWindow(hwnd);
+    case WM_NCCALCSIZE: {
+      if (!wparam)
+        return DefWindowProc(hwnd, msg, wparam, lparam);
+      UINT dpi = GetDpiForWindow(hwnd);
 
-    int frame_x = GetSystemMetricsForDpi(SM_CXFRAME, dpi);
-    int frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
-    int padding = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+      int frame_x = GetSystemMetricsForDpi(SM_CXFRAME, dpi);
+      int frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
+      int padding = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
 
-    NCCALCSIZE_PARAMS* params = reinterpret_cast<NCCALCSIZE_PARAMS*>(lparam);
-    RECT* requested_client_rect = params->rgrc;
+      NCCALCSIZE_PARAMS* params = reinterpret_cast<NCCALCSIZE_PARAMS*>(lparam);
+      RECT* requested_client_rect = params->rgrc;
 
-    requested_client_rect->right -= frame_x + padding;
-    requested_client_rect->left += frame_x + padding;
-    requested_client_rect->bottom -= frame_y + padding;
+      requested_client_rect->right -= frame_x + padding;
+      requested_client_rect->left += frame_x + padding;
+      requested_client_rect->bottom -= frame_y + padding;
 
-    if (is_window_maximized(hwnd)) {
-      requested_client_rect->top += padding;
-    }
-
-    return 0;
-  }
-  case WM_CREATE: {
-    SetWindowPos(hwnd, NULL, 0, 0, 0, 0,
-                 SWP_FRAMECHANGED | SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER);
-    break;
-  }
-  case WM_NCHITTEST: {
-    LRESULT hit = DefWindowProc(hwnd, msg, wparam, lparam);
-    switch (hit) {
-    case HTNOWHERE:
-    case HTRIGHT:
-    case HTLEFT:
-    case HTTOPLEFT:
-    case HTTOP:
-    case HTTOPRIGHT:
-    case HTBOTTOMRIGHT:
-    case HTBOTTOM:
-    case HTBOTTOMLEFT:
-      return hit;
-    }
-
-    if (hovered_button == TitleBarButton::MAXIMIZE) {
-      // Show SnapLayout on Windows 11
-      return HTMAXBUTTON;
-    }
-
-    UINT dpi = GetDpiForWindow(hwnd);
-    int frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
-    int padding = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
-    POINT cursor_point;
-    cursor_point.x = GET_X_LPARAM(lparam);
-    cursor_point.y = GET_Y_LPARAM(lparam);
-    ScreenToClient(hwnd, &cursor_point);
-    if (cursor_point.y > 0 && cursor_point.y < frame_y + padding) {
-      return HTTOP;
-    }
-
-    int menu_bar_width = App::get().menu_bar_width(); // dpi?
-
-    RECT title_bar_rect = get_titlebar_rect(hwnd);
-    if (cursor_point.y < title_bar_rect.bottom &&
-        cursor_point.x > title_bar_rect.left + menu_bar_width) {
-      return HTCAPTION;
-    }
-
-    return HTCLIENT;
-  }
-  case WM_GETMINMAXINFO: {
-    UINT dpi = GetDpiForWindow(hwnd);
-    App* app = App::get_maybe_uninitialized();
-    int menu_bar_width = app ? app->menu_bar_width() : 0; // dpi?
-    int button_width = dpi_scale(47, dpi);
-
-    MINMAXINFO* minmax = reinterpret_cast<MINMAXINFO*>(lparam);
-    minmax->ptMinTrackSize.x =
-        max(menu_bar_width + 3 * button_width + dpi_scale(30, dpi),
-            dpi_scale(500, dpi));
-    minmax->ptMinTrackSize.y = dpi_scale(400, dpi);
-    return 0;
-  }
-  case WM_NCMOUSEMOVE: {
-    POINT cursor_point;
-    GetCursorPos(&cursor_point);
-    ScreenToClient(hwnd, &cursor_point);
-
-    RECT title_bar_rect = get_titlebar_rect(hwnd);
-    TitleBarButtonRects button_rects =
-        get_title_bar_button_rects(hwnd, &title_bar_rect);
-
-    TitleBarButton new_hovered_button = TitleBarButton::NONE;
-    if (PtInRect(&button_rects.close, cursor_point)) {
-      new_hovered_button = TitleBarButton::CLOSE;
-    } else if (PtInRect(&button_rects.minimize, cursor_point)) {
-      new_hovered_button = TitleBarButton::MINIMIZE;
-    } else if (PtInRect(&button_rects.maximize, cursor_point)) {
-      new_hovered_button = TitleBarButton::MAXIMIZE;
-    }
-    if (new_hovered_button != hovered_button) {
-      SetWindowLongPtrW(hwnd, GWLP_USERDATA,
-                        static_cast<LONG_PTR>(new_hovered_button));
-    }
-    break;
-  }
-  case WM_MOUSEMOVE: {
-    if (hovered_button != TitleBarButton::NONE) {
-      SetWindowLongPtrW(hwnd, GWLP_USERDATA,
-                        static_cast<LONG_PTR>(TitleBarButton::NONE));
-    }
-    break;
-  }
-  case WM_NCLBUTTONDOWN: {
-    if (hovered_button != TitleBarButton::NONE) {
-      return 0;
-    }
-    break;
-  }
-  case WM_NCLBUTTONUP: {
-    if (hovered_button == TitleBarButton::CLOSE) {
-      App::get().close();
-      return 0;
-    } else if (hovered_button == TitleBarButton::MINIMIZE) {
-      ShowWindow(hwnd, SW_MINIMIZE);
-      return 0;
-    } else if (hovered_button == TitleBarButton::MAXIMIZE) {
-      int mode = is_window_maximized(hwnd) ? SW_NORMAL : SW_MAXIMIZE;
-      ShowWindow(hwnd, mode);
-      return 0;
-    }
-    break;
-  }
-  case WM_NCRBUTTONUP: {
-    if (wparam == HTCAPTION) {
-      BOOL const isMaximized = IsZoomed(hwnd);
-
-      MENUITEMINFO menu_item_info;
-      ZeroMemory(&menu_item_info, sizeof(menu_item_info));
-      menu_item_info.cbSize = sizeof(menu_item_info);
-      menu_item_info.fMask = MIIM_STATE;
-
-      HMENU const sys_menu = GetSystemMenu(hwnd, false);
-      set_menu_item_state(sys_menu, &menu_item_info, SC_RESTORE, isMaximized);
-      set_menu_item_state(sys_menu, &menu_item_info, SC_MOVE, !isMaximized);
-      set_menu_item_state(sys_menu, &menu_item_info, SC_SIZE, !isMaximized);
-      set_menu_item_state(sys_menu, &menu_item_info, SC_MINIMIZE, true);
-      set_menu_item_state(sys_menu, &menu_item_info, SC_MAXIMIZE, !isMaximized);
-      set_menu_item_state(sys_menu, &menu_item_info, SC_CLOSE, true);
-      BOOL const result =
-          TrackPopupMenu(sys_menu, TPM_RETURNCMD, GET_X_LPARAM(lparam),
-                         GET_Y_LPARAM(lparam), 0, hwnd, NULL);
-      if (result != 0) {
-        PostMessage(hwnd, WM_SYSCOMMAND, result, 0);
+      if (is_window_maximized(hwnd)) {
+        requested_client_rect->top += padding;
       }
-    }
-    break;
-  }
-  case WM_SETCURSOR: {
-    SetCursor(LoadCursor(NULL, IDC_ARROW));
-    break;
-  }
-  case WM_SIZE:
-    if (wparam == SIZE_MINIMIZED) return 0;
-    g_resize_width = static_cast<UINT>(LOWORD(lparam));
-    g_resize_height = static_cast<UINT>(HIWORD(lparam));
-    return 0;
-  case WM_SYSCOMMAND:
-    if ((wparam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu
+
       return 0;
-    break;
-  case WM_CLOSE:
-    App::get().close();
-    return 0;
-  case WM_DESTROY: {
-    PostQuitMessage(0);
-    return 0;
-  }
+    }
+    case WM_CREATE: {
+      SetWindowPos(hwnd, NULL, 0, 0, 0, 0,
+                   SWP_FRAMECHANGED | SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER);
+      break;
+    }
+    case WM_NCHITTEST: {
+      LRESULT hit = DefWindowProc(hwnd, msg, wparam, lparam);
+      switch (hit) {
+        case HTNOWHERE:
+        case HTRIGHT:
+        case HTLEFT:
+        case HTTOPLEFT:
+        case HTTOP:
+        case HTTOPRIGHT:
+        case HTBOTTOMRIGHT:
+        case HTBOTTOM:
+        case HTBOTTOMLEFT:
+          return hit;
+      }
+
+      if (hovered_button == TitleBarButton::MAXIMIZE) {
+        // Show SnapLayout on Windows 11
+        return HTMAXBUTTON;
+      }
+
+      UINT dpi = GetDpiForWindow(hwnd);
+      int frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
+      int padding = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+      POINT cursor_point;
+      cursor_point.x = GET_X_LPARAM(lparam);
+      cursor_point.y = GET_Y_LPARAM(lparam);
+      ScreenToClient(hwnd, &cursor_point);
+      if (cursor_point.y > 0 && cursor_point.y < frame_y + padding) {
+        return HTTOP;
+      }
+
+      int menu_bar_width = app->menu_bar_width();  // dpi?
+
+      RECT title_bar_rect = get_titlebar_rect(hwnd);
+      if (cursor_point.y < title_bar_rect.bottom &&
+          cursor_point.x > title_bar_rect.left + menu_bar_width) {
+        return HTCAPTION;
+      }
+
+      return HTCLIENT;
+    }
+    case WM_GETMINMAXINFO: {
+      UINT dpi = GetDpiForWindow(hwnd);
+      int menu_bar_width = app->menu_bar_width();  // dpi?
+      int button_width = dpi_scale(47, dpi);
+
+      MINMAXINFO* minmax = reinterpret_cast<MINMAXINFO*>(lparam);
+      minmax->ptMinTrackSize.x =
+          max(menu_bar_width + 3 * button_width + dpi_scale(30, dpi),
+              dpi_scale(500, dpi));
+      minmax->ptMinTrackSize.y = dpi_scale(400, dpi);
+      return 0;
+    }
+    case WM_NCMOUSEMOVE: {
+      POINT cursor_point;
+      GetCursorPos(&cursor_point);
+      ScreenToClient(hwnd, &cursor_point);
+
+      RECT title_bar_rect = get_titlebar_rect(hwnd);
+      TitleBarButtonRects button_rects =
+          get_title_bar_button_rects(hwnd, &title_bar_rect);
+
+      TitleBarButton new_hovered_button = TitleBarButton::NONE;
+      if (PtInRect(&button_rects.close, cursor_point)) {
+        new_hovered_button = TitleBarButton::CLOSE;
+      } else if (PtInRect(&button_rects.minimize, cursor_point)) {
+        new_hovered_button = TitleBarButton::MINIMIZE;
+      } else if (PtInRect(&button_rects.maximize, cursor_point)) {
+        new_hovered_button = TitleBarButton::MAXIMIZE;
+      }
+      if (new_hovered_button != hovered_button) {
+        SetWindowLongPtrW(hwnd, GWLP_USERDATA,
+                          static_cast<LONG_PTR>(new_hovered_button));
+      }
+      break;
+    }
+    case WM_MOUSEMOVE: {
+      if (hovered_button != TitleBarButton::NONE) {
+        SetWindowLongPtrW(hwnd, GWLP_USERDATA,
+                          static_cast<LONG_PTR>(TitleBarButton::NONE));
+      }
+      break;
+    }
+    case WM_NCLBUTTONDOWN: {
+      if (hovered_button != TitleBarButton::NONE) {
+        return 0;
+      }
+      break;
+    }
+    case WM_NCLBUTTONUP: {
+      if (hovered_button == TitleBarButton::CLOSE) {
+        app->close();
+        return 0;
+      } else if (hovered_button == TitleBarButton::MINIMIZE) {
+        ShowWindow(hwnd, SW_MINIMIZE);
+        return 0;
+      } else if (hovered_button == TitleBarButton::MAXIMIZE) {
+        int mode = is_window_maximized(hwnd) ? SW_NORMAL : SW_MAXIMIZE;
+        ShowWindow(hwnd, mode);
+        return 0;
+      }
+      break;
+    }
+    case WM_NCRBUTTONUP: {
+      if (wparam == HTCAPTION) {
+        BOOL const isMaximized = IsZoomed(hwnd);
+
+        MENUITEMINFO menu_item_info;
+        ZeroMemory(&menu_item_info, sizeof(menu_item_info));
+        menu_item_info.cbSize = sizeof(menu_item_info);
+        menu_item_info.fMask = MIIM_STATE;
+
+        HMENU const sys_menu = GetSystemMenu(hwnd, false);
+        set_menu_item_state(sys_menu, &menu_item_info, SC_RESTORE, isMaximized);
+        set_menu_item_state(sys_menu, &menu_item_info, SC_MOVE, !isMaximized);
+        set_menu_item_state(sys_menu, &menu_item_info, SC_SIZE, !isMaximized);
+        set_menu_item_state(sys_menu, &menu_item_info, SC_MINIMIZE, true);
+        set_menu_item_state(sys_menu, &menu_item_info, SC_MAXIMIZE,
+                            !isMaximized);
+        set_menu_item_state(sys_menu, &menu_item_info, SC_CLOSE, true);
+        BOOL const result =
+            TrackPopupMenu(sys_menu, TPM_RETURNCMD, GET_X_LPARAM(lparam),
+                           GET_Y_LPARAM(lparam), 0, hwnd, NULL);
+        if (result != 0) {
+          PostMessage(hwnd, WM_SYSCOMMAND, result, 0);
+        }
+      }
+      break;
+    }
+    case WM_SETCURSOR: {
+      SetCursor(LoadCursor(NULL, IDC_ARROW));
+      break;
+    }
+    case WM_SIZE:
+      if (wparam == SIZE_MINIMIZED)
+        return 0;
+      g_resize_width = static_cast<UINT>(LOWORD(lparam));
+      g_resize_height = static_cast<UINT>(HIWORD(lparam));
+      return 0;
+    case WM_SYSCOMMAND:
+      if ((wparam & 0xfff0) == SC_KEYMENU)  // Disable ALT application menu
+        return 0;
+      break;
+    case WM_CLOSE:
+      app->close();
+      return 0;
+    case WM_DESTROY: {
+      PostQuitMessage(0);
+      return 0;
+    }
   }
 
   return DefWindowProcW(hwnd, msg, wparam, lparam);

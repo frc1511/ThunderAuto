@@ -36,7 +36,8 @@ static const int32_t POINT_COLOR_LOCKED = IM_COL32(192, 192, 192, 255);
 static const int32_t ROTATION_DONE_COLOR = IM_COL32(255, 128, 0, 255);
 
 static const ImVec2 to_screen_coordinate(const ImVec2& field_pt,
-                                         const Field& field, const ImRect& bb) {
+                                         const Field& field,
+                                         const ImRect& bb) {
   ImVec2 pt = field_pt / field.size();
 
   pt *= field.image_rect().Max - field.image_rect().Min;
@@ -50,7 +51,8 @@ static const ImVec2 to_screen_coordinate(const ImVec2& field_pt,
 }
 
 static const ImVec2 to_field_coordinate(const ImVec2& screen_pt,
-                                        const Field& field, const ImRect& bb) {
+                                        const Field& field,
+                                        const ImRect& bb) {
   ImVec2 pt = (screen_pt - bb.Min) / bb.GetSize();
 
   pt = ImVec2(pt.x, 1.f - pt.y);
@@ -82,31 +84,31 @@ void PathEditorPage::setup_field(const ProjectSettings& settings) {
     replace_macro(image_path, "PROJECT_DIR",
                   settings.path.parent_path().string());
 
-    m_field_texture.init(image_path.c_str());
+    m_field_texture.load_from_file(image_path.c_str());
   } else {
     unsigned char* image_data_buf = nullptr;
     std::size_t image_data_size = 0;
     switch (settings.field.builtin_image()) {
       using enum Field::BuiltinImage;
-    case FIELD_2022:
-      image_data_buf = field_2022_png;
-      image_data_size = field_2022_png_size;
-      break;
-    case FIELD_2023:
-      image_data_buf = field_2023_png;
-      image_data_size = field_2023_png_size;
-      break;
-    case FIELD_2024:
-      image_data_buf = field_2024_png;
-      image_data_size = field_2024_png_size;
-      break;
-    case FIELD_2025:
-      image_data_buf = field_2025_png;
-      image_data_size = field_2025_png_size;
-      break;
+      case FIELD_2022:
+        image_data_buf = field_2022_png;
+        image_data_size = field_2022_png_size;
+        break;
+      case FIELD_2023:
+        image_data_buf = field_2023_png;
+        image_data_size = field_2023_png_size;
+        break;
+      case FIELD_2024:
+        image_data_buf = field_2024_png;
+        image_data_size = field_2024_png_size;
+        break;
+      case FIELD_2025:
+        image_data_buf = field_2025_png;
+        image_data_size = field_2025_png_size;
+        break;
     }
 
-    m_field_texture.init(image_data_buf, image_data_size);
+    m_field_texture.load_from_memory(image_data_buf, image_data_size);
   }
 
   m_field_aspect_ratio = static_cast<float>(m_field_texture.width()) /
@@ -144,7 +146,8 @@ void PathEditorPage::present(bool* running) {
 
 void PathEditorPage::present_curve_editor() {
   ImGuiWindow* win = ImGui::GetCurrentWindow();
-  if (win->SkipItems) return;
+  if (win->SkipItems)
+    return;
 
   ImGui::SetScrollX(0);
   ImGui::SetScrollY(0);
@@ -181,7 +184,8 @@ void PathEditorPage::present_curve_editor() {
   ImRect bb(win->DC.CursorPos, win->DC.CursorPos + canvas * m_field_scale);
 
   ImGui::ItemSize(bb);
-  if (!ImGui::ItemAdd(bb, 0)) return;
+  if (!ImGui::ItemAdd(bb, 0))
+    return;
 
   //
   // Field.
@@ -214,7 +218,8 @@ void PathEditorPage::present_curve_editor() {
 
     const CurvePoint& point = curve.points().at(i);
 
-    if (m_show_rotation) present_point_rotation_widget(point, selected, bb);
+    if (m_show_rotation)
+      present_point_rotation_widget(point, selected, bb);
     if (m_show_tangents)
       present_point_heading_widget(point, !first, !last, selected, bb);
     present_point_widget(point, selected, first, last, bb);
@@ -338,14 +343,14 @@ void PathEditorPage::present_curve(ImRect bb) {
     float hue = 0.f;
     switch (m_curve_overlay) {
       using enum CurveOverlay;
-    case VELOCITY:
-      hue = 0.7f - point->velocity / curve.settings().max_linear_vel;
-      break;
-    case CURVATURE:
-      hue = 0.6f - std::clamp(point->curvature, 0.f, 10.f) / 10.f;
-      break;
-    default:
-      assert(false);
+      case VELOCITY:
+        hue = 0.7f - point->velocity / curve.settings().max_linear_vel;
+        break;
+      case CURVATURE:
+        hue = 0.6f - std::clamp(point->curvature, 0.f, 10.f) / 10.f;
+        break;
+      default:
+        assert(false);
     }
 
     draw_list->AddLine(last_point_position, point_position,
@@ -364,7 +369,9 @@ void PathEditorPage::present_curve(ImRect bb) {
 }
 
 void PathEditorPage::present_point_widget(const CurvePoint& point,
-                                          bool selected, bool first, bool last,
+                                          bool selected,
+                                          bool first,
+                                          bool last,
                                           ImRect bb) {
   ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
@@ -391,7 +398,8 @@ void PathEditorPage::present_point_widget(const CurvePoint& point,
 }
 
 void PathEditorPage::present_point_rotation_widget(const CurvePoint& point,
-                                                   bool selected, ImRect bb) {
+                                                   bool selected,
+                                                   ImRect bb) {
   ImDrawList* draw_list(ImGui::GetWindowDrawList());
 
   int32_t color = POINT_COLOR;
@@ -418,9 +426,12 @@ void PathEditorPage::present_point_rotation_widget(const CurvePoint& point,
 }
 
 void PathEditorPage::present_point_heading_widget(const CurvePoint& point,
-                                                  bool incoming, bool outgoing,
-                                                  bool selected, ImRect bb) {
-  if (point.editor_locked()) return;
+                                                  bool incoming,
+                                                  bool outgoing,
+                                                  bool selected,
+                                                  ImRect bb) {
+  if (point.editor_locked())
+    return;
 
   ImDrawList* draw_list(ImGui::GetWindowDrawList());
 
@@ -569,7 +580,9 @@ void PathEditorPage::present_playback_slider() {
   ImGui::PopItemWidth();
 }
 
-void PathEditorPage::toggle_playback() { m_is_playing = !m_is_playing; }
+void PathEditorPage::toggle_playback() {
+  m_is_playing = !m_is_playing;
+}
 
 void PathEditorPage::handle_input(ProjectState& state, ImRect bb) {
   m_show_context_menu = false;
@@ -600,7 +613,8 @@ void PathEditorPage::handle_point_input(ProjectState& state, ImRect bb) {
   for (std::size_t i = 0; i < curve.points().size(); ++i) {
     CurvePoint& point = curve.points().at(i);
 
-    if (point.editor_locked()) continue;
+    if (point.editor_locked())
+      continue;
 
     const ImVec2 position_pt = point.position();
     const auto [heading_in_pt, heading_out_pt] = point.heading_control_points();
@@ -654,7 +668,6 @@ void PathEditorPage::handle_point_input(ProjectState& state, ImRect bb) {
 
   if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) ||
       (right_click && (hovered_point_type == PointType::POSITION))) {
-
     int prev_selected_point_index = state.selected_point_index();
 
     state.selected_point_index() = hovered_point_index;
@@ -696,20 +709,20 @@ void PathEditorPage::handle_point_input(ProjectState& state, ImRect bb) {
 
       switch (m_drag_point) {
         using enum PointType;
-      case POSITION:
-        point.set_position(new_position);
-        break;
-      case HEADING_IN:
-        point.set_heading_control_point(new_position, CurvePoint::INCOMING);
-        break;
-      case HEADING_OUT:
-        point.set_heading_control_point(new_position, CurvePoint::OUTGOING);
-        break;
-      case ROTATION:
-        point.set_rotation_control_point(new_position);
-        break;
-      default:
-        assert(false);
+        case POSITION:
+          point.set_position(new_position);
+          break;
+        case HEADING_IN:
+          point.set_heading_control_point(new_position, CurvePoint::INCOMING);
+          break;
+        case HEADING_OUT:
+          point.set_heading_control_point(new_position, CurvePoint::OUTGOING);
+          break;
+        case ROTATION:
+          point.set_rotation_control_point(new_position);
+          break;
+        default:
+          assert(false);
       }
 
       m_history.add_state(state);
@@ -809,12 +822,14 @@ void PathEditorPage::handle_curve_input(ProjectState& state, ImRect bb) {
 
   if (state.selected_point_index() != -1 && curve.points().size() > 2 &&
       (ImGui::IsKeyPressed(ImGuiKey_Delete) ||
-       ImGui::IsKeyPressed(ImGuiKey_Backspace))) {
+       ImGui::IsKeyPressed(ImGuiKey_Backspace)) &&
+      m_is_focused) {
     remove_selected_point(state);
   }
 }
 
-void PathEditorPage::insert_point(ProjectState& state, std::size_t index,
+void PathEditorPage::insert_point(ProjectState& state,
+                                  std::size_t index,
                                   ImVec2 position) {
   Curve& curve = state.current_path();
 
@@ -837,7 +852,8 @@ void PathEditorPage::select_next_point(ProjectState& state) {
 }
 
 void PathEditorPage::select_previous_point(ProjectState& state) {
-  if (state.selected_point_index() <= 0) return;
+  if (state.selected_point_index() <= 0)
+    return;
 
   state.selected_point_index() -= 1;
   m_history.add_state(state);
@@ -846,7 +862,8 @@ void PathEditorPage::select_previous_point(ProjectState& state) {
 void PathEditorPage::remove_selected_point(ProjectState& state) {
   Curve& curve = state.current_path();
 
-  if (curve.points().size() <= 2) return;
+  if (curve.points().size() <= 2)
+    return;
 
   curve.remove_point(state.selected_point_index());
   if (state.selected_point_index()) {
@@ -856,4 +873,3 @@ void PathEditorPage::remove_selected_point(ProjectState& state) {
 
   curve.output(m_cached_curve, preview_output_curve_settings);
 }
-

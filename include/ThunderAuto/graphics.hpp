@@ -1,8 +1,10 @@
 #pragma once
 
 #include <ThunderAuto/thunder_auto.hpp>
+#include <ThunderAuto/singleton.hpp>
+#include <ThunderAuto/app.hpp>
 
-class Graphics {
+class Graphics : public Singleton<Graphics> {
 #if THUNDER_AUTO_DIRECTX11
   ID3D11Device* m_device = nullptr;
   ID3D11DeviceContext* m_device_context = nullptr;
@@ -18,18 +20,9 @@ class Graphics {
   GLFWwindow* m_window = nullptr;
 #endif
 
-private:
-  Graphics() = default;
+  App* m_app = nullptr;
 
 public:
-  static Graphics& get() {
-    static Graphics instance;
-    return instance;
-  }
-
-  Graphics(Graphics const&) = delete;
-  void operator=(Graphics const&) = delete;
-
 #if THUNDER_AUTO_DIRECTX11
   ID3D11Device* device() { return m_device; }
   ID3D11DeviceContext* context() { return m_device_context; }
@@ -39,10 +32,10 @@ public:
   HWND hwnd();
 #endif
 
-  void init();
+  void init(App& app);
   void deinit();
 
-  bool poll_events(); // Returns whether the window should close.
+  bool poll_events();  // Returns whether the window should close.
 
   void begin_frame();
   void end_frame();
@@ -59,12 +52,13 @@ public:
   void window_focus();
   void window_set_should_close(bool value);
 
-private:
-#ifdef THUNDER_AUTO_DIRECTX11 // DirectX 11 helper functions.
+ private:
+#ifdef THUNDER_AUTO_DIRECTX11  // DirectX 11 helper functions.
   bool init_device();
   void deinit_device();
   void init_render_target();
   void deinit_render_target();
+
+  friend LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 #endif
 };
-
