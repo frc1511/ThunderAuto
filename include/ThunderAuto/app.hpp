@@ -82,6 +82,7 @@ class App {
   // Graphics stuff
 
   int m_menu_bar_width = 0;
+  int m_menu_bar_height = 0;
 
 public:
   App() = default;
@@ -144,4 +145,5 @@ private:
 
 public:
   int menu_bar_width() const { return m_menu_bar_width; }
+  int menu_bar_height() const { return m_menu_bar_height; }
 };

@@ -55,10 +55,9 @@ void App::focus_was_changed(bool focused) {
 }
 
 void App::present() {
+  present_popups();
   present_menu_bar();
   present_pages();
-
-  present_popups();
 
   const ProjectSettings& settings = m_document_manager.settings();
 
@@ -189,190 +188,10 @@ void App::present_menu_bar() {
       m_menu_bar_width = ImGui::GetCursorPosX();
     }
 
-#ifdef THUNDER_AUTO_DIRECTX11
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(0.f, TITLEBAR_HEIGHT));
-
-    // Draw custom minimize/maximize/close buttons
-    do {
-      ImGuiWindow* win = ImGui::GetCurrentWindow();
-      if (win->SkipItems) break;
-
-      ImDrawList* draw_list = ImGui::GetWindowDrawList();
-
-      const ImVec2 button_size(WINDOW_BUTTON_WIDTH, TITLEBAR_HEIGHT);
-
-      // Spacer + Title
-      {
-        ImGuiScopedDisabled disabled(!Graphics::get().is_focused());
-        ImGui::PushFont(FontLibrary::get().bold_font);
-
-        const float spacer_width =
-            ImGui::GetContentRegionAvail().x - 3 * button_size.x;
-
-        float title_width = 0.f;
-        float filename_width = 0.f;
-        float app_name_width = 0.f;
-
-        const ImVec2 spacer_min(win->DC.CursorPos.x,
-                                win->DC.CursorPos.y +
-                                    win->DC.CurrLineTextBaseOffset);
-
-        std::string begin_title;
-        std::string end_title;
-
-        const char* filename = m_titlebar_filename.c_str();
-        const ImVec2 filename_size = ImGui::CalcTextSize(filename);
-
-        static const char* elipsis = "...";
-        const ImVec2 elipsis_size = ImGui::CalcTextSize(elipsis);
-
-        static const char* dash = " - ";
-        const ImVec2 dash_size = ImGui::CalcTextSize(dash);
-
-        static const char* app_name = "ThunderAuto " THUNDER_AUTO_VERSION_STR;
-        const ImVec2 app_name_size = ImGui::CalcTextSize(app_name);
-
-        if (app_name_size.x >= spacer_width) { // Nothing will fit.
-        } else if (elipsis_size.x + dash_size.x + app_name_size.x >=
-                       spacer_width ||
-                   !*filename) { // Just app name will fit
-          title_width = app_name_size.x;
-          app_name_width = app_name_size.x;
-
-          end_title = app_name;
-        } else if (filename_size.x + dash_size.x + app_name_size.x >=
-                   spacer_width) { // Some of the filename and app name will fit
-          title_width = spacer_width;
-          app_name_width = elipsis_size.x + dash_size.x + app_name_size.x;
-          filename_width = spacer_width - app_name_width;
-
-          begin_title = filename;
-          end_title = std::string(elipsis) + dash + app_name;
-
-        } else { // Filename and app name will fit
-          title_width = filename_size.x + dash_size.x + app_name_size.x;
-          filename_width = filename_size.x;
-          app_name_width = dash_size.x + app_name_size.x;
-
-          begin_title = filename;
-          end_title = std::string(dash) + app_name;
-        }
-
-        const float spacer_edge_width = (spacer_width - title_width) / 2.f;
-        const float text_height = ImGui::GetTextLineHeight();
-
-        const ImVec2 begin_min(spacer_min.x + spacer_edge_width, spacer_min.y);
-        const ImVec2 begin_max(begin_min.x + filename_width,
-                               spacer_min.y + text_height);
-
-        const ImVec2 begin_size = begin_max - begin_min;
-
-        const ImVec2 end_min(begin_min.x + filename_width, spacer_min.y);
-        const ImVec2 end_max(end_min.x + app_name_width,
-                             spacer_min.y + text_height);
-
-        const ImVec2 end_size = end_max - end_min;
-
-        ImGui::PushID("Menu Spacer");
-
-        const ImRect spacer(spacer_min,
-                            spacer_min + ImVec2(spacer_width, text_height));
-        ImGui::ItemSize(spacer);
-        ImGui::ItemAdd(spacer, 0);
-
-        const char* begin_title_str = begin_title.c_str();
-        const char* end_title_str = end_title.c_str();
-
-        ImGui::RenderTextClipped(begin_min, begin_max, begin_title_str,
-                                 begin_title_str + strlen(begin_title_str),
-                                 &begin_size);
-        ImGui::RenderTextClipped(end_min, end_max, end_title_str,
-                                 end_title_str + strlen(end_title_str),
-                                 &end_size);
-
-        ImGui::PopID();
-
-        ImGui::PopFont();
-      }
-
-      bool min_selected = false;
-      bool max_selected = false;
-      bool close_selected = false;
-
-      const ImGuiSelectableFlags selectable_flags =
-          ImGuiSelectableFlags_SelectOnRelease |
-          ImGuiSelectableFlags_NoSetKeyOwner |
-          ImGuiSelectableFlags_SetNavIdOnHover;
-
-      {
-        ImGui::PushID("App Min");
-        ImGui::Selectable("", &min_selected, selectable_flags,
-                          ImVec2(button_size.x, 0.0f));
-
-        ImVec2 button_center_pos =
-            ImGui::GetItemRectMin() + ImGui::GetItemRectSize() / 2.f;
-
-        draw_list->AddLine(button_center_pos - ImVec2(5.f, 0.f),
-                           button_center_pos + ImVec2(5.f, 0.f),
-                           IM_COL32(255, 255, 255, 255), 1.f);
-
-        ImGui::PopID();
-      }
-      {
-        ImGui::PushID("App Max");
-        ImGui::Selectable("", &max_selected, selectable_flags,
-                          ImVec2(button_size.x, 0.0f));
-        ImVec2 button_center_pos =
-            ImGui::GetItemRectMin() + ImGui::GetItemRectSize() / 2.f;
-
-        bool maximized = Graphics::get().is_maximized();
-
-        ImVec2 offset = maximized ? ImVec2(-1.f, +1.f) : ImVec2(0.f, 0.f);
-
-        draw_list->AddRect(button_center_pos - ImVec2(5.f, 5.f) + offset,
-                           button_center_pos + ImVec2(5.f, 5.f) + offset,
-                           IM_COL32(255, 255, 255, 255), 1.f);
-
-        if (maximized) {
-          draw_list->AddRect(button_center_pos - ImVec2(5.f, 5.f) - offset,
-                             button_center_pos + ImVec2(5.f, 5.f) - offset,
-                             IM_COL32(255, 255, 255, 255), 1.f);
-        }
-
-        ImGui::PopID();
-      }
-      {
-
-        ImGui::PushID("App Close");
-
-        ImGui::PushStyleColor(ImGuiCol_HeaderHovered,
-                              ImVec4(1.f, 0.f, 0.f, 1.f));
-        ImGui::Selectable("", &close_selected, selectable_flags,
-                          ImVec2(button_size.x, 0.0f));
-        ImGui::PopStyleColor();
-
-        ImVec2 button_center_pos =
-            ImGui::GetItemRectMin() + ImGui::GetItemRectSize() / 2.f;
-
-        draw_list->AddLine(button_center_pos - ImVec2(5.f, 5.f),
-                           button_center_pos + ImVec2(5.f, 5.f),
-                           IM_COL32(255, 255, 255, 255), 1.f);
-
-        draw_list->AddLine(button_center_pos - ImVec2(5.f, -5.f),
-                           button_center_pos + ImVec2(5.f, -5.f),
-                           IM_COL32(255, 255, 255, 255), 1.f);
-
-        ImGui::PopID();
-      }
-    } while (false);
-
-    ImGui::PopStyleVar();
-
-#endif
-
     ImGui::EndMenuBar();
   }
+
+  m_menu_bar_height = ImGui::GetItemRectSize().y;
 
   ImGui::PopStyleVar();
 }

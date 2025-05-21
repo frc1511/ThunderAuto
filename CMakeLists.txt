@@ -224,7 +224,7 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE ${THUNDER_AUTO_PCH})
 #
 
 if (THUNDER_AUTO_DIRECTX11)
-  target_link_libraries(${PROJECT_NAME} user32 gdi32 uxtheme)
+  target_link_libraries(${PROJECT_NAME} user32 gdi32 uxtheme d2d1)
 else()
   target_link_libraries(${PROJECT_NAME} glad)
 endif()

@@ -38,6 +38,7 @@ using std::min;
 
 #if THUNDER_AUTO_DIRECTX11
 #include <d3d11.h>
+#include <d2d1.h>
 #include <tchar.h>
 #include <wrl/client.h>
 #include <Windows.h>
