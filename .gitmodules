@@ -1,7 +1,0 @@
-[submodule "thirdparty/imgui"]
-	path = thirdparty/imgui
-	url = https://github.com/petelilley/imgui
-[submodule "thirdparty/json"]
-	path = thirdparty/json
-	url = https://github.com/nlohmann/json
-	branch = master

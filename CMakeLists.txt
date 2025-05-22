@@ -173,10 +173,27 @@ else()
   set(IMGUI_BACKEND_RENDERER "opengl3")
   set(IMGUI_BACKEND_PLATFORM "glfw")
 endif()
-add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/imgui")
+
+include(FetchContent)
+
+FetchContent_Declare(
+  imgui
+  GIT_REPOSITORY https://github.com/petelilley/imgui.git
+  GIT_TAG master
+  GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(imgui)
+
+FetchContent_Declare(
+  json
+  GIT_REPOSITORY https://github.com/nlohmann/json.git
+  GIT_TAG v3.12.0
+  GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(json)
+
 add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/stb_image")
 add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/IconFontCppHeaders")
-add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/json")
 
 #
 # Build executable.
