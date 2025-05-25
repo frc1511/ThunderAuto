@@ -4,7 +4,7 @@
 #include <ThunderAuto/file_types.hpp>
 #include <ThunderAuto/imgui_util.hpp>
 
-#include <ThunderAuto/graphics.hpp>
+#include <ThunderAuto/graphics/graphics.hpp>
 
 #define TITLEBAR_HEIGHT     20.f
 #define WINDOW_BUTTON_WIDTH 47.f
@@ -158,7 +158,7 @@ void App::present_menu_bar() {
 
   if (ImGui::BeginMenuBar()) {
     {
-      ImGuiScopedDisabled disabled(!Graphics::get().is_focused());
+      ImGuiScopedDisabled disabled(!PlatformGraphics::get().is_window_focused());
 
       present_file_menu();
 
@@ -728,7 +728,7 @@ void App::unsaved() {
     break;
   case CANCEL:
     m_event_state = m_next_event_state = EventState::NONE;
-    Graphics::get().window_set_should_close(false);
+    PlatformGraphics::get().window_set_should_close(false);
     break;
   default:
     assert(false);
@@ -752,7 +752,7 @@ void App::redo() {
 void App::update_titlebar_title() {
   if (!m_document_manager.is_open()) {
     m_titlebar_filename = "";
-    Graphics::get().window_set_title("");
+    PlatformGraphics::get().window_set_title("");
     return;
   }
 
@@ -764,7 +764,7 @@ void App::update_titlebar_title() {
   title += m_document_manager.name();
 
   m_titlebar_filename = title;
-  Graphics::get().window_set_title(m_titlebar_filename.c_str());
+  PlatformGraphics::get().window_set_title(m_titlebar_filename.c_str());
 }
 
 #if THUNDER_AUTO_MACOS

@@ -5,7 +5,7 @@
 #include <ThunderAuto/document_edit_manager.hpp>
 #include <ThunderAuto/pages/page.hpp>
 #include <ThunderAuto/project_settings.hpp>
-#include <ThunderAuto/texture.hpp>
+#include <ThunderAuto/graphics/texture.hpp>
 
 class PathEditorPage : public Page {
   DocumentEditManager& m_history;
@@ -36,7 +36,7 @@ class PathEditorPage : public Page {
 
   ImVec2 m_field_size;
   float m_field_aspect_ratio = 1.f;
-  Texture m_field_texture;
+  std::unique_ptr<Texture> m_field_texture;
 
   ImVec2 m_field_offset;
   float m_field_scale = 1.f;

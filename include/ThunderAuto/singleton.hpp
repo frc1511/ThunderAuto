@@ -1,18 +1,24 @@
 #pragma once
 
-template <typename T>
-class Singleton {
+class SingletonBase {
  public:
-  static T& get() {
-    static T instance;
-    return instance;
-  }
+  virtual ~SingletonBase() = default;
 
-  Singleton(const Singleton&) = delete;
-  Singleton(Singleton&&) = delete;
-  Singleton& operator=(const Singleton&) = delete;
-  Singleton& operator=(Singleton&&) = delete;
+  SingletonBase(const SingletonBase&) = delete;
+  SingletonBase(SingletonBase&&) = delete;
+  SingletonBase& operator=(const SingletonBase&) = delete;
+  SingletonBase& operator=(SingletonBase&&) = delete;
 
  protected:
-  Singleton() = default;
+  SingletonBase() = default;
 };
+
+template <typename T>
+class Singleton : public SingletonBase {
+  public:
+    static T& get() {
+      static T instance;
+      return instance;
+    }
+};
+  

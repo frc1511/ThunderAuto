@@ -1,24 +1,15 @@
-#include <ThunderAuto/graphics.hpp>
+#include "graphics_directx11.hpp"
 
-#include <ThunderAuto/app.hpp>
+#include <wrl/client.h>
+#include <windowsx.h>
+
+#include <imgui_impl_dx11.h>
+#include <imgui_impl_win32.h>
 
 #define WINDOW_WIDTH 1300
 #define WINDOW_HEIGHT 800
 
 #define WINDOW_TITLE "ThunderAuto " THUNDER_AUTO_VERSION_STR
-
-#if THUNDER_AUTO_DIRECTX11
-#include <uxtheme.h>
-#include <vssym32.h>
-
-#include <imgui_impl_dx11.h>
-#include <imgui_impl_win32.h>
-#else  // THUNDER_AUTO_OPENGL
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h>
-#endif
-
-#if THUNDER_AUTO_DIRECTX11
 
 #define TITLEBAR_BUTTON_WIDTH 47
 #define TITLEBAR_BUTTON_ICON_SIZE 10
@@ -27,43 +18,15 @@ static UINT g_resize_width = 0, g_resize_height = 0;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
-#else
+void GraphicsDirectX11::init(App& app) {
+  if (m_init)
+    return;
 
-//
-// GL/GLSL versions.
-//
-#if defined(IMGUI_IMPL_OPENGL_ES2)
-#error "OpenGL ES 2 is not supported"
-#endif
-
-#if THUNDER_AUTO_MACOS || THUNDER_AUTO_WINDOWS_TEST_OPENGL_MACOS
-#define GLSL_VERSION "#version 150"
-#define GL_VERSION_MAJOR 3
-#define GL_VERSION_MINOR 2
-#else
-#define GLSL_VERSION "#version 130"
-#define GL_VERSION_MAJOR 3
-#define GL_VERSION_MINOR 0
-#endif
-
-#endif
-
-#if THUNDER_AUTO_WINDOWS
-
-HWND Graphics::hwnd() {
-#if THUNDER_AUTO_DIRECTX11
-  return m_hwnd;
-#else  // THUNDER_AUTO_OPENGL
-  return glfwGetWin32Window(m_window);
-#endif
-}
-
-#endif
-
-void Graphics::init(App& app) {
   m_app = &app;
 
-#if THUNDER_AUTO_DIRECTX11
+  //
+  // Window
+  //
   ZeroMemory(&m_wc, sizeof(m_wc));
   m_wc.cbSize = sizeof(WNDCLASSEXW);
   m_wc.lpszClassName = L"ThunderAuto";
@@ -89,43 +52,6 @@ void Graphics::init(App& app) {
   ShowWindow(m_hwnd, SW_SHOWDEFAULT);
   UpdateWindow(m_hwnd);
 
-#else  // THUNDER_AUTO_OPENGL
-  //
-  // GLFW.
-  //
-  glfwSetErrorCallback([](int error, const char* description) {
-    fprintf(stderr, "GLFW Error %d: %s\n", error, description);
-  });
-
-  if (!glfwInit()) {
-    exit(1);
-  }
-
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GL_VERSION_MAJOR);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GL_VERSION_MINOR);
-
-#if THUNDER_AUTO_MACOS || THUNDER_AUTO_WINDOWS_TEST_OPENGL_MACOS
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);  // Required on Mac
-#endif
-
-  // Initialize window.
-  m_window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE,
-                              nullptr, nullptr);
-  if (!m_window)
-    exit(1);
-
-  glfwSetWindowSizeLimits(m_window, 700, 500, GLFW_DONT_CARE, GLFW_DONT_CARE);
-
-  glfwMakeContextCurrent(m_window);
-
-  // VSync.
-  glfwSwapInterval(true);
-
-  // Load OpenGL functions.
-  gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-#endif
-
   //
   // Imgui.
   //
@@ -141,18 +67,30 @@ void Graphics::init(App& app) {
     io->ConfigWindowsMoveFromTitleBarOnly = true;
   }
 
-#if THUNDER_AUTO_DIRECTX11
   ImGui_ImplWin32_Init(m_hwnd);
   ImGui_ImplDX11_Init(m_device, m_device_context);
 
-#else  // THUNDER_AUTO_OPENGL
-  ImGui_ImplGlfw_InitForOpenGL(m_window, true);
-  ImGui_ImplOpenGL3_Init(GLSL_VERSION);
-#endif
+  m_init = true;
 }
 
-bool Graphics::poll_events() {
-#if THUNDER_AUTO_DIRECTX11
+void GraphicsDirectX11::deinit() {
+  if (!m_init)
+    return;
+
+  ImGui_ImplDX11_Shutdown();
+  ImGui_ImplWin32_Shutdown();
+
+  ImGui::DestroyContext();
+
+  deinit_directx();
+  DestroyWindow(m_hwnd);
+  UnregisterClassW(m_wc.lpszClassName, m_wc.hInstance);
+}
+
+bool GraphicsDirectX11::poll_events() {
+  if (!m_init)
+    return false;
+
   MSG msg;
   while (PeekMessage(&msg, nullptr, 0U, 0U, PM_REMOVE)) {
     TranslateMessage(&msg);
@@ -164,7 +102,7 @@ bool Graphics::poll_events() {
 
   if (m_swap_chain_occluded &&
       m_swap_chain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED) {
-    ::Sleep(10);
+    Sleep(10);
     return false;
   }
   m_swap_chain_occluded = false;
@@ -177,31 +115,26 @@ bool Graphics::poll_events() {
     init_render_targets();
   }
   return false;
-
-#else
-  glfwPollEvents();
-  return glfwWindowShouldClose(m_window);
-#endif
 }
 
-void Graphics::begin_frame() {
-#if THUNDER_AUTO_DIRECTX11
+void GraphicsDirectX11::begin_frame() {
+  if (!m_init)
+    return;
+
   ImGui_ImplDX11_NewFrame();
   ImGui_ImplWin32_NewFrame();
-#else  // THUNDER_AUTO_OPENGL
-  ImGui_ImplOpenGL3_NewFrame();
-  ImGui_ImplGlfw_NewFrame();
-#endif
 
   ImGui::NewFrame();
 }
 
-void Graphics::end_frame() {
+void GraphicsDirectX11::end_frame() {
+  if (!m_init)
+    return;
+
   ImGui::Render();
 
   const ImVec4 clear_color = ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
 
-#if THUNDER_AUTO_DIRECTX11
   const float clear_color_with_alpha[4] = {
       clear_color.x * clear_color.w, clear_color.y * clear_color.w,
       clear_color.z * clear_color.w, clear_color.w};
@@ -223,130 +156,51 @@ void Graphics::end_frame() {
 
   HRESULT hr = m_swap_chain->Present(1, 0);  // Present with vsync
   m_swap_chain_occluded = (hr == DXGI_STATUS_OCCLUDED);
+}
 
-#else  // THUNDER_AUTO_OPENGL
-  int buf_width, buf_height;
-  glfwGetFramebufferSize(m_window, &buf_width, &buf_height);
+void GraphicsDirectX11::window_set_title(const char* title) {
+  if (!m_init)
+    return;
 
-  glViewport(0, 0, buf_width, buf_height);
-  glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w,
-               clear_color.z * clear_color.w, clear_color.w);
-  glClear(GL_COLOR_BUFFER_BIT);
+  SetWindowTextA(m_hwnd, title);
+}
 
-  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+void GraphicsDirectX11::window_set_should_close(bool value) {
+  if (!m_init)
+    return;
 
-  if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-    GLFWwindow* backup_current_context = glfwGetCurrentContext();
-    ImGui::UpdatePlatformWindows();
-    ImGui::RenderPlatformWindowsDefault();
-    glfwMakeContextCurrent(backup_current_context);
+  if (value) {
+    PostMessageW(m_hwnd, WM_CLOSE, 0, 0);
+  } else {
+    // ShowWindow(m_hwnd, SW_SHOW);
   }
-
-  glfwSwapBuffers(m_window);
-#endif
 }
 
-void Graphics::deinit() {
-#if THUNDER_AUTO_DIRECTX11
-  ImGui_ImplDX11_Shutdown();
-  ImGui_ImplWin32_Shutdown();
-#else  // THUNDER_AUTO_OPENGL
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
-#endif
+void GraphicsDirectX11::window_focus() {
+  if (!m_init)
+    return;
 
-  ImGui::DestroyContext();
-
-#if THUNDER_AUTO_DIRECTX11
-  deinit_directx();
-  DestroyWindow(m_hwnd);
-  UnregisterClassW(m_wc.lpszClassName, m_wc.hInstance);
-#else  // THUNDER_AUTO_OPENGL
-  glfwDestroyWindow(m_window);
-  glfwTerminate();
-#endif
+  SetForegroundWindow(m_hwnd);
+  SetFocus(m_hwnd);
 }
 
-ImVec2 Graphics::window_size() const {
-  int width = 0, height = 0;
-#if THUNDER_AUTO_DIRECTX11
-#else  // THUNDER_AUTO_OPENGL
-  glfwGetWindowSize(m_window, &width, &height);
-#endif
-  return ImVec2(width, height);
+bool GraphicsDirectX11::is_window_focused() {
+  if (!m_init)
+    return true;
+
+  return GetFocus() == m_hwnd;
 }
 
-bool Graphics::is_maximized() {
-#if THUNDER_AUTO_DIRECTX11
+bool GraphicsDirectX11::is_window_maximized() {
+  if (!m_init)
+    return false;
+
   WINDOWPLACEMENT placement;
   placement.length = sizeof(WINDOWPLACEMENT);
   if (GetWindowPlacement(m_hwnd, &placement)) {
     return placement.showCmd == SW_MAXIMIZE;
   }
-#endif
-  return false;
 }
-
-bool Graphics::is_focused() {
-#if THUNDER_AUTO_DIRECTX11
-  return GetFocus() == m_hwnd;
-#else  // THUNDER_AUTO_OPENGL
-  return glfwGetWindowAttrib(m_window, GLFW_FOCUSED) != 0;
-#endif
-}
-
-ImVec2 Graphics::window_pos() const {
-  int x = 0, y = 0;
-#if THUNDER_AUTO_DIRECTX11
-#else  // THUNDER_AUTO_OPENGL
-  glfwGetWindowPos(m_window, &x, &y);
-#endif
-  return ImVec2(x, y);
-}
-
-void Graphics::window_set_size(int width, int height) {
-#if THUNDER_AUTO_DIRECTX11
-  (void)width;
-  (void)height;
-#else  // THUNDER_AUTO_OPENGL
-  glfwSetWindowSize(m_window, width, height);
-#endif
-}
-
-void Graphics::window_set_pos(int x, int y) {
-#if THUNDER_AUTO_DIRECTX11
-  (void)x;
-  (void)y;
-#else  // THUNDER_AUTO_OPENGL
-  glfwSetWindowPos(m_window, x, y);
-#endif
-}
-
-void Graphics::window_set_title(const char* title) {
-#if THUNDER_AUTO_DIRECTX11
-  SetWindowTextA(m_hwnd, title);
-#else  // THUNDER_AUTO_OPENGL
-  glfwSetWindowTitle(m_window, title);
-#endif
-}
-
-void Graphics::window_focus() {
-#if THUNDER_AUTO_DIRECTX11
-#else  // THUNDER_AUTO_OPENGL
-  glfwFocusWindow(m_window);
-#endif
-}
-
-void Graphics::window_set_should_close(bool value) {
-#if THUNDER_AUTO_DIRECTX11
-  (void)value;
-  // TODO
-#else  // THUNDER_AUTO_OPENGL
-  glfwSetWindowShouldClose(m_window, value);
-#endif
-}
-
-#if THUNDER_AUTO_DIRECTX11  // DirectX 11 helper functions.
 
 static inline D2D_RECT_F to_d2d_rect(const RECT& rect) {
   return D2D1::RectF((float)rect.left, (float)rect.top, (float)rect.right,
@@ -371,7 +225,7 @@ static D2D_RECT_F get_centered_rect_in_rect(const D2D_RECT_F& outer_rect,
   return center;
 }
 
-void Graphics::draw_titlebar_buttons() {
+void GraphicsDirectX11::draw_titlebar_buttons() {
   HRESULT hr;
   D2D1_BRUSH_PROPERTIES brush_props;
   brush_props.opacity = 1.f;
@@ -404,7 +258,7 @@ void Graphics::draw_titlebar_buttons() {
 
   Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> button_icon_brush;
   D2D1_COLOR_F button_icon_color = *(D2D1_COLOR_F*)&style.Colors[ImGuiCol_Text];
-  if (!is_focused())
+  if (!is_window_focused())
     button_icon_color.a = .5f;
   hr = m_d2d_render_target->CreateSolidColorBrush(
       &button_icon_color, &brush_props, &button_icon_brush);
@@ -438,13 +292,15 @@ void Graphics::draw_titlebar_buttons() {
   draw_titlebar_close_icon(close_rect, button_icon_brush.Get());
 }
 
-void Graphics::draw_titlebar_button_hover(const D2D_RECT_F& button_rect,
-                                          ID2D1SolidColorBrush* brush) {
+void GraphicsDirectX11::draw_titlebar_button_hover(
+    const D2D_RECT_F& button_rect,
+    ID2D1SolidColorBrush* brush) {
   m_d2d_render_target->FillRectangle(&button_rect, brush);
 }
 
-void Graphics::draw_titlebar_minimize_icon(const D2D_RECT_F& button_rect,
-                                           ID2D1SolidColorBrush* brush) {
+void GraphicsDirectX11::draw_titlebar_minimize_icon(
+    const D2D_RECT_F& button_rect,
+    ID2D1SolidColorBrush* brush) {
   UINT dpi = GetDpiForWindow(m_hwnd);
   int icon_size = dpi_scale(TITLEBAR_BUTTON_ICON_SIZE, dpi);
 
@@ -456,9 +312,10 @@ void Graphics::draw_titlebar_minimize_icon(const D2D_RECT_F& button_rect,
   m_d2d_render_target->DrawLine(line_begin, line_end, brush);
 }
 
-void Graphics::draw_titlebar_maximize_icon(const D2D_RECT_F& button_rect,
-                                           ID2D1SolidColorBrush* bg_brush,
-                                           ID2D1SolidColorBrush* icon_brush) {
+void GraphicsDirectX11::draw_titlebar_maximize_icon(
+    const D2D_RECT_F& button_rect,
+    ID2D1SolidColorBrush* bg_brush,
+    ID2D1SolidColorBrush* icon_brush) {
   UINT dpi = GetDpiForWindow(m_hwnd);
   int icon_size = dpi_scale(TITLEBAR_BUTTON_ICON_SIZE, dpi);
 
@@ -467,7 +324,7 @@ void Graphics::draw_titlebar_maximize_icon(const D2D_RECT_F& button_rect,
 
   int box_corner_radius = dpi_scale(1, dpi);
 
-  if (!is_maximized()) {
+  if (!is_window_maximized()) {
     D2D1_ROUNDED_RECT icon_rect_rounded =
         D2D1::RoundedRect(icon_rect, box_corner_radius, box_corner_radius);
     m_d2d_render_target->DrawRoundedRectangle(&icon_rect_rounded, icon_brush);
@@ -494,8 +351,8 @@ void Graphics::draw_titlebar_maximize_icon(const D2D_RECT_F& button_rect,
   m_d2d_render_target->DrawRoundedRectangle(&front_rect_rounded, icon_brush);
 }
 
-void Graphics::draw_titlebar_close_icon(const D2D_RECT_F& button_rect,
-                                        ID2D1SolidColorBrush* brush) {
+void GraphicsDirectX11::draw_titlebar_close_icon(const D2D_RECT_F& button_rect,
+                                                 ID2D1SolidColorBrush* brush) {
   UINT dpi = GetDpiForWindow(m_hwnd);
   int icon_size = dpi_scale(TITLEBAR_BUTTON_ICON_SIZE, dpi);
 
@@ -515,7 +372,7 @@ void Graphics::draw_titlebar_close_icon(const D2D_RECT_F& button_rect,
   m_d2d_render_target->DrawLine(line_begin, line_end, brush);
 }
 
-bool Graphics::init_directx() {
+bool GraphicsDirectX11::init_directx() {
   if (!init_d3d_and_swapchain()) {
     deinit_swapchain();
     deinit_d3d();
@@ -534,14 +391,14 @@ bool Graphics::init_directx() {
   return true;
 }
 
-void Graphics::deinit_directx() {
+void GraphicsDirectX11::deinit_directx() {
   deinit_render_targets();
   deinit_swapchain();
   deinit_d3d();
   deinit_d2d();
 }
 
-bool Graphics::init_d3d_and_swapchain() {
+bool GraphicsDirectX11::init_d3d_and_swapchain() {
   // Setup swap chain
   DXGI_SWAP_CHAIN_DESC sd;
   ZeroMemory(&sd, sizeof(sd));
@@ -553,11 +410,11 @@ bool Graphics::init_d3d_and_swapchain() {
   sd.BufferDesc.RefreshRate.Denominator = 1;
   sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
   sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-  sd.OutputWindow = hwnd();
+  sd.OutputWindow = m_hwnd;
   sd.SampleDesc.Count = 1;
   sd.SampleDesc.Quality = 0;
   sd.Windowed = TRUE;
-  sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+  sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
   UINT createDeviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 #ifndef NDEBUG
@@ -582,14 +439,14 @@ bool Graphics::init_d3d_and_swapchain() {
   return res == S_OK;
 }
 
-void Graphics::deinit_swapchain() {
+void GraphicsDirectX11::deinit_swapchain() {
   if (m_swap_chain) {
     m_swap_chain->Release();
     m_swap_chain = nullptr;
   }
 }
 
-void Graphics::deinit_d3d() {
+void GraphicsDirectX11::deinit_d3d() {
   if (m_device_context) {
     m_device_context->Release();
     m_device_context = nullptr;
@@ -600,7 +457,7 @@ void Graphics::deinit_d3d() {
   }
 }
 
-bool Graphics::init_d2d() {
+bool GraphicsDirectX11::init_d2d() {
   D2D1_FACTORY_OPTIONS d2dOptions = {};
 #ifndef NDEBUG
   d2dOptions.debugLevel = D2D1_DEBUG_LEVEL_INFORMATION;
@@ -611,24 +468,24 @@ bool Graphics::init_d2d() {
   return res == S_OK;
 }
 
-void Graphics::deinit_d2d() {
+void GraphicsDirectX11::deinit_d2d() {
   if (m_d2d_factory) {
     m_d2d_factory->Release();
     m_d2d_factory = nullptr;
   }
 }
 
-void Graphics::init_render_targets() {
+void GraphicsDirectX11::init_render_targets() {
   init_d3d_render_target();
   init_d2d_render_target();
 }
 
-void Graphics::deinit_render_targets() {
+void GraphicsDirectX11::deinit_render_targets() {
   deinit_d3d_render_target();
   deinit_d2d_render_target();
 }
 
-void Graphics::init_d3d_render_target() {
+void GraphicsDirectX11::init_d3d_render_target() {
   ID3D11Texture2D* pBackBuffer;
   m_swap_chain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
   m_device->CreateRenderTargetView(pBackBuffer, nullptr,
@@ -636,14 +493,14 @@ void Graphics::init_d3d_render_target() {
   pBackBuffer->Release();
 }
 
-void Graphics::deinit_d3d_render_target() {
+void GraphicsDirectX11::deinit_d3d_render_target() {
   if (m_main_render_target_view) {
     m_main_render_target_view->Release();
     m_main_render_target_view = nullptr;
   }
 }
 
-void Graphics::init_d2d_render_target() {
+void GraphicsDirectX11::init_d2d_render_target() {
   HRESULT res;
 
   IDXGISurface* dxgiSurface;
@@ -664,21 +521,21 @@ void Graphics::init_d2d_render_target() {
   dxgiSurface->Release();
 }
 
-void Graphics::deinit_d2d_render_target() {
+void GraphicsDirectX11::deinit_d2d_render_target() {
   if (m_d2d_render_target) {
     m_d2d_render_target->Release();
     m_d2d_render_target = nullptr;
   }
 }
 
-RECT Graphics::get_titlebar_rect() {
+RECT GraphicsDirectX11::get_titlebar_rect() {
   RECT rect;
   GetClientRect(m_hwnd, &rect);
   rect.bottom = rect.top + m_app->menu_bar_height();
   return rect;
 }
 
-TitleBarButtonRects Graphics::get_title_bar_button_rects() {
+TitleBarButtonRects GraphicsDirectX11::get_title_bar_button_rects() {
   UINT dpi = GetDpiForWindow(m_hwnd);
   TitleBarButtonRects button_rects;
 
@@ -704,7 +561,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam))
     return true;
 
-  Graphics& graphics = Graphics::get();
+  GraphicsDirectX11& graphics = GraphicsDirectX11::get();
   App* app = graphics.m_app;
 
   TitleBarButton hovered_button =
@@ -727,7 +584,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
       requested_client_rect->left += frame_x + padding;
       requested_client_rect->bottom -= frame_y + padding;
 
-      if (graphics.is_maximized()) {
+      if (graphics.is_window_maximized()) {
         requested_client_rect->top += padding;
       }
 
@@ -834,7 +691,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
         ShowWindow(hwnd, SW_MINIMIZE);
         return 0;
       } else if (hovered_button == BUTTON_MAXIMIZE) {
-        int mode = graphics.is_maximized() ? SW_NORMAL : SW_MAXIMIZE;
+        int mode = graphics.is_window_maximized() ? SW_NORMAL : SW_MAXIMIZE;
         ShowWindow(hwnd, mode);
         return 0;
       }
@@ -897,5 +754,3 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 
   return DefWindowProcW(hwnd, msg, wparam, lparam);
 }
-
-#endif

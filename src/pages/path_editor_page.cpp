@@ -84,7 +84,7 @@ void PathEditorPage::setup_field(const ProjectSettings& settings) {
     replace_macro(image_path, "PROJECT_DIR",
                   settings.path.parent_path().string());
 
-    m_field_texture.load_from_file(image_path.c_str());
+    m_field_texture = PlatformTexture::make(image_path.c_str());
   } else {
     unsigned char* image_data_buf = nullptr;
     std::size_t image_data_size = 0;
@@ -108,11 +108,11 @@ void PathEditorPage::setup_field(const ProjectSettings& settings) {
         break;
     }
 
-    m_field_texture.load_from_memory(image_data_buf, image_data_size);
+    m_field_texture = PlatformTexture::make(image_data_buf, image_data_size);
   }
 
-  m_field_aspect_ratio = static_cast<float>(m_field_texture.width()) /
-                         static_cast<float>(m_field_texture.height());
+  m_field_aspect_ratio = static_cast<float>(m_field_texture->width()) /
+                         static_cast<float>(m_field_texture->height());
 
   if (!m_field_texture) {
     puts("Failed to load field image!!\n");
@@ -319,7 +319,7 @@ void PathEditorPage::present_field(ImRect bb) {
   ImDrawList* draw_list(ImGui::GetWindowDrawList());
 
   // Background image.
-  draw_list->AddImage(m_field_texture.id(), bb.Min, bb.Max);
+  draw_list->AddImage(m_field_texture->id(), bb.Min, bb.Max);
 }
 
 void PathEditorPage::present_curve(ImRect bb) {

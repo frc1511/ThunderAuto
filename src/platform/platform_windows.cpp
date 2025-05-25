@@ -1,6 +1,7 @@
 #include <ThunderAuto/platform/platform_windows.hpp>
 
-#include <ThunderAuto/graphics.hpp>
+#include <ThunderAuto/graphics/graphics.hpp>
+#include <Windows.h>
 
 std::string
 PlatformWindows::open_file_dialog(FileType type,
@@ -10,12 +11,14 @@ PlatformWindows::open_file_dialog(FileType type,
 
   create_filter(filter_buffer, &filter_buffer_index, extensions);
 
+  HWND hwnd = reinterpret_cast<HWND>(PlatformGraphics::get().get_platform_handle());
+
   OPENFILENAMEA ofn;
   CHAR sz_file[260] = {0};
   CHAR current_dir[256] = {0};
   ZeroMemory(&ofn, sizeof(OPENFILENAME));
   ofn.lStructSize = sizeof(OPENFILENAME);
-  ofn.hwndOwner = Graphics::get().hwnd();
+  ofn.hwndOwner = hwnd;
   ofn.lpstrFile = sz_file;
   ofn.nMaxFile = sizeof(sz_file);
   if (GetCurrentDirectoryA(256, current_dir)) {
@@ -40,12 +43,14 @@ PlatformWindows::save_file_dialog(const FileExtensionList& extensions) {
 
   create_filter(filter_buffer, &filter_buffer_index, extensions);
 
+  HWND hwnd = reinterpret_cast<HWND>(PlatformGraphics::get().get_platform_handle());
+
   OPENFILENAMEA ofn;
   CHAR sz_file[260] = {0};
   CHAR current_dir[256] = {0};
   ZeroMemory(&ofn, sizeof(OPENFILENAME));
   ofn.lStructSize = sizeof(OPENFILENAME);
-  ofn.hwndOwner = Graphics::get().hwnd();
+  ofn.hwndOwner = hwnd;
   ofn.lpstrFile = sz_file;
   ofn.nMaxFile = sizeof(sz_file);
   if (GetCurrentDirectoryA(256, current_dir)) {

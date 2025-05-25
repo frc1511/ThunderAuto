@@ -1,6 +1,6 @@
 #include <ThunderAuto/platform/platform_manager.hpp>
 
-#include <ThunderAuto/graphics.hpp>
+#include <ThunderAuto/graphics/graphics.hpp>
 
 #if THUNDER_AUTO_MACOS
 #include <ThunderAuto/platform/platform_macos.hpp>
@@ -22,7 +22,7 @@ PlatformManager::open_file_dialog(FileType type,
   std::string result = m_impl->open_file_dialog(type, extensions);
 
   // Bring focus back to the window.
-  Graphics::get().window_focus();
+  PlatformGraphics::get().window_focus();
 
   return result;
 }
@@ -32,7 +32,7 @@ PlatformManager::save_file_dialog(const FileExtensionList& extensions) {
   std::string result = m_impl->save_file_dialog(extensions);
 
   // Bring focus back to the window.
-  Graphics::get().window_focus();
+  PlatformGraphics::get().window_focus();
 
   return result;
 }

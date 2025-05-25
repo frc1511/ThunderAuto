@@ -2,7 +2,7 @@
 #include <ThunderAuto/font_library.hpp>
 #include <ThunderAuto/thunder_auto.hpp>
 
-#include <ThunderAuto/graphics.hpp>
+#include <ThunderAuto/graphics/graphics.hpp>
 
 static void apply_imgui_style();
 static void load_fonts();
@@ -30,7 +30,7 @@ int _main(int argc, char** argv) {
   int exit_code = 0;
 
   App app;
-  Graphics::get().init(app);
+  PlatformGraphics::get().init(app);
 
   setup_data_handler(app);
 
@@ -45,7 +45,7 @@ int _main(int argc, char** argv) {
   // Main loop.
   //
   while (app.is_running()) {
-    if (Graphics::get().poll_events()) {
+    if (PlatformGraphics::get().poll_events()) {
       app.close();
     }
 
@@ -71,7 +71,7 @@ int _main(int argc, char** argv) {
     }
 
     // New Frame.
-    Graphics::get().begin_frame();
+    PlatformGraphics::get().begin_frame();
 
     ImGuiViewport* viewport = ImGui::GetMainViewport();
 
@@ -118,15 +118,17 @@ int _main(int argc, char** argv) {
     ImGui::End();
 
     // Render frame.
-    Graphics::get().end_frame();
+    PlatformGraphics::get().end_frame();
   }
 
-  Graphics::get().deinit();
+  PlatformGraphics::get().deinit();
 
   return exit_code;
 }
 
 #if THUNDER_AUTO_WINDOWS
+#include <Windows.h>
+
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine,
             int nShowCmd) {
   (void)hInstance;

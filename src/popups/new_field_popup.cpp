@@ -60,12 +60,12 @@ void NewFieldPopup::present(bool* running) {
     ImGui::SameLine();
 
     if (ImGui::Button("Ok")) {
-      m_field_texture.load_from_file(img_path_buf);
+      m_field_texture = PlatformTexture::make(img_path_buf);
       if (m_field_texture) {
         m_selected_image = true;
 
-        m_field_aspect_ratio = static_cast<float>(m_field_texture.width()) /
-                               static_cast<float>(m_field_texture.height());
+        m_field_aspect_ratio = static_cast<float>(m_field_texture->width()) /
+                               static_cast<float>(m_field_texture->height());
 
         m_field = Field(img_path_buf, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f),
                         m_field_size);
@@ -112,7 +112,7 @@ void NewFieldPopup::present_field_setup() {
   ImGui::ItemSize(bb);
   if (!ImGui::ItemAdd(bb, 0)) return;
 
-  draw_list->AddImage(m_field_texture.id(), bb.Min, bb.Max);
+  draw_list->AddImage(m_field_texture->id(), bb.Min, bb.Max);
 
   ImVec2 mouse = io.MousePos;
   auto move_point = [&](ImVec2 pt) -> ImVec2 {

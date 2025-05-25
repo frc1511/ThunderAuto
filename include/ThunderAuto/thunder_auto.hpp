@@ -22,6 +22,10 @@
 #include <vector>
 
 using namespace std::literals;
+using namespace std::chrono_literals;
+using namespace std::string_literals;
+using namespace std::string_view_literals;
+
 using std::max;
 using std::min;
 
@@ -31,22 +35,4 @@ using std::min;
 #include <imgui_internal.h>
 #include <imgui_raii.h>
 
-#if THUNDER_AUTO_WINDOWS
-#include <Windows.h>
-#endif
-
-#if THUNDER_AUTO_DIRECTX11
-#include <d3d11.h>
-#include <d2d1.h>
-#include <tchar.h>
-#include <wrl/client.h>
-#include <windowsx.h>
-#else // THUNDER_AUTO_OPENGL
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#if THUNDER_AUTO_WINDOWS
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
-#endif
-#endif
-
+#include <ThunderAuto/macros.hpp>

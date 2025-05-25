@@ -4,7 +4,7 @@
 #include <ThunderAuto/field.hpp>
 #include <ThunderAuto/platform/platform_manager.hpp>
 #include <ThunderAuto/popups/popup.hpp>
-#include <ThunderAuto/texture.hpp>
+#include <ThunderAuto/graphics/texture.hpp>
 
 class NewFieldPopup : public Popup {
   PlatformManager& m_platform_manager;
@@ -13,7 +13,7 @@ class NewFieldPopup : public Popup {
 
   bool m_selected_image = false;
 
-  Texture m_field_texture;
+  std::unique_ptr<Texture> m_field_texture;
   float m_field_aspect_ratio = 1;
   bool m_image_load_failed = false;
 
