@@ -6,14 +6,6 @@
 #include <imgui_impl_dx11.h>
 #include <imgui_impl_win32.h>
 
-#define WINDOW_WIDTH 1300
-#define WINDOW_HEIGHT 800
-
-#define WINDOW_TITLE "ThunderAuto " THUNDER_AUTO_VERSION_STR
-
-#define TITLEBAR_BUTTON_WIDTH 47
-#define TITLEBAR_BUTTON_ICON_SIZE 10
-
 static UINT g_resize_width = 0, g_resize_height = 0;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
@@ -23,6 +15,15 @@ void GraphicsDirectX11::init(App& app) {
     return;
 
   m_app = &app;
+
+  //
+  // Imgui.
+  //
+  IMGUI_CHECKVERSION();
+
+  ImGui::CreateContext();
+
+  ImGui_ImplWin32_EnableDpiAwareness();
 
   //
   // Window
@@ -39,9 +40,10 @@ void GraphicsDirectX11::init(App& app) {
   const DWORD ws =
       WS_THICKFRAME | WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_VISIBLE;
 
-  m_hwnd = CreateWindowExW(
-      WS_EX_APPWINDOW, m_wc.lpszClassName, L"" WINDOW_TITLE, ws, 100, 100,
-      WINDOW_WIDTH, WINDOW_HEIGHT, nullptr, nullptr, m_wc.hInstance, nullptr);
+  m_hwnd = CreateWindowExW(WS_EX_APPWINDOW, m_wc.lpszClassName,
+                           L"" DEFAULT_WINDOW_TITLE, ws, 100, 100,
+                           DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, nullptr,
+                           nullptr, m_wc.hInstance, nullptr);
 
   // Initialize DirectX
   if (!init_directx()) {
@@ -53,19 +55,11 @@ void GraphicsDirectX11::init(App& app) {
   UpdateWindow(m_hwnd);
 
   //
-  // Imgui.
+  // More ImGui setup.
   //
-  IMGUI_CHECKVERSION();
 
-  ImGui::CreateContext();
-
-  {
-    ImGuiIO* io = &ImGui::GetIO();
-    io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    io->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-    io->ConfigWindowsMoveFromTitleBarOnly = true;
-  }
+  apply_ui_config();
+  apply_ui_style();
 
   ImGui_ImplWin32_Init(m_hwnd);
   ImGui_ImplDX11_Init(m_device, m_device_context);
@@ -158,15 +152,67 @@ void GraphicsDirectX11::end_frame() {
   m_swap_chain_occluded = (hr == DXGI_STATUS_OCCLUDED);
 }
 
+float GraphicsDirectX11::dpi_scale() const {
+  if (!m_hwnd)
+    return 1.f;
+
+  return ImGui_ImplWin32_GetDpiScaleForHwnd(m_hwnd);
+}
+
+ImVec2 GraphicsDirectX11::window_size() const {
+  if (!m_hwnd)
+    return ImVec2(0, 0);
+
+  RECT rect;
+  GetClientRect(m_hwnd, &rect);
+  return ImVec2((float)(rect.right - rect.left),
+                (float)(rect.bottom - rect.top));
+}
+
+void GraphicsDirectX11::window_set_size(int width, int height) {
+  if (!m_hwnd)
+    return;
+
+  RECT rect;
+  GetClientRect(m_hwnd, &rect);
+  int x = rect.left;
+  int y = rect.top;
+
+  SetWindowPos(m_hwnd, nullptr, x, y, width, height,
+               SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOSENDCHANGING);
+}
+
+ImVec2 GraphicsDirectX11::window_position() const {
+  if (!m_hwnd)
+    return ImVec2(0, 0);
+
+  RECT rect;
+  GetWindowRect(m_hwnd, &rect);
+  return ImVec2((float)(rect.left), (float)(rect.top));
+}
+
+void GraphicsDirectX11::window_set_position(int x, int y) {
+  if (!m_hwnd)
+    return;
+
+  RECT rect;
+  GetClientRect(m_hwnd, &rect);
+  int width = rect.right - rect.left;
+  int height = rect.bottom - rect.top;
+
+  SetWindowPos(m_hwnd, nullptr, x, y, width, height,
+               SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOSENDCHANGING);
+}
+
 void GraphicsDirectX11::window_set_title(const char* title) {
-  if (!m_init)
+  if (!m_hwnd)
     return;
 
   SetWindowTextA(m_hwnd, title);
 }
 
 void GraphicsDirectX11::window_set_should_close(bool value) {
-  if (!m_init)
+  if (!m_hwnd)
     return;
 
   if (value) {
@@ -177,7 +223,7 @@ void GraphicsDirectX11::window_set_should_close(bool value) {
 }
 
 void GraphicsDirectX11::window_focus() {
-  if (!m_init)
+  if (!m_hwnd)
     return;
 
   SetForegroundWindow(m_hwnd);
@@ -185,14 +231,14 @@ void GraphicsDirectX11::window_focus() {
 }
 
 bool GraphicsDirectX11::is_window_focused() {
-  if (!m_init)
+  if (!m_hwnd)
     return true;
 
   return GetFocus() == m_hwnd;
 }
 
 bool GraphicsDirectX11::is_window_maximized() {
-  if (!m_init)
+  if (!m_hwnd)
     return false;
 
   WINDOWPLACEMENT placement;
@@ -200,6 +246,8 @@ bool GraphicsDirectX11::is_window_maximized() {
   if (GetWindowPlacement(m_hwnd, &placement)) {
     return placement.showCmd == SW_MAXIMIZE;
   }
+
+  return false;
 }
 
 static inline D2D_RECT_F to_d2d_rect(const RECT& rect) {
@@ -212,6 +260,9 @@ static D2D_RECT_F get_centered_rect_in_rect(const D2D_RECT_F& outer_rect,
                                             float center_height) {
   float outer_width = outer_rect.right - outer_rect.left;
   float outer_height = outer_rect.bottom - outer_rect.top;
+
+  center_width = min(center_width, outer_width);
+  center_height = min(center_height, outer_height);
 
   float padding_x = (outer_width - center_width) / 2.f;
   float padding_y = (outer_height - center_height) / 2.f;
@@ -301,8 +352,8 @@ void GraphicsDirectX11::draw_titlebar_button_hover(
 void GraphicsDirectX11::draw_titlebar_minimize_icon(
     const D2D_RECT_F& button_rect,
     ID2D1SolidColorBrush* brush) {
-  UINT dpi = GetDpiForWindow(m_hwnd);
-  int icon_size = dpi_scale(TITLEBAR_BUTTON_ICON_SIZE, dpi);
+  const ImGuiStyle& style = ImGui::GetStyle();
+  float icon_size = style.UserSizes[UISIZE_TITLEBAR_BUTTON_ICON_SIZE];
 
   D2D_RECT_F icon_rect = get_centered_rect_in_rect(button_rect, icon_size, 0);
 
@@ -316,13 +367,14 @@ void GraphicsDirectX11::draw_titlebar_maximize_icon(
     const D2D_RECT_F& button_rect,
     ID2D1SolidColorBrush* bg_brush,
     ID2D1SolidColorBrush* icon_brush) {
-  UINT dpi = GetDpiForWindow(m_hwnd);
-  int icon_size = dpi_scale(TITLEBAR_BUTTON_ICON_SIZE, dpi);
+  const ImGuiStyle& style = ImGui::GetStyle();
+  float icon_size = style.UserSizes[UISIZE_TITLEBAR_BUTTON_ICON_SIZE];
 
   D2D_RECT_F icon_rect =
       get_centered_rect_in_rect(button_rect, icon_size, icon_size);
 
-  int box_corner_radius = dpi_scale(1, dpi);
+  int box_corner_radius =
+      style.UserSizes[UISIZE_TITLEBAR_BUTTON_MAXIMIZE_ICON_BOX_ROUNDING];
 
   if (!is_window_maximized()) {
     D2D1_ROUNDED_RECT icon_rect_rounded =
@@ -331,7 +383,8 @@ void GraphicsDirectX11::draw_titlebar_maximize_icon(
     return;
   }
 
-  int box_offset = dpi_scale(2, dpi);
+  float box_offset =
+      style.UserSizes[UISIZE_TITLEBAR_BUTTON_MAXIMIZE_ICON_BOX_OFFSET];
 
   D2D_RECT_F front_rect = icon_rect;
   front_rect.right -= box_offset;
@@ -353,8 +406,8 @@ void GraphicsDirectX11::draw_titlebar_maximize_icon(
 
 void GraphicsDirectX11::draw_titlebar_close_icon(const D2D_RECT_F& button_rect,
                                                  ID2D1SolidColorBrush* brush) {
-  UINT dpi = GetDpiForWindow(m_hwnd);
-  int icon_size = dpi_scale(TITLEBAR_BUTTON_ICON_SIZE, dpi);
+  const ImGuiStyle& style = ImGui::GetStyle();
+  float icon_size = style.UserSizes[UISIZE_TITLEBAR_BUTTON_ICON_SIZE];
 
   D2D_RECT_F icon_rect =
       get_centered_rect_in_rect(button_rect, icon_size, icon_size);
@@ -506,14 +559,11 @@ void GraphicsDirectX11::init_d2d_render_target() {
   IDXGISurface* dxgiSurface;
   res = m_swap_chain->GetBuffer(0, IID_PPV_ARGS(&dxgiSurface));
 
-  // Create the DXGI Surface Render Target.
-  float dpi = GetDpiForWindow(m_hwnd);
-
   D2D1_RENDER_TARGET_PROPERTIES props = D2D1::RenderTargetProperties(
       D2D1_RENDER_TARGET_TYPE_DEFAULT,
       D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM,
                         D2D1_ALPHA_MODE_PREMULTIPLIED),
-      dpi, dpi);
+      USER_DEFAULT_SCREEN_DPI, USER_DEFAULT_SCREEN_DPI);
 
   res = m_d2d_factory->CreateDxgiSurfaceRenderTarget(dxgiSurface, &props,
                                                      &m_d2d_render_target);
@@ -539,7 +589,8 @@ TitleBarButtonRects GraphicsDirectX11::get_title_bar_button_rects() {
   UINT dpi = GetDpiForWindow(m_hwnd);
   TitleBarButtonRects button_rects;
 
-  int button_width = dpi_scale(TITLEBAR_BUTTON_WIDTH, dpi);
+  const ImGuiStyle& style = ImGui::GetStyle();
+  int button_width = (int)style.UserSizes[UISIZE_TITLEBAR_BUTTON_WIDTH];
   button_rects.close = get_titlebar_rect();
 
   button_rects.close.left = button_rects.close.right - button_width;
@@ -637,15 +688,20 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
       return HTCLIENT;
     }
     case WM_GETMINMAXINFO: {
-      UINT dpi = GetDpiForWindow(hwnd);
-      int menu_bar_width = app->menu_bar_width();  // dpi?
-      int button_width = graphics.dpi_scale(TITLEBAR_BUTTON_WIDTH, dpi);
+      int menu_bar_width = app->menu_bar_width();
+
+      const ImGuiStyle& style = ImGui::GetStyle();
+      int button_width = (int)style.UserSizes[UISIZE_TITLEBAR_BUTTON_WIDTH];
+
+      int drag_area_width =
+          (int)style.UserSizes[UISIZE_TITLEBAR_DRAG_AREA_WIDTH];
+      int min_width = (int)style.UserSizes[UISIZE_WINDOW_MIN_WIDTH];
+      int min_height = (int)style.UserSizes[UISIZE_WINDOW_MIN_HEIGHT];
 
       MINMAXINFO* minmax = reinterpret_cast<MINMAXINFO*>(lparam);
       minmax->ptMinTrackSize.x =
-          max(menu_bar_width + 3 * button_width + graphics.dpi_scale(30, dpi),
-              graphics.dpi_scale(500, dpi));
-      minmax->ptMinTrackSize.y = graphics.dpi_scale(400, dpi);
+          max(menu_bar_width + 3 * button_width + drag_area_width, min_width);
+      minmax->ptMinTrackSize.y = min_height;
       return 0;
     }
     case WM_NCMOUSEMOVE: {
@@ -743,6 +799,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
       if ((wparam & 0xfff0) == SC_KEYMENU)  // Disable ALT application menu
         return 0;
       break;
+    case WM_DPICHANGED: {
+      RECT* rect = (RECT*)lparam;
+      SetWindowPos(hwnd, NULL, rect->left, rect->top, rect->right - rect->left,
+                   rect->bottom - rect->top, SWP_NOZORDER);
+      float scale =
+          static_cast<float>(LOWORD(wparam)) / USER_DEFAULT_SCREEN_DPI;
+      graphics.update_ui_scale(scale);
+      return 0;
+    }
     case WM_CLOSE:
       app->close();
       return 0;

@@ -29,8 +29,8 @@ class GraphicsOpenGL final : public Graphics, public Singleton<GraphicsOpenGL> {
   ImVec2 window_size() const override;
   void window_set_size(int width, int height) override;
 
-  ImVec2 window_pos() const override;
-  void window_set_pos(int x, int y) override;
+  ImVec2 window_position() const override;
+  void window_set_position(int x, int y) override;
 
   void window_set_title(const char* title) override;
   void window_set_should_close(bool value) override;

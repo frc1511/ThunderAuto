@@ -30,7 +30,7 @@ class GraphicsDirectX11 final : public Graphics,
   ID2D1Factory* m_d2d_factory = nullptr;
   ID2D1RenderTarget* m_d2d_render_target = nullptr;
 
-  HWND m_hwnd;
+  HWND m_hwnd = nullptr;
   WNDCLASSEXW m_wc = {};
 
   bool m_swap_chain_occluded = false;
@@ -50,11 +50,13 @@ class GraphicsDirectX11 final : public Graphics,
   void begin_frame() override;
   void end_frame() override;
 
-  // ImVec2 window_size() const override;
-  // void window_set_size(int width, int height) override;
+  float dpi_scale() const;
 
-  // ImVec2 window_pos() const override;
-  // void window_set_pos(int x, int y) override;
+  ImVec2 window_size() const override;
+  void window_set_size(int width, int height) override;
+
+  ImVec2 window_position() const override;
+  void window_set_position(int x, int y) override;
 
   void window_set_title(const char* title) override;
   void window_set_should_close(bool value) override;
@@ -106,10 +108,6 @@ class GraphicsDirectX11 final : public Graphics,
 
   RECT get_titlebar_rect();
   TitleBarButtonRects get_title_bar_button_rects();
-
-  static inline int dpi_scale(int value, UINT dpi) {
-    return static_cast<int>(value * dpi / 96.f);
-  }
 
   friend LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 };

@@ -114,6 +114,8 @@ public:
 
 private:
   void present_menu_bar();
+  void present_menu_bar_title();
+
   void present_file_menu();
   void present_edit_menu();
   void present_view_menu();

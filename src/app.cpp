@@ -6,9 +6,6 @@
 
 #include <ThunderAuto/graphics/graphics.hpp>
 
-#define TITLEBAR_HEIGHT     20.f
-#define WINDOW_BUTTON_WIDTH 47.f
-
 void App::setup_dockspace(ImGuiID dockspace_id) {
   ImGuiViewport* viewport = ImGui::GetMainViewport();
 
@@ -44,7 +41,8 @@ void App::setup_dockspace(ImGuiID dockspace_id) {
 void App::focus_was_changed(bool focused) {
   bool auto_export = m_document_manager.settings().auto_export;
 
-  if (focused || !auto_export) return;
+  if (focused || !auto_export)
+    return;
 
   m_export_success =
       m_document_edit_manager.current_state().export_all_paths_to_csv(
@@ -63,40 +61,41 @@ void App::present() {
 
   switch (m_event_state) {
     using enum EventState;
-  case NONE:
-    if (m_document_manager.is_open()) break;
+    case NONE:
+      if (m_document_manager.is_open())
+        break;
 
-    m_event_state = WELCOME;
-    [[fallthrough]];
-  case WELCOME:
-    welcome();
-    break;
-  case NEW_PROJECT:
-    new_project();
-    break;
-  case NEW_FIELD:
-    new_field();
-    break;
-  case OPEN_PROJECT:
-    open_project();
-    break;
-  case CLOSE_PROJECT:
-    if (settings.auto_export) {
-      (void)m_document_edit_manager.current_state().export_all_paths_to_csv(
-          settings);
-    }
-    m_document_manager.close();
-    update_titlebar_title();
-    m_event_state = WELCOME;
-    break;
-  case CLOSE_EVERYTHING:
-    m_running = false;
-    break;
-  case UNSAVED:
-    unsaved();
-    break;
-  default:
-    break;
+      m_event_state = WELCOME;
+      [[fallthrough]];
+    case WELCOME:
+      welcome();
+      break;
+    case NEW_PROJECT:
+      new_project();
+      break;
+    case NEW_FIELD:
+      new_field();
+      break;
+    case OPEN_PROJECT:
+      open_project();
+      break;
+    case CLOSE_PROJECT:
+      if (settings.auto_export) {
+        (void)m_document_edit_manager.current_state().export_all_paths_to_csv(
+            settings);
+      }
+      m_document_manager.close();
+      update_titlebar_title();
+      m_event_state = WELCOME;
+      break;
+    case CLOSE_EVERYTHING:
+      m_running = false;
+      break;
+    case UNSAVED:
+      unsaved();
+      break;
+    default:
+      break;
   }
 
   bool is_unsaved = m_document_manager.is_unsaved();
@@ -125,7 +124,9 @@ void App::close() {
   }
 }
 
-void App::data_clear() { m_recent_projects.clear(); }
+void App::data_clear() {
+  m_recent_projects.clear();
+}
 
 bool App::data_should_open(const char* name) {
   return strcmp(name, "RecentProjects") == 0;
@@ -133,7 +134,8 @@ bool App::data_should_open(const char* name) {
 
 void App::data_read_line(const char* line) {
   assert(line);
-  if (line[0] == '\0') return;
+  if (line[0] == '\0')
+    return;
 
   m_recent_projects.push_back(line);
 }
@@ -146,19 +148,24 @@ void App::data_write(const char* type_name, ImGuiTextBuffer* buf) {
   size_t i = 0;
   for (const std::string& project : m_recent_projects) {
     buf->appendf("%s\n", project.c_str());
-    if (++i >= 5) break;
+    if (++i >= 5)
+      break;
   }
 
   buf->append("\n");
 }
 
 void App::present_menu_bar() {
-  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,
-                      ImVec2(0.f, TITLEBAR_HEIGHT / 2));
+  const ImGuiStyle& style = ImGui::GetStyle();
 
-  if (ImGui::BeginMenuBar()) {
+  auto frame_padding = ImGui::Scoped::StyleVar(
+      ImGuiStyleVar_FramePadding,
+      ImVec2(0.0f, style.UserSizes[UISIZE_TITLEBAR_FRAME_PADDING]));
+
+  if (ImGui::BeginMainMenuBar()) {
     {
-      ImGuiScopedDisabled disabled(!PlatformGraphics::get().is_window_focused());
+      ImGuiScopedDisabled disabled(
+          !PlatformGraphics::get().is_window_focused());
 
       present_file_menu();
 
@@ -167,11 +174,14 @@ void App::present_menu_bar() {
         present_view_menu();
         present_path_menu();
 
-        ImGui::PushStyleVar(
-            ImGuiStyleVar_ItemSpacing,
-            ImVec2(ImGui::GetStyle().ItemSpacing.x, TITLEBAR_HEIGHT));
-        bool export_all_paths = ImGui::MenuItem("Export All Paths");
-        ImGui::PopStyleVar();
+        bool export_all_paths;
+        {
+          auto spacing = ImGui::Scoped::StyleVarY(
+              ImGuiStyleVar_ItemSpacing,
+              style.UserSizes[UISIZE_TITLEBAR_ITEM_SPACING]);
+
+          export_all_paths = ImGui::MenuItem("Export All Paths");
+        }
 
         if (export_all_paths) {
           m_export_success =
@@ -188,29 +198,133 @@ void App::present_menu_bar() {
       m_menu_bar_width = ImGui::GetCursorPosX();
     }
 
-    ImGui::EndMenuBar();
+    m_menu_bar_height = ImGui::GetWindowSize().y;
+
+#if THUNDER_AUTO_DIRECTX11  // Title bar is custom for DirectX11
+    present_menu_bar_title();
+#endif
+
+    ImGui::EndMainMenuBar();
+  }
+}
+
+void App::present_menu_bar_title() {
+  ImGuiWindow* win = ImGui::GetCurrentWindow();
+  if (win->SkipItems)
+    return;
+
+  ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+  ImGuiScopedDisabled disabled(!PlatformGraphics::get().is_window_focused());
+  // ImGui::PushFont(FontLibrary::get().bold_font);
+
+  const ImGuiStyle& style = ImGui::GetStyle();
+
+  const float spacer_width = ImGui::GetContentRegionAvail().x -
+                             3 * style.UserSizes[UISIZE_TITLEBAR_BUTTON_WIDTH];
+
+  float title_width = 0.f;
+  float filename_width = 0.f;
+  float app_name_width = 0.f;
+
+  const ImVec2 spacer_min(win->DC.CursorPos.x,
+                          win->DC.CursorPos.y + win->DC.CurrLineTextBaseOffset);
+
+  std::string begin_title;
+  std::string end_title;
+
+  const char* filename = m_titlebar_filename.c_str();
+  const ImVec2 filename_size = ImGui::CalcTextSize(filename);
+
+  static const char* elipsis = "...";
+  const ImVec2 elipsis_size = ImGui::CalcTextSize(elipsis);
+
+  static const char* dash = " - ";
+  const ImVec2 dash_size = ImGui::CalcTextSize(dash);
+
+  static const char* app_name = DEFAULT_WINDOW_TITLE;
+  const ImVec2 app_name_size = ImGui::CalcTextSize(app_name);
+
+  if (app_name_size.x >= spacer_width) {  // Nothing will fit.
+  } else if (elipsis_size.x + dash_size.x + app_name_size.x >= spacer_width ||
+             !*filename) {  // Just app name will fit
+    title_width = app_name_size.x;
+    app_name_width = app_name_size.x;
+
+    end_title = app_name;
+  } else if (filename_size.x + dash_size.x + app_name_size.x >=
+             spacer_width) {  // Some of the filename and app name will fit
+    title_width = spacer_width;
+    app_name_width = elipsis_size.x + dash_size.x + app_name_size.x;
+    filename_width = spacer_width - app_name_width;
+
+    begin_title = filename;
+    end_title = std::string(elipsis) + dash + app_name;
+
+  } else {  // Filename and app name will fit
+    title_width = filename_size.x + dash_size.x + app_name_size.x;
+    filename_width = filename_size.x;
+    app_name_width = dash_size.x + app_name_size.x;
+
+    begin_title = filename;
+    end_title = std::string(dash) + app_name;
   }
 
-  m_menu_bar_height = ImGui::GetItemRectSize().y;
+  const float spacer_edge_width = (spacer_width - title_width) / 2.f;
+  const float text_height = ImGui::GetTextLineHeight();
 
-  ImGui::PopStyleVar();
+  const ImVec2 begin_min(spacer_min.x + spacer_edge_width, spacer_min.y);
+  const ImVec2 begin_max(begin_min.x + filename_width,
+                         spacer_min.y + text_height);
+
+  const ImVec2 begin_size = begin_max - begin_min;
+
+  const ImVec2 end_min(begin_min.x + filename_width, spacer_min.y);
+  const ImVec2 end_max(end_min.x + app_name_width, spacer_min.y + text_height);
+
+  const ImVec2 end_size = end_max - end_min;
+
+  ImGui::PushID("Menu Spacer");
+
+  const ImRect spacer(spacer_min,
+                      spacer_min + ImVec2(spacer_width, text_height));
+  ImGui::ItemSize(spacer);
+  ImGui::ItemAdd(spacer, 0);
+
+  const char* begin_title_str = begin_title.c_str();
+  const char* end_title_str = end_title.c_str();
+
+  ImGui::RenderTextClipped(begin_min, begin_max, begin_title_str,
+                           begin_title_str + strlen(begin_title_str),
+                           &begin_size);
+  ImGui::RenderTextClipped(end_min, end_max, end_title_str,
+                           end_title_str + strlen(end_title_str), &end_size);
+
+  ImGui::PopID();
+
+  // ImGui::PopFont();
 }
 
 void App::present_pages() {
   if (m_document_manager.is_open()) {
-    if (m_show_actions) m_actions_page.present(&m_show_actions);
-    if (m_show_properties) m_properties_page.present(&m_show_properties);
-    if (m_show_path_manager) m_path_manager_page.present(&m_show_path_manager);
-    if (m_show_path_editor) m_path_editor_page.present(&m_show_path_editor);
-    if (m_show_settings) m_settings_page.present(&m_show_settings);
+    if (m_show_actions)
+      m_actions_page.present(&m_show_actions);
+    if (m_show_properties)
+      m_properties_page.present(&m_show_properties);
+    if (m_show_path_manager)
+      m_path_manager_page.present(&m_show_path_manager);
+    if (m_show_path_editor)
+      m_path_editor_page.present(&m_show_path_editor);
+    if (m_show_settings)
+      m_settings_page.present(&m_show_settings);
   }
 }
 
 #ifdef THUNDER_AUTO_MACOS
-#define CTRL_STR       "Cmd+"
+#define CTRL_STR "Cmd+"
 #define CTRL_SHIFT_STR "Cmd+Shift+"
 #else
-#define CTRL_STR       "Ctrl+"
+#define CTRL_STR "Ctrl+"
 #define CTRL_SHIFT_STR "Ctrl+Shift+"
 #endif
 
@@ -220,10 +334,15 @@ void App::present_file_menu() {
 
   ProjectSettings& settings = m_document_manager.settings();
 
-  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                      ImVec2(ImGui::GetStyle().ItemSpacing.x, TITLEBAR_HEIGHT));
-  bool show_menu = ImGui::BeginMenu("File");
-  ImGui::PopStyleVar();
+  bool show_menu;
+  {
+    const ImGuiStyle& style = ImGui::GetStyle();
+    auto spacing =
+        ImGui::Scoped::StyleVarY(ImGuiStyleVar_ItemSpacing,
+                                 style.UserSizes[UISIZE_TITLEBAR_ITEM_SPACING]);
+
+    show_menu = ImGui::BeginMenu("File");
+  }
 
   if (show_menu) {
     ImGui::MenuItem(ICON_FA_FILE "  New", CTRL_STR "N", &item_new);
@@ -245,8 +364,9 @@ void App::present_file_menu() {
         }
       }
       if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("Automatically save project\n"
-                          "when changes are made");
+        ImGui::SetTooltip(
+            "Automatically save project\n"
+            "when changes are made");
       }
 
       if (ImGui::MenuItem(ICON_FA_FILE_CSV "  Auto Export", nullptr,
@@ -263,8 +383,9 @@ void App::present_file_menu() {
         }
       }
       if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("Automatically export all paths\n"
-                          "when focus is lost");
+        ImGui::SetTooltip(
+            "Automatically export all paths\n"
+            "when focus is lost");
       }
 
       ImGui::Separator();
@@ -276,18 +397,28 @@ void App::present_file_menu() {
     ImGui::EndMenu();
   }
 
-  if (item_new) try_change_state(EventState::NEW_PROJECT);
-  if (item_open) try_change_state(EventState::OPEN_PROJECT);
-  if (item_save) m_document_manager.save();
-  if (item_save_as) save_as();
-  if (item_close) try_change_state(EventState::CLOSE_PROJECT);
+  if (item_new)
+    try_change_state(EventState::NEW_PROJECT);
+  if (item_open)
+    try_change_state(EventState::OPEN_PROJECT);
+  if (item_save)
+    m_document_manager.save();
+  if (item_save_as)
+    save_as();
+  if (item_close)
+    try_change_state(EventState::CLOSE_PROJECT);
 }
 
 void App::present_edit_menu() {
-  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                      ImVec2(ImGui::GetStyle().ItemSpacing.x, TITLEBAR_HEIGHT));
-  bool show_menu = ImGui::BeginMenu("Edit");
-  ImGui::PopStyleVar();
+  bool show_menu;
+  {
+    const ImGuiStyle& style = ImGui::GetStyle();
+    auto item_spacing =
+        ImGui::Scoped::StyleVarY(ImGuiStyleVar_ItemSpacing,
+                                 style.UserSizes[UISIZE_TITLEBAR_ITEM_SPACING]);
+
+    show_menu = ImGui::BeginMenu("Edit");
+  }
 
   if (show_menu) {
     if (ImGui::MenuItem(ICON_FA_UNDO "  Undo", CTRL_STR "Z")) {
@@ -307,10 +438,15 @@ void App::present_edit_menu() {
 }
 
 void App::present_view_menu() {
-  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                      ImVec2(ImGui::GetStyle().ItemSpacing.x, TITLEBAR_HEIGHT));
-  bool show_menu = ImGui::BeginMenu("View");
-  ImGui::PopStyleVar();
+  bool show_menu;
+  {
+    const ImGuiStyle& style = ImGui::GetStyle();
+    auto item_spacing =
+        ImGui::Scoped::StyleVarY(ImGuiStyleVar_ItemSpacing,
+                                 style.UserSizes[UISIZE_TITLEBAR_ITEM_SPACING]);
+
+    show_menu = ImGui::BeginMenu("View");
+  }
 
   if (show_menu) {
     if (ImGui::MenuItem(ICON_FA_REDO "  Reset View", CTRL_STR "0")) {
@@ -326,17 +462,23 @@ void App::present_path_menu() {
 
   ProjectState state = m_document_manager.history()->current_state();
 
-  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                      ImVec2(ImGui::GetStyle().ItemSpacing.x, TITLEBAR_HEIGHT));
-  bool show_menu = ImGui::BeginMenu("Path");
-  ImGui::PopStyleVar();
+  bool show_menu;
+  {
+    const ImGuiStyle& style = ImGui::GetStyle();
+    auto item_spacing =
+        ImGui::Scoped::StyleVarY(ImGuiStyleVar_ItemSpacing,
+                                 style.UserSizes[UISIZE_TITLEBAR_ITEM_SPACING]);
+
+    show_menu = ImGui::BeginMenu("Path");
+  }
 
   if (show_menu) {
     ImGui::MenuItem(ICON_FA_FILE_CSV "  Export to CSV", nullptr, &item_export);
 
-    ImGui::MenuItem("\xef\x8d\xa3"
-                    "  Reverse Direction",
-                    nullptr, &item_reverse);
+    ImGui::MenuItem(
+        "\xef\x8d\xa3"
+        "  Reverse Direction",
+        nullptr, &item_reverse);
     ImGui::MenuItem(ICON_FA_COPY "  Duplicate", nullptr, &item_duplicate);
     {
       ImGuiScopedDisabled disabled(state.paths().size() <= 1);
@@ -370,10 +512,15 @@ void App::present_path_menu() {
 }
 
 void App::present_tools_menu() {
-  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                      ImVec2(ImGui::GetStyle().ItemSpacing.x, TITLEBAR_HEIGHT));
-  bool show_menu = ImGui::BeginMenu("Tools");
-  ImGui::PopStyleVar();
+  bool show_menu;
+  {
+    const ImGuiStyle& style = ImGui::GetStyle();
+    auto item_spacing =
+        ImGui::Scoped::StyleVarY(ImGuiStyleVar_ItemSpacing,
+                                 style.UserSizes[UISIZE_TITLEBAR_ITEM_SPACING]);
+
+    show_menu = ImGui::BeginMenu("Tools");
+  }
 
   if (show_menu) {
     ImGui::MenuItem(ICON_FA_LIST "  Paths", nullptr, &m_show_path_manager);
@@ -402,9 +549,9 @@ void App::present_export_popup() {
     m_export_popup = false;
   }
 
-  if (ImGui::BeginPopupModal("Export Done", nullptr,
-                             ImGuiWindowFlags_NoResize |
-                                 ImGuiWindowFlags_NoMove)) {
+  if (ImGui::BeginPopupModal(
+          "Export Done", nullptr,
+          ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
     ImGui::SetWindowSize(ImVec2(-1.f, -1.f));
 
     const std::vector<std::pair<std::string, Curve>>& paths =
@@ -416,7 +563,8 @@ void App::present_export_popup() {
     ImGui::Text("%s CSV file(s):", m_export_success ? "Successfully exported"
                                                     : "FAILED to export");
 
-    if (!m_export_success) ImGui::PopStyleColor();
+    if (!m_export_success)
+      ImGui::PopStyleColor();
 
     ImGui::Indent(10.0);
 
@@ -450,9 +598,9 @@ void App::present_project_open_error_popup() {
     m_project_open_error_popup = false;
   }
 
-  if (ImGui::BeginPopupModal("Project Open Error", nullptr,
-                             ImGuiWindowFlags_NoResize |
-                                 ImGuiWindowFlags_NoMove)) {
+  if (ImGui::BeginPopupModal(
+          "Project Open Error", nullptr,
+          ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
     ImGui::SetWindowSize(ImVec2(-1.f, -1.f));
 
     ImGui::Text("Failed to open project: \"%s\"",
@@ -460,25 +608,26 @@ void App::present_project_open_error_popup() {
 
     switch (m_project_open_error) {
       using enum OpenProjectStatus;
-    case OK:
-      break;
-    case FILE_NOT_FOUND:
-      ImGui::Text("File not found");
-      break;
-    case FAILED_TO_OPEN:
-      ImGui::Text("Failed to open file");
-      break;
-    case VERSION_TOO_NEW: {
-      const ProjectSettings& settings = m_document_manager.settings();
-      ImGui::Text("Project major version (%d.%d) is newer than current "
-                  "ThunderAuto version (%d.%d)",
-                  settings.version_major, settings.version_minor,
-                  THUNDER_AUTO_VERSION_MAJOR, THUNDER_AUTO_VERSION_MINOR);
-      ImGui::Text("Please update ThunderAuto to the latest version");
-    } break;
-    case INVALID_CONTENTS:
-      ImGui::Text("Invalid file contents (corrupted?)");
-      break;
+      case OK:
+        break;
+      case FILE_NOT_FOUND:
+        ImGui::Text("File not found");
+        break;
+      case FAILED_TO_OPEN:
+        ImGui::Text("Failed to open file");
+        break;
+      case VERSION_TOO_NEW: {
+        const ProjectSettings& settings = m_document_manager.settings();
+        ImGui::Text(
+            "Project major version (%d.%d) is newer than current "
+            "ThunderAuto version (%d.%d)",
+            settings.version_major, settings.version_minor,
+            THUNDER_AUTO_VERSION_MAJOR, THUNDER_AUTO_VERSION_MINOR);
+        ImGui::Text("Please update ThunderAuto to the latest version");
+      } break;
+      case INVALID_CONTENTS:
+        ImGui::Text("Invalid file contents (corrupted?)");
+        break;
     }
 
     if (ImGui::Button("Ok") || ImGui::IsKeyPressed(ImGuiKey_Escape) ||
@@ -499,9 +648,9 @@ void App::present_project_version_popup() {
     m_project_version_popup = false;
   }
 
-  if (ImGui::BeginPopupModal("Project Version", nullptr,
-                             ImGuiWindowFlags_NoResize |
-                                 ImGuiWindowFlags_NoMove)) {
+  if (ImGui::BeginPopupModal(
+          "Project Version", nullptr,
+          ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
     ImGui::SetWindowSize(ImVec2(-1.f, -1.f));
 
     const ProjectSettings& settings = m_document_manager.settings();
@@ -509,16 +658,18 @@ void App::present_project_version_popup() {
     bool minor_newer = settings.version_minor > THUNDER_AUTO_VERSION_MINOR;
     bool major_older = settings.version_major < THUNDER_AUTO_VERSION_MAJOR;
 
-    ImGui::Text("Project Version (%d.%d) is %s than current ThunderAuto "
-                "version (%d.%d)",
-                settings.version_major, settings.version_minor,
-                minor_newer ? "newer" : "older", THUNDER_AUTO_VERSION_MAJOR,
-                THUNDER_AUTO_VERSION_MINOR);
+    ImGui::Text(
+        "Project Version (%d.%d) is %s than current ThunderAuto "
+        "version (%d.%d)",
+        settings.version_major, settings.version_minor,
+        minor_newer ? "newer" : "older", THUNDER_AUTO_VERSION_MAJOR,
+        THUNDER_AUTO_VERSION_MINOR);
 
     if (major_older) {
-      ImGui::Text("Upon saving, this project will be updated to the current "
-                  "ThunderAuto version. This may break compatibility with "
-                  "older ThunderAuto versions.");
+      ImGui::Text(
+          "Upon saving, this project will be updated to the current "
+          "ThunderAuto version. This may break compatibility with "
+          "older ThunderAuto versions.");
     } else if (minor_newer) {
       ImGui::Text(
           "The project's minor version is newer than current ThunderAuto "
@@ -527,9 +678,10 @@ void App::present_project_version_popup() {
           "format, although any changes should be backwards compatible.\n");
 
       ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0.5, 0, 1));
-      ImGui::Text("It is still recommended to update ThunderAuto to the latest "
-                  "version to ensure compatibility, and to not loose any "
-                  "project data when saving.");
+      ImGui::Text(
+          "It is still recommended to update ThunderAuto to the latest "
+          "version to ensure compatibility, and to not loose any "
+          "project data when saving.");
       ImGui::PopStyleColor();
     }
 
@@ -564,26 +716,27 @@ void App::welcome() {
   bool showing_popup = true;
   m_welcome_popup.present(&showing_popup);
 
-  if (showing_popup) return;
+  if (showing_popup)
+    return;
 
   WelcomePopup::Result result = m_welcome_popup.result();
 
   switch (result) {
     using enum WelcomePopup::Result;
-  case NEW_PROJECT:
-    m_event_state = EventState::NEW_PROJECT;
-    break;
-  case OPEN_PROJECT:
-    m_event_state = EventState::OPEN_PROJECT;
-    break;
-  case RECENT_PROJECT: {
-    std::string* recent_path = m_welcome_popup.recent_project();
-    assert(recent_path);
-    open_from_path(*recent_path);
-    break;
-  }
-  default:
-    assert(false);
+    case NEW_PROJECT:
+      m_event_state = EventState::NEW_PROJECT;
+      break;
+    case OPEN_PROJECT:
+      m_event_state = EventState::OPEN_PROJECT;
+      break;
+    case RECENT_PROJECT: {
+      std::string* recent_path = m_welcome_popup.recent_project();
+      assert(recent_path);
+      open_from_path(*recent_path);
+      break;
+    }
+    default:
+      assert(false);
   }
 }
 
@@ -594,7 +747,8 @@ void App::new_project() {
 
   m_new_project_popup.present(&showing_popup);
 
-  if (showing_popup) return;
+  if (showing_popup)
+    return;
 
   NewProjectPopup::Result result = m_new_project_popup.result();
 
@@ -602,21 +756,21 @@ void App::new_project() {
 
   switch (result) {
     using enum NewProjectPopup::Result;
-  case NEW_FIELD:
-    m_event_state = EventState::NEW_FIELD;
-    break;
-  case CREATE:
-    m_document_manager.new_project(m_new_project_popup.result_project());
-    m_path_editor_page.setup_field(m_document_manager.settings());
-    m_properties_page.setup(m_document_manager.settings());
-    update_titlebar_title();
+    case NEW_FIELD:
+      m_event_state = EventState::NEW_FIELD;
+      break;
+    case CREATE:
+      m_document_manager.new_project(m_new_project_popup.result_project());
+      m_path_editor_page.setup_field(m_document_manager.settings());
+      m_properties_page.setup(m_document_manager.settings());
+      update_titlebar_title();
 
-    m_recent_projects.push_front(m_document_manager.path().string());
-    break;
-  case CANCEL:
-    break;
-  default:
-    assert(false);
+      m_recent_projects.push_front(m_document_manager.path().string());
+      break;
+    case CANCEL:
+      break;
+    default:
+      assert(false);
   }
 }
 
@@ -627,7 +781,8 @@ void App::new_field() {
 
   m_new_field_popup.present(&showing_popup);
 
-  if (showing_popup) return;
+  if (showing_popup)
+    return;
 
   NewFieldPopup::Result result = m_new_field_popup.result();
 
@@ -635,13 +790,13 @@ void App::new_field() {
 
   switch (result) {
     using enum NewFieldPopup::Result;
-  case CREATE:
-    m_new_project_popup.set_field(m_new_field_popup.field());
-    break;
-  case CANCEL:
-    break;
-  default:
-    assert(false);
+    case CREATE:
+      m_new_project_popup.set_field(m_new_field_popup.field());
+      break;
+    case CANCEL:
+      break;
+    default:
+      assert(false);
   }
 }
 
@@ -649,7 +804,7 @@ void App::open_project() {
   std::string path = m_platform_manager.open_file_dialog(
       FileType::FILE, {THUNDERAUTO_FILE_FILTER});
 
-  if (path.empty()) { // Open cancelled.
+  if (path.empty()) {  // Open cancelled.
     m_event_state = EventState::NONE;
     return;
   }
@@ -713,25 +868,26 @@ void App::unsaved() {
 
   m_unsaved_popup.present(&showing_popup);
 
-  if (showing_popup) return;
+  if (showing_popup)
+    return;
 
   UnsavedPopup::Result result = m_unsaved_popup.result();
 
   switch (result) {
     using enum UnsavedPopup::Result;
-  case SAVE:
-    m_document_manager.save();
-    m_document_manager.close();
-    break;
-  case DONT_SAVE:
-    m_document_manager.close();
-    break;
-  case CANCEL:
-    m_event_state = m_next_event_state = EventState::NONE;
-    PlatformGraphics::get().window_set_should_close(false);
-    break;
-  default:
-    assert(false);
+    case SAVE:
+      m_document_manager.save();
+      m_document_manager.close();
+      break;
+    case DONT_SAVE:
+      m_document_manager.close();
+      break;
+    case CANCEL:
+      m_event_state = m_next_event_state = EventState::NONE;
+      PlatformGraphics::get().window_set_should_close(false);
+      break;
+    default:
+      assert(false);
   }
 }
 
@@ -768,12 +924,12 @@ void App::update_titlebar_title() {
 }
 
 #if THUNDER_AUTO_MACOS
-#define CTRL_KEY (io.KeyCtrl) // Not io.KeySuper anymore?
+#define CTRL_KEY (io.KeyCtrl)  // Not io.KeySuper anymore?
 #else
 #define CTRL_KEY (io.KeyCtrl)
 #endif
 
-#define CTRL_DOWN       (CTRL_KEY && !io.KeyAlt && !io.KeyShift)
+#define CTRL_DOWN (CTRL_KEY && !io.KeyAlt && !io.KeyShift)
 #define CTRL_SHIFT_DOWN (CTRL_KEY && !io.KeyAlt && io.KeyShift)
 
 #define KEY_DOWN(key) ImGui::IsKeyDown(key)
@@ -783,28 +939,28 @@ void App::update_titlebar_title() {
 void App::process_input() {
   const ImGuiIO& io = ImGui::GetIO();
 
-  if (CTRL_DOWN && KEY_DOWN(ImGuiKey_N)) { // Ctrl+N
+  if (CTRL_DOWN && KEY_DOWN(ImGuiKey_N)) {  // Ctrl+N
     try_change_state(EventState::NEW_PROJECT);
 
-  } else if (CTRL_DOWN && KEY_DOWN(ImGuiKey_O)) { // Ctrl+O
+  } else if (CTRL_DOWN && KEY_DOWN(ImGuiKey_O)) {  // Ctrl+O
     try_change_state(EventState::OPEN_PROJECT);
 
   } else if (m_document_manager.is_open()) {
-    if (CTRL_DOWN && KEY_DOWN(ImGuiKey_S)) { // Ctrl+S
+    if (CTRL_DOWN && KEY_DOWN(ImGuiKey_S)) {  // Ctrl+S
       m_document_manager.save();
 
-    } else if (CTRL_SHIFT_DOWN && KEY_DOWN(ImGuiKey_S)) { // Ctrl+Shift+S
+    } else if (CTRL_SHIFT_DOWN && KEY_DOWN(ImGuiKey_S)) {  // Ctrl+Shift+S
       save_as();
 
-    } else if (CTRL_DOWN && KEY_DOWN(ImGuiKey_W)) { // Ctrl+W
+    } else if (CTRL_DOWN && KEY_DOWN(ImGuiKey_W)) {  // Ctrl+W
       try_change_state(EventState::CLOSE_PROJECT);
 
-    } else if (CTRL_DOWN && KEY_DOWN_OR_REPEAT(ImGuiKey_Z)) { // Ctrl+Z
+    } else if (CTRL_DOWN && KEY_DOWN_OR_REPEAT(ImGuiKey_Z)) {  // Ctrl+Z
       undo();
 
-    } else if ((CTRL_DOWN && KEY_DOWN_OR_REPEAT(ImGuiKey_Y)) || // Ctrl+Y
+    } else if ((CTRL_DOWN && KEY_DOWN_OR_REPEAT(ImGuiKey_Y)) ||  // Ctrl+Y
                (CTRL_SHIFT_DOWN &&
-                KEY_DOWN_OR_REPEAT(ImGuiKey_Z))) { // Ctrl+Shift+Z
+                KEY_DOWN_OR_REPEAT(ImGuiKey_Z))) {  // Ctrl+Shift+Z
       redo();
 
     } else if (CTRL_DOWN &&
@@ -816,7 +972,7 @@ void App::process_input() {
       m_export_popup = true;
       m_exported_index = -1;
 
-    } else if (CTRL_DOWN && KEY_DOWN(ImGuiKey_0)) { // Ctrl+0
+    } else if (CTRL_DOWN && KEY_DOWN(ImGuiKey_0)) {  // Ctrl+0
       m_path_editor_page.reset_view();
 
     } else if (m_path_editor_page.is_focused()) {

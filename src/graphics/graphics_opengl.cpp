@@ -3,11 +3,6 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
-#define WINDOW_WIDTH 1300
-#define WINDOW_HEIGHT 800
-
-#define WINDOW_TITLE "ThunderAuto " THUNDER_AUTO_VERSION_STR
-
 //
 // GL/GLSL versions.
 //
@@ -32,6 +27,13 @@ void GraphicsOpenGL::init(App& app) {
   m_app = &app;
 
   //
+  // Imgui
+  //
+  IMGUI_CHECKVERSION();
+
+  ImGui::CreateContext();
+
+  //
   // GLFW
   //
   glfwSetErrorCallback([](int error, const char* description) {
@@ -50,8 +52,8 @@ void GraphicsOpenGL::init(App& app) {
 #endif
 
   // Initialize window.
-  m_window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE,
-                              nullptr, nullptr);
+  m_window = glfwCreateWindow(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT,
+                              DEFAULT_WINDOW_TITLE, nullptr, nullptr);
   if (!m_window)
     exit(1);
 
@@ -66,19 +68,11 @@ void GraphicsOpenGL::init(App& app) {
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
   //
-  // Imgui
+  // More ImGui setup.
   //
-  IMGUI_CHECKVERSION();
 
-  ImGui::CreateContext();
-
-  {
-    ImGuiIO* io = &ImGui::GetIO();
-    io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    io->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-    io->ConfigWindowsMoveFromTitleBarOnly = true;
-  }
+  apply_ui_config();
+  apply_ui_style();
 
   ImGui_ImplGlfw_InitForOpenGL(m_window, true);
   ImGui_ImplOpenGL3_Init(GLSL_VERSION);
@@ -164,7 +158,7 @@ void GraphicsOpenGL::window_set_size(int width, int height) {
   glfwSetWindowSize(m_window, width, height);
 }
 
-ImVec2 GraphicsOpenGL::window_pos() const {
+ImVec2 GraphicsOpenGL::window_position() const {
   if (!m_init)
     return ImVec2(0, 0);
 
@@ -173,7 +167,7 @@ ImVec2 GraphicsOpenGL::window_pos() const {
   return ImVec2(x, y);
 }
 
-void GraphicsOpenGL::window_set_pos(int x, int y) {
+void GraphicsOpenGL::window_set_position(int x, int y) {
   if (!m_init)
     return;
 

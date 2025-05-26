@@ -4,8 +4,6 @@
 
 #include <ThunderAuto/graphics/graphics.hpp>
 
-static void apply_imgui_style();
-static void load_fonts();
 static void setup_data_handler(App& app);
 
 int _main(int argc, char** argv) {
@@ -33,9 +31,6 @@ int _main(int argc, char** argv) {
   PlatformGraphics::get().init(app);
 
   setup_data_handler(app);
-
-  apply_imgui_style();
-  load_fonts();
 
   if (start_project_path.has_value()) {
     app.open_from_path(start_project_path.value().string());
@@ -87,8 +82,7 @@ int _main(int argc, char** argv) {
 
     // clang-format off
     if (!ImGui::Begin("ThunderAuto", &running,
-                      ImGuiWindowFlags_MenuBar
-                    | ImGuiWindowFlags_NoDocking
+                      ImGuiWindowFlags_NoDocking
                     | ImGuiWindowFlags_NoTitleBar
                     | ImGuiWindowFlags_NoCollapse
                     | ImGuiWindowFlags_NoResize
@@ -168,136 +162,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine,
 #else
 int main(int argc, char** argv) { return _main(argc, argv); }
 #endif
-
-static void apply_imgui_style() {
-
-  //
-  // My janky Rolling Thunder ImGui theme...
-  //
-
-  ImGui::StyleColorsDark();
-
-  ImGuiStyle& style = ImGui::GetStyle();
-  style.PopupRounding = 2;
-  style.WindowRounding = 2;
-  style.ChildRounding = 2;
-  style.FrameRounding = 2;
-  style.ScrollbarRounding = 12;
-  style.GrabRounding = 2;
-  style.TabRounding = 2;
-  style.WindowMenuButtonPosition = ImGuiDir_None;
-  style.WindowTitleAlign.x = 0.5f;
-
-  // Colors.
-  ImVec4 yellow_high = ImVec4(1.00f, 0.95f, 0.00f, 1.00f);
-  ImVec4 yellow_low = ImVec4(1.00f, 0.95f, 0.00f, 0.70f);
-  ImVec4 red_very_low = ImVec4(0.93f, 0.11f, 0.14f, 0.20f);
-  ImVec4 red_low = ImVec4(0.93f, 0.11f, 0.14f, 0.50f);
-  ImVec4 red_mid = ImVec4(0.93f, 0.11f, 0.14f, 0.65f);
-  ImVec4 red_high = ImVec4(0.93f, 0.11f, 0.14f, 0.75f);
-  ImVec4 grey_low = ImVec4(0.10f, 0.12f, 0.15f, 1.00f);
-  ImVec4 grey_mid = ImVec4(0.13f, 0.15f, 0.17f, 1.00f);
-  ImVec4 grey_high = ImVec4(0.14f, 0.16f, 0.18f, 1.00f);
-  ImVec4 bg = ImVec4(0.05f, 0.07f, 0.09f, 1.00f);
-  ImVec4 border = ImVec4(0.17f, 0.18f, 0.21f, 1.00f);
-  ImVec4 title_high = ImVec4(0.09f, 0.11f, 0.13f, 1.00f);
-  ImVec4 title_low = ImVec4(0.07f, 0.09f, 0.11f, 1.00f);
-
-  style.Colors[ImGuiCol_WindowBg] = bg;
-  style.Colors[ImGuiCol_PopupBg] = bg;
-  style.Colors[ImGuiCol_ChildBg] = bg;
-
-  style.Colors[ImGuiCol_Border] = border;
-
-  style.Colors[ImGuiCol_TitleBg] = title_low;
-  style.Colors[ImGuiCol_TitleBgCollapsed] = title_low;
-  style.Colors[ImGuiCol_TitleBgActive] = title_high;
-
-  style.Colors[ImGuiCol_MenuBarBg] = title_high;
-
-  style.Colors[ImGuiCol_Header] = grey_low;
-  style.Colors[ImGuiCol_HeaderHovered] = grey_mid;
-  style.Colors[ImGuiCol_HeaderActive] = grey_high;
-
-  style.Colors[ImGuiCol_FrameBg] = grey_low;
-  style.Colors[ImGuiCol_FrameBgHovered] = grey_mid;
-  style.Colors[ImGuiCol_FrameBgActive] = grey_high;
-
-  style.Colors[ImGuiCol_Button] = red_low;
-  style.Colors[ImGuiCol_ButtonHovered] = red_mid;
-  style.Colors[ImGuiCol_ButtonActive] = red_high;
-
-  style.Colors[ImGuiCol_CheckMark] = red_high;
-  style.Colors[ImGuiCol_SliderGrab] = red_low;
-  style.Colors[ImGuiCol_SliderGrabActive] = red_high;
-
-  style.Colors[ImGuiCol_SeparatorHovered] = yellow_low;
-  style.Colors[ImGuiCol_SeparatorActive] = yellow_high;
-
-  style.Colors[ImGuiCol_ResizeGrip] = red_very_low;
-  style.Colors[ImGuiCol_ResizeGripHovered] = red_mid;
-  style.Colors[ImGuiCol_ResizeGripActive] = red_high;
-
-  style.Colors[ImGuiCol_Tab] = grey_mid;
-  style.Colors[ImGuiCol_TabHovered] = red_mid;
-  style.Colors[ImGuiCol_TabSelected] = red_high;
-  style.Colors[ImGuiCol_TabDimmed] = grey_low;
-  style.Colors[ImGuiCol_TabDimmedSelected] = red_low;
-
-  style.Colors[ImGuiCol_DockingPreview] = red_low;
-}
-
-#include <Ubuntu_Bold_ttf.h>
-#include <Ubuntu_Regular_ttf.h>
-// #include <Roboto_Regular_ttf.h>
-// #include <Roboto_Bold_ttf.h>
-#include <FontAwesome_Regular_ttf.h>
-#include <FontAwesome_Solid_ttf.h>
-
-#include <IconsFontAwesome5.h>
-
-static void load_fonts() {
-  FontLibrary& font_lib = FontLibrary::get();
-
-  ImGuiIO* io = &ImGui::GetIO();
-
-  // Tell ImGui not to free fonts from memory.
-  ImFontConfig font_cfg;
-  font_cfg.FontDataOwnedByAtlas = false;
-
-  static const ImWchar* glyph_ranges = io->Fonts->GetGlyphRangesDefault();
-
-  // Regular font.
-  font_lib.regular_font = io->Fonts->AddFontFromMemoryTTF(
-      reinterpret_cast<void*>(Ubuntu_Regular_ttf), Ubuntu_Regular_ttf_size,
-      15.0f, &font_cfg, glyph_ranges);
-
-  // FontAwesome icons...
-  font_cfg.MergeMode = true;
-  font_cfg.PixelSnapH = true;
-
-  static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_16_FA, 0};
-  io->Fonts->AddFontFromMemoryTTF(FontAwesome_Regular_ttf,
-                                  FontAwesome_Regular_ttf_size, 15.0f,
-                                  &font_cfg, icon_ranges);
-  io->Fonts->AddFontFromMemoryTTF(FontAwesome_Solid_ttf,
-                                  FontAwesome_Solid_ttf_size, 15.0f, &font_cfg,
-                                  icon_ranges);
-
-  // Additional fonts.
-  font_cfg.MergeMode = false;
-  font_cfg.PixelSnapH = false;
-
-  font_lib.big_font = io->Fonts->AddFontFromMemoryTTF(
-      reinterpret_cast<void*>(Ubuntu_Bold_ttf), Ubuntu_Bold_ttf_size, 30.0f,
-      &font_cfg, glyph_ranges);
-
-  font_lib.bold_font = io->Fonts->AddFontFromMemoryTTF(
-      reinterpret_cast<void*>(Ubuntu_Bold_ttf), Ubuntu_Bold_ttf_size, 15.0f,
-      &font_cfg, glyph_ranges);
-
-  io->ConfigWindowsMoveFromTitleBarOnly = true;
-}
 
 static void setup_data_handler(App& app) {
   ImGuiSettingsHandler ini_handler;
