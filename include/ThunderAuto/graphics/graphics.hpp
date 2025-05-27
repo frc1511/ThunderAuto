@@ -4,18 +4,6 @@
 #include <ThunderAuto/singleton.hpp>
 #include <ThunderAuto/app.hpp>
 
-enum UISize {
-  UISIZE_TITLEBAR_BUTTON_WIDTH = 0,
-  UISIZE_TITLEBAR_BUTTON_ICON_SIZE,
-  UISIZE_TITLEBAR_BUTTON_MAXIMIZE_ICON_BOX_ROUNDING,
-  UISIZE_TITLEBAR_BUTTON_MAXIMIZE_ICON_BOX_OFFSET,
-  UISIZE_TITLEBAR_DRAG_AREA_WIDTH,
-  UISIZE_TITLEBAR_FRAME_PADDING,
-  UISIZE_TITLEBAR_ITEM_SPACING,
-  UISIZE_WINDOW_MIN_WIDTH,
-  UISIZE_WINDOW_MIN_HEIGHT,
-};
-
 #define DEFAULT_WINDOW_WIDTH 1300
 #define DEFAULT_WINDOW_HEIGHT 800
 
@@ -52,6 +40,7 @@ class Graphics : public SingletonBase {
     UNUSED(x);
     UNUSED(y);
   }
+  virtual void window_move_to_center() {}
 
   virtual void window_set_title(const char* title) { UNUSED(title); }
   virtual void window_set_should_close(bool value) { UNUSED(value); }

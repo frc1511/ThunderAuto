@@ -3,14 +3,14 @@
 #include <IconsFontAwesome5.h>
 #include <ThunderAuto/imgui_util.hpp>
 
-#define COLUMN_WIDTH 150
-
 void WelcomePopup::present(bool* running) {
   // Center window.
   ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), false,
                           ImVec2(0.5f, 0.5f));
   if (!ImGui::Begin(m_name, running,
-                              ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoDocking)) {
+                    ImGuiWindowFlags_AlwaysAutoResize |
+                        ImGuiWindowFlags_NoTitleBar |
+                        ImGuiWindowFlags_NoDocking)) {
     return;
   }
 
@@ -23,36 +23,42 @@ void WelcomePopup::present(bool* running) {
 
   ImGui::Text("Version " THUNDER_AUTO_VERSION_STR);
 
-  ImGui::Dummy(ImVec2(0.0f, 15.0f));
+  ImGui::NewLine();
 
   //
   // New Project.
   //
   {
-    ImGuiScopedField field("New Project", COLUMN_WIDTH, []() {
-      ImGui::Text(ICON_FA_FILE "  New Project");
-      ImGui::SetWindowFontScale(0.75f);
-      ImGui::Text("Create a new project");
-      ImGui::SetWindowFontScale(1.0f);
-    });
+    ImGuiScopedField field = ImGuiScopedField::Builder("New Project")
+                                 .custom_left_column([]() {
+                                   ImGui::Text(ICON_FA_FILE "  New Project");
+                                   ImGui::SetWindowFontScale(0.75f);
+                                   ImGui::Text("Create a new project");
+                                   ImGui::SetWindowFontScale(1.0f);
+                                 })
+                                 .build();
 
     if (ImGui::Button("New Project")) {
       m_result = Result::NEW_PROJECT;
     }
   }
 
-  ImGui::Dummy(ImVec2(0.0f, 10.0f));
+  ImGui::Spacing();
+  ImGui::Spacing();
 
   //
   // Open Project.
   //
   {
-    ImGuiScopedField field("Open Project", COLUMN_WIDTH, []() {
-      ImGui::Text(ICON_FA_FOLDER_OPEN "  Open Project");
-      ImGui::SetWindowFontScale(0.75f);
-      ImGui::Text("Open an existing project");
-      ImGui::SetWindowFontScale(1.0f);
-    });
+    ImGuiScopedField field =
+        ImGuiScopedField::Builder("Open Project")
+            .custom_left_column([]() {
+              ImGui::Text(ICON_FA_FOLDER_OPEN "  Open Project");
+              ImGui::SetWindowFontScale(0.75f);
+              ImGui::Text("Open an existing project");
+              ImGui::SetWindowFontScale(1.0f);
+            })
+            .build();
 
     if (ImGui::Button("Open Project")) {
       m_result = Result::OPEN_PROJECT;
@@ -63,11 +69,12 @@ void WelcomePopup::present(bool* running) {
   // Recent Projects.
   //
   if (!m_recent_projects.empty()) {
-    ImGui::Dummy(ImVec2(0.0f, 10.0f));
+    ImGui::Spacing();
+    ImGui::Spacing();
 
     ImGui::Text(ICON_FA_CLIPBOARD "  Recent Projects");
     ImGui::PushID("##Recents");
-    ImGui::Indent(17.0f);
+    ImGui::Indent(GET_UISIZE(INDENT_MEDIUM));
     size_t i = 0;
     for (auto& project : m_recent_projects) {
       std::string id =
@@ -79,9 +86,10 @@ void WelcomePopup::present(bool* running) {
         m_recent_project = &project;
       }
       ImGui::PopID();
-      if (++i >= 5) break;
+      if (++i >= 5)
+        break;
     }
-    ImGui::Unindent(17.0f);
+    ImGui::Unindent(GET_UISIZE(INDENT_MEDIUM));
     ImGui::PopID();
   }
 
@@ -91,4 +99,3 @@ void WelcomePopup::present(bool* running) {
     *running = false;
   }
 }
-

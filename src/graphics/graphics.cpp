@@ -1,5 +1,7 @@
 #include <ThunderAuto/graphics/graphics.hpp>
 
+#include <ThunderAuto/ui_sizes.hpp>
+
 #if THUNDER_AUTO_DIRECTX11
 #include "graphics_directx11.hpp"
 #elif THUNDER_AUTO_OPENGL
@@ -96,7 +98,7 @@ void Graphics::update_ui_scale(float scale) {
   ImGuiStyle styleold = style;  // Backup colors
 
   // ScaleAllSizes will change the original size, so reset all style config
-  style = ImGuiStyle(); 
+  style = ImGuiStyle();
   style.PopupRounding = 2;
   style.WindowRounding = 2;
   style.ChildRounding = 2;
@@ -107,15 +109,40 @@ void Graphics::update_ui_scale(float scale) {
   style.WindowMenuButtonPosition = ImGuiDir_None;
   style.WindowTitleAlign.x = 0.5f;
 
+  // Titlebar sizes
   style.UserSizes[UISIZE_TITLEBAR_BUTTON_WIDTH] = 47.f;
   style.UserSizes[UISIZE_TITLEBAR_BUTTON_ICON_SIZE] = 10.f;
   style.UserSizes[UISIZE_TITLEBAR_BUTTON_MAXIMIZE_ICON_BOX_ROUNDING] = 1.f;
   style.UserSizes[UISIZE_TITLEBAR_BUTTON_MAXIMIZE_ICON_BOX_OFFSET] = 2.f;
-  style.UserSizes[UISIZE_TITLEBAR_DRAG_AREA_WIDTH] = 30.f;
-  style.UserSizes[UISIZE_TITLEBAR_FRAME_PADDING] = 10.f;
-  style.UserSizes[UISIZE_TITLEBAR_ITEM_SPACING] = 20.f;
+  style.UserSizes[UISIZE_TITLEBAR_DRAG_AREA_MIN_WIDTH] = 30.f;
+  style.UserSizes[UISIZE_TITLEBAR_FRAME_PADDING_Y] = 10.f;
+  style.UserSizes[UISIZE_TITLEBAR_ITEM_SPACING_Y] = 20.f;
+  // Window sizes
   style.UserSizes[UISIZE_WINDOW_MIN_WIDTH] = 500.f;
   style.UserSizes[UISIZE_WINDOW_MIN_HEIGHT] = 400.f;
+  // Page sizes
+  style.UserSizes[UISIZE_ACTIONS_PAGE_START_WIDTH] = 300.f;
+  style.UserSizes[UISIZE_ACTIONS_PAGE_START_HEIGHT] = 400.f;
+  style.UserSizes[UISIZE_PATH_EDITOR_PAGE_START_WIDTH] = 800.f;
+  style.UserSizes[UISIZE_PATH_EDITOR_PAGE_START_HEIGHT] = 600.f;
+  style.UserSizes[UISIZE_PATH_MANAGER_PAGE_START_WIDTH] = 300.f;
+  style.UserSizes[UISIZE_PATH_MANAGER_PAGE_START_HEIGHT] = 600.f;
+  style.UserSizes[UISIZE_PROPERTIES_PAGE_START_WIDTH] = 300.f;
+  style.UserSizes[UISIZE_PROPERTIES_PAGE_START_HEIGHT] = 600.f;
+  style.UserSizes[UISIZE_SETTINGS_PAGE_START_WIDTH] = 300.f;
+  style.UserSizes[UISIZE_SETTINGS_PAGE_START_HEIGHT] = 120.f;
+  // Popup sizes
+  style.UserSizes[UISIZE_NEW_FIELD_POPUP_START_WIDTH] = 370.f;
+  style.UserSizes[UISIZE_NEW_FIELD_POPUP_START_HEIGHT] = 250.f;
+  style.UserSizes[UISIZE_NEW_PROJECT_POPUP_START_WIDTH] = 400.f;
+  style.UserSizes[UISIZE_NEW_PROJECT_POPUP_START_HEIGHT] = 250.f;
+  style.UserSizes[UISIZE_UNSAVED_POPUP_START_WIDTH] = 125.f;
+  style.UserSizes[UISIZE_UNSAVED_POPUP_START_HEIGHT] = 115.f;
+  // Other sizes
+  style.UserSizes[UISIZE_FIELD_NORMAL_LEFT_COLUMN_WIDTH] = 135.f;
+  style.UserSizes[UISIZE_INDENT_SMALL] = 10.f,
+  style.UserSizes[UISIZE_INDENT_MEDIUM] = 20.f,
+  style.UserSizes[UISIZE_INDENT_LARGE] = 30.f;
 
   style.ScaleAllSizes(scale);
   std::memcpy(style.Colors, styleold.Colors,
@@ -123,9 +150,9 @@ void Graphics::update_ui_scale(float scale) {
 
   load_fonts(scale);
 
-  PlatformGraphics::get().window_set_position(100 * scale, 100 * scale);
   PlatformGraphics::get().window_set_size(DEFAULT_WINDOW_WIDTH * scale,
                                           DEFAULT_WINDOW_HEIGHT * scale);
+  PlatformGraphics::get().window_move_to_center();
 }
 
 #include <Ubuntu_Bold_ttf.h>
@@ -164,12 +191,12 @@ void Graphics::load_fonts(float scale) {
 
   static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_16_FA, 0};
   font = io->Fonts->AddFontFromMemoryTTF(FontAwesome_Regular_ttf,
-                                  FontAwesome_Regular_ttf_size, 15.0f * scale,
-                                  &font_cfg, icon_ranges);
+                                         FontAwesome_Regular_ttf_size,
+                                         15.0f * scale, &font_cfg, icon_ranges);
   assert(font != nullptr);
   font = io->Fonts->AddFontFromMemoryTTF(FontAwesome_Solid_ttf,
-                                  FontAwesome_Solid_ttf_size, 15.0f * scale,
-                                  &font_cfg, icon_ranges);
+                                         FontAwesome_Solid_ttf_size,
+                                         15.0f * scale, &font_cfg, icon_ranges);
   assert(font != nullptr);
 
   // Additional fonts.

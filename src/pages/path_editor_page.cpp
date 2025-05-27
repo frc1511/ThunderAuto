@@ -2,6 +2,7 @@
 
 #include <ThunderAuto/imgui_util.hpp>
 #include <ThunderAuto/macro_util.hpp>
+#include <ThunderAuto/font_library.hpp>
 
 #include <IconsFontAwesome5.h>
 #include <stb_image.h>
@@ -127,7 +128,9 @@ void PathEditorPage::setup_field(const ProjectSettings& settings) {
 }
 
 void PathEditorPage::present(bool* running) {
-  ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(GET_UISIZE(PATH_EDITOR_PAGE_START_WIDTH),
+                                  GET_UISIZE(PATH_EDITOR_PAGE_START_HEIGHT)),
+                           ImGuiCond_FirstUseEver);
   if (!ImGui::Begin(name(), running,
                     ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar |
                         ImGuiWindowFlags_NoScrollWithMouse)) {
@@ -542,8 +545,16 @@ void PathEditorPage::present_robot_preview(ImRect bb) {
 }
 
 void PathEditorPage::present_playback_slider() {
+  const ImGuiStyle& style = ImGui::GetStyle();
+  const ImGuiIO& io = ImGui::GetIO();
+
+  const ImFont* font = FontLibrary::get().regular_font;
+
+  float slider_y_offset =
+      style.FramePadding.y * 2.f + font->FontSize + style.WindowPadding.y;
+
   // Bottom of the window.
-  ImGui::SetCursorPosY(ImGui::GetWindowHeight() - 30);
+  ImGui::SetCursorPosY(ImGui::GetWindowHeight() - slider_y_offset);
 
   // Play button.
   if (ImGui::Button(m_is_playing ? ICON_FA_PAUSE : ICON_FA_PLAY)) {
@@ -566,7 +577,7 @@ void PathEditorPage::present_playback_slider() {
     m_playback_time = std::fmod(m_playback_time, total_time);
   }
 
-  ImGui::PushItemWidth(ImGui::GetWindowWidth() - 75);
+  ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
 
   {
     char buffer[64];

@@ -5,7 +5,9 @@
 #include <ThunderAuto/font_library.hpp>
 
 void ActionsPage::present(bool* running) {
-  ImGui::SetNextWindowSize(ImVec2(200, 400), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(GET_UISIZE(ACTIONS_PAGE_START_WIDTH),
+                                  GET_UISIZE(ACTIONS_PAGE_START_HEIGHT)),
+                           ImGuiCond_FirstUseEver);
   ImGui::Scoped s = ImGui::Scoped::Window(name(), running);
   if (!s)
     return;

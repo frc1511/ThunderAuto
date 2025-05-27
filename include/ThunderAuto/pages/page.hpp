@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ThunderAuto/thunder_auto.hpp>
+#include <ThunderAuto/ui_sizes.hpp>
 
 class Page {
 public:

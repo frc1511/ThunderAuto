@@ -6,10 +6,10 @@
 #include <ThunderAuto/imgui_util.hpp>
 #include <ThunderAuto/platform/platform.hpp>
 
-#define COLUMN_WIDTH 135.0f
-
 void PropertiesPage::present(bool* running) {
-  ImGui::SetNextWindowSize(ImVec2(400, 600), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(GET_UISIZE(PROPERTIES_PAGE_START_WIDTH),
+                                  GET_UISIZE(PROPERTIES_PAGE_START_HEIGHT)),
+                           ImGuiCond_FirstUseEver);
   if (!ImGui::Begin(name(), running, ImGuiWindowFlags_NoCollapse)) {
     ImGui::End();
     return;
@@ -27,7 +27,6 @@ void PropertiesPage::present(bool* running) {
   if (state.selected_point_index() != -1 &&
       ImGui::CollapsingHeader(ICON_FA_CIRCLE "  Point", nullptr,
                               ImGuiTreeNodeFlags_DefaultOpen)) {
-
     present_point_properties(state);
   }
 
@@ -126,12 +125,11 @@ void PropertiesPage::present_point_properties(ProjectState& state) {
           float text_width = ImGui::CalcTextSize("1 << 00").x;
           const ImGuiStyle& style = ImGui::GetStyle();
 
-          ImGui::SetCursorPosX(window_width - style.FramePadding.x * 2.0f - text_width - style.ItemSpacing.x);
+          ImGui::SetCursorPosX(window_width - style.FramePadding.x * 2.0f -
+                               text_width - style.ItemSpacing.x);
         }
 
         ImGui::Text("1 << %d", (int)i);
-
-
       }
 
       ImGui::TreePop();
@@ -144,7 +142,7 @@ void PropertiesPage::present_path_properties(ProjectState& state) {
 
   // Export to CSV.
   {
-    ImGuiScopedField field("Export to CSV", COLUMN_WIDTH);
+    ImGuiScopedField field = ImGuiScopedField::Builder("Export to CSV").build();
 
     if (ImGui::Button("Export")) {
       bool success = state.export_current_path_to_csv(*m_settings);
@@ -237,7 +235,7 @@ void PropertiesPage::present_velocity_properties(ProjectState& state) {
 
   // Linear Acceleration.
   {
-    ImGuiScopedField field("Linear Accel", COLUMN_WIDTH);
+    ImGuiScopedField field = ImGuiScopedField::Builder("Linear Accel").build();
 
     changed |= present_slider("##Linear Acceleration",
                               settings.max_linear_accel, 0.1f, "%.2f m/s²");
@@ -248,7 +246,8 @@ void PropertiesPage::present_velocity_properties(ProjectState& state) {
 
   // Linear Velocity.
   {
-    ImGuiScopedField field("Linear Velocity", COLUMN_WIDTH);
+    ImGuiScopedField field =
+        ImGuiScopedField::Builder("Linear Velocity").build();
 
     changed |= present_slider("##Linear Velocity", settings.max_linear_vel,
                               0.1f, "%.2f m/s");
@@ -258,7 +257,8 @@ void PropertiesPage::present_velocity_properties(ProjectState& state) {
 
   // Centripetal Acceleration.
   {
-    ImGuiScopedField field("Centripetal Accel", COLUMN_WIDTH);
+    ImGuiScopedField field =
+        ImGuiScopedField::Builder("Centripetal Accel").build();
 
     changed |=
         present_slider("##Centripetal Acceleration",
@@ -275,10 +275,9 @@ void PropertiesPage::present_velocity_properties(ProjectState& state) {
 }
 
 void PropertiesPage::present_editor_properties() {
-
   // Curve overlay.
   {
-    ImGuiScopedField field("Curve Overlay", COLUMN_WIDTH);
+    ImGuiScopedField field = ImGuiScopedField::Builder("Curve Overlay").build();
 
     static PathEditorPage::CurveOverlay curve_overlay =
         PathEditorPage::CurveOverlay::VELOCITY;
@@ -296,7 +295,7 @@ void PropertiesPage::present_editor_properties() {
 
   // Show tangents.
   {
-    ImGuiScopedField field("Show Tangents", COLUMN_WIDTH);
+    ImGuiScopedField field = ImGuiScopedField::Builder("Show Tangents").build();
 
     static bool show_tangents = true;
     if (ImGui::Checkbox("##Show Tangents", &show_tangents)) {
@@ -306,7 +305,7 @@ void PropertiesPage::present_editor_properties() {
 
   // Show rotation.
   {
-    ImGuiScopedField field("Show Rotation", COLUMN_WIDTH);
+    ImGuiScopedField field = ImGuiScopedField::Builder("Show Rotation").build();
 
     static bool show_rotation = true;
     if (ImGui::Checkbox("##Show Rotation", &show_rotation)) {
@@ -316,7 +315,7 @@ void PropertiesPage::present_editor_properties() {
 
   // Show curve tooltip.
   {
-    ImGuiScopedField field("Show Tooltip", COLUMN_WIDTH);
+    ImGuiScopedField field = ImGuiScopedField::Builder("Show Tooltip").build();
 
     static bool show_tooltip = true;
     if (ImGui::Checkbox("##Show Tooltip", &show_tooltip)) {
@@ -326,7 +325,8 @@ void PropertiesPage::present_editor_properties() {
 }
 
 void PropertiesPage::present_link_popup(ProjectState& state,
-                                        std::size_t point_index, bool reset) {
+                                        std::size_t point_index,
+                                        bool reset) {
   CurvePoint& point = state.current_path().points().at(point_index);
 
   static int link_index = -1;
@@ -341,16 +341,17 @@ void PropertiesPage::present_link_popup(ProjectState& state,
     new_link = false;
   }
 
-  if (!ImGui::BeginPopupModal("Link Waypoint", nullptr,
-                              ImGuiWindowFlags_NoResize |
-                                  ImGuiWindowFlags_NoMove)) {
+  if (!ImGui::BeginPopupModal(
+          "Link Waypoint", nullptr,
+          ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
     return;
   }
 
   ImGui::SetWindowSize(ImVec2(300.f, -1.f));
 
   {
-    ImGuiScopedField field("Link", 80.f);
+    ImGuiScopedField field =
+        ImGuiScopedField::Builder("Link").left_column_width(80.f).build();
 
     const char* combo_title = new_link ? "New Link"
                               : (link_index == -1)
@@ -385,7 +386,8 @@ void PropertiesPage::present_link_popup(ProjectState& state,
   }
 
   if (new_link) {
-    ImGuiScopedField field("Link Name", 80.f);
+    ImGuiScopedField field =
+        ImGuiScopedField::Builder("Link Name").left_column_width(80.f).build();
 
     ImGui::InputText("##input", link_buffer, 256);
   }
@@ -441,11 +443,11 @@ bool PropertiesPage::edit_point_position(CurvePoint& pt) {
 
   bool changed = false;
   {
-    ImGuiScopedField field("X Position", COLUMN_WIDTH);
+    ImGuiScopedField field = ImGuiScopedField::Builder("X Position").build();
     changed |= present_slider("##X Position", position.x, 0.25f, "%.2f m");
   }
   {
-    ImGuiScopedField field("Y Position", COLUMN_WIDTH);
+    ImGuiScopedField field = ImGuiScopedField::Builder("Y Position").build();
     changed |= present_slider("##Y Position", position.y, 0.25f, "%.2f m");
   }
 
@@ -454,10 +456,11 @@ bool PropertiesPage::edit_point_position(CurvePoint& pt) {
   return changed;
 }
 
-bool PropertiesPage::edit_point_headings(CurvePoint& pt, bool incoming,
+bool PropertiesPage::edit_point_headings(CurvePoint& pt,
+                                         bool incoming,
                                          bool outgoing) {
   auto show_heading_drag = [&](const char* id, bool which) -> bool {
-    ImGuiScopedField field(id + 2, COLUMN_WIDTH);
+    ImGuiScopedField field = ImGuiScopedField::Builder(id + 2).build();
 
     float heading = pt.heading(which).degrees();
     bool changed = present_slider(id, heading, 1.f, "%.2f°");
@@ -477,10 +480,11 @@ bool PropertiesPage::edit_point_headings(CurvePoint& pt, bool incoming,
   return result;
 }
 
-bool PropertiesPage::edit_point_heading_weights(CurvePoint& pt, bool incoming,
+bool PropertiesPage::edit_point_heading_weights(CurvePoint& pt,
+                                                bool incoming,
                                                 bool outgoing) {
   auto show_weight_drag = [&](const char* id, bool which) -> bool {
-    ImGuiScopedField field(id + 2, COLUMN_WIDTH);
+    ImGuiScopedField field = ImGuiScopedField::Builder(id + 2).build();
 
     float weight = pt.heading_weight(which);
     bool changed = present_slider(id, weight, 0.25f);
@@ -502,7 +506,7 @@ bool PropertiesPage::edit_point_heading_weights(CurvePoint& pt, bool incoming,
 }
 
 bool PropertiesPage::edit_point_rotation(CurvePoint& pt) {
-  ImGuiScopedField field("Rotation", COLUMN_WIDTH);
+  ImGuiScopedField field = ImGuiScopedField::Builder("Rotation").build();
 
   float rotation = pt.rotation().degrees();
   bool changed = present_slider("##Rotation", rotation, 1.f, "%.2f°");
@@ -512,8 +516,13 @@ bool PropertiesPage::edit_point_rotation(CurvePoint& pt) {
   return changed;
 }
 
-bool PropertiesPage::edit_point_previous_segment_rotation_time_percent(CurvePoint& point) {
-  ImGuiScopedField field("Previous Segment\nRotation Time %", COLUMN_WIDTH, "Percent of the incoming segment's drive time spent rotating");
+bool PropertiesPage::edit_point_previous_segment_rotation_time_percent(
+    CurvePoint& point) {
+  ImGuiScopedField field =
+      ImGuiScopedField::Builder("Previous Segment\nRotation Time %")
+          .tooltip(
+              "Percent of the incoming segment's drive time spent rotating")
+          .build();
 
   float percent = point.previous_segment_rotation_time_percent() * 100.f;
   bool changed = present_slider("##Rotation Time %", percent, 1.f, "%.0f %%");
@@ -523,11 +532,10 @@ bool PropertiesPage::edit_point_previous_segment_rotation_time_percent(CurvePoin
   point.set_previous_segment_rotation_time_percent(percent / 100.f);
 
   return changed;
-
 }
 
 bool PropertiesPage::edit_point_stop(CurvePoint& pt) {
-  ImGuiScopedField field("Stop", COLUMN_WIDTH);
+  ImGuiScopedField field = ImGuiScopedField::Builder("Stop").build();
 
   bool stop = pt.stop();
   bool changed = ImGui::Checkbox("##Stop", &stop);
@@ -537,9 +545,10 @@ bool PropertiesPage::edit_point_stop(CurvePoint& pt) {
   return changed;
 }
 
-bool PropertiesPage::present_slider(const char* id, float& value,
-                                    const float speed, const char* format) {
-
+bool PropertiesPage::present_slider(const char* id,
+                                    float& value,
+                                    const float speed,
+                                    const char* format) {
   bool active = ImGui::DragFloat(id, &value, speed, 0.f, 0.f, format);
 
   if (ImGui::IsItemActivated()) {
@@ -555,4 +564,3 @@ bool PropertiesPage::present_slider(const char* id, float& value,
 
   return active;
 }
-

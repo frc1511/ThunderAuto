@@ -8,7 +8,9 @@
 static const size_t MAX_NAME_LENGTH = 256;
 
 void PathManagerPage::present(bool* running) {
-  ImGui::SetNextWindowSize(ImVec2(400, 400), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(GET_UISIZE(PATH_MANAGER_PAGE_START_WIDTH),
+                                  GET_UISIZE(PATH_MANAGER_PAGE_START_HEIGHT)),
+                           ImGuiCond_FirstUseEver);
   ImGui::Scoped s = ImGui::Scoped::Window(name(), running);
   if (!s)
     return;

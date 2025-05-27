@@ -156,11 +156,9 @@ void App::data_write(const char* type_name, ImGuiTextBuffer* buf) {
 }
 
 void App::present_menu_bar() {
-  const ImGuiStyle& style = ImGui::GetStyle();
-
-  auto frame_padding = ImGui::Scoped::StyleVar(
+  auto frame_padding = ImGui::Scoped::StyleVarY(
       ImGuiStyleVar_FramePadding,
-      ImVec2(0.0f, style.UserSizes[UISIZE_TITLEBAR_FRAME_PADDING]));
+      GET_UISIZE(TITLEBAR_FRAME_PADDING_Y));
 
   if (ImGui::BeginMainMenuBar()) {
     {
@@ -178,7 +176,7 @@ void App::present_menu_bar() {
         {
           auto spacing = ImGui::Scoped::StyleVarY(
               ImGuiStyleVar_ItemSpacing,
-              style.UserSizes[UISIZE_TITLEBAR_ITEM_SPACING]);
+              GET_UISIZE(TITLEBAR_ITEM_SPACING_Y));
 
           export_all_paths = ImGui::MenuItem("Export All Paths");
         }
@@ -221,7 +219,7 @@ void App::present_menu_bar_title() {
   const ImGuiStyle& style = ImGui::GetStyle();
 
   const float spacer_width = ImGui::GetContentRegionAvail().x -
-                             3 * style.UserSizes[UISIZE_TITLEBAR_BUTTON_WIDTH];
+                             3 * GET_UISIZE(TITLEBAR_BUTTON_WIDTH);
 
   float title_width = 0.f;
   float filename_width = 0.f;
@@ -339,7 +337,7 @@ void App::present_file_menu() {
     const ImGuiStyle& style = ImGui::GetStyle();
     auto spacing =
         ImGui::Scoped::StyleVarY(ImGuiStyleVar_ItemSpacing,
-                                 style.UserSizes[UISIZE_TITLEBAR_ITEM_SPACING]);
+                                 GET_UISIZE(TITLEBAR_ITEM_SPACING_Y));
 
     show_menu = ImGui::BeginMenu("File");
   }
@@ -415,7 +413,7 @@ void App::present_edit_menu() {
     const ImGuiStyle& style = ImGui::GetStyle();
     auto item_spacing =
         ImGui::Scoped::StyleVarY(ImGuiStyleVar_ItemSpacing,
-                                 style.UserSizes[UISIZE_TITLEBAR_ITEM_SPACING]);
+                                 GET_UISIZE(TITLEBAR_ITEM_SPACING_Y));
 
     show_menu = ImGui::BeginMenu("Edit");
   }
@@ -443,7 +441,7 @@ void App::present_view_menu() {
     const ImGuiStyle& style = ImGui::GetStyle();
     auto item_spacing =
         ImGui::Scoped::StyleVarY(ImGuiStyleVar_ItemSpacing,
-                                 style.UserSizes[UISIZE_TITLEBAR_ITEM_SPACING]);
+                                 GET_UISIZE(TITLEBAR_ITEM_SPACING_Y));
 
     show_menu = ImGui::BeginMenu("View");
   }
@@ -467,7 +465,7 @@ void App::present_path_menu() {
     const ImGuiStyle& style = ImGui::GetStyle();
     auto item_spacing =
         ImGui::Scoped::StyleVarY(ImGuiStyleVar_ItemSpacing,
-                                 style.UserSizes[UISIZE_TITLEBAR_ITEM_SPACING]);
+                                 GET_UISIZE(TITLEBAR_ITEM_SPACING_Y));
 
     show_menu = ImGui::BeginMenu("Path");
   }
@@ -517,7 +515,7 @@ void App::present_tools_menu() {
     const ImGuiStyle& style = ImGui::GetStyle();
     auto item_spacing =
         ImGui::Scoped::StyleVarY(ImGuiStyleVar_ItemSpacing,
-                                 style.UserSizes[UISIZE_TITLEBAR_ITEM_SPACING]);
+                                 GET_UISIZE(TITLEBAR_ITEM_SPACING_Y));
 
     show_menu = ImGui::BeginMenu("Tools");
   }

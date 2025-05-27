@@ -5,12 +5,11 @@
 #include <ThunderAuto/imgui_util.hpp>
 #include <ThunderAuto/macro_util.hpp>
 
-#define COLUMN_WIDTH 150.0f
-
 void NewProjectPopup::present(bool* running) {
   ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), false,
                           ImVec2(0.5f, 0.5f));
-  ImGui::SetNextWindowSize(ImVec2(400, 250));
+  ImGui::SetNextWindowSize(ImVec2(GET_UISIZE(NEW_PROJECT_POPUP_START_WIDTH),
+                                  GET_UISIZE(NEW_PROJECT_POPUP_START_HEIGHT)));
   if (!ImGui::BeginPopupModal(m_name, nullptr, ImGuiWindowFlags_NoResize)) {
     return;
   }
@@ -29,13 +28,16 @@ void NewProjectPopup::present(bool* running) {
   // Save location.
   //
   {
-    ImGuiScopedField field("Path", ICON_FA_FILE "  Path", COLUMN_WIDTH);
+    ImGuiScopedField field =
+        ImGuiScopedField::Builder(ICON_FA_FILE "  Path").build();
 
     // Shrink the input text to make space for the browse button.
     {
       const ImGuiStyle& style = ImGui::GetStyle();
-      float browse_button_width = ImGui::CalcTextSize("Browse").x + style.FramePadding.x * 2.f;
-      ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - style.ItemSpacing.x - browse_button_width);
+      float browse_button_width =
+          ImGui::CalcTextSize("Browse").x + style.FramePadding.x * 2.f;
+      ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - style.ItemSpacing.x -
+                              browse_button_width);
     }
 
     ImGui::InputText("##Path", deploy_path_buf, 256, ImGuiInputTextFlags_None);
@@ -57,8 +59,8 @@ void NewProjectPopup::present(bool* running) {
   // Field.
   //
   {
-    ImGuiScopedField field("Field", ICON_FA_SWIMMING_POOL "  Field",
-                           COLUMN_WIDTH);
+    ImGuiScopedField field =
+        ImGuiScopedField::Builder(ICON_FA_SWIMMING_POOL "  Field").build();
 
     const char* fields[] = {"2025 - Reefscape", "2024 - Crescendo",
                             "2023 - Charged Up", "2022 - Rapid React",
@@ -108,8 +110,8 @@ void NewProjectPopup::present(bool* running) {
   // Drive Controller Selection.
   //
   {
-    ImGuiScopedField field("Controller Type", ICON_FA_CAR "  Controller Type",
-                           COLUMN_WIDTH);
+    ImGuiScopedField field =
+        ImGuiScopedField::Builder(ICON_FA_CAR "  Controller Type").build();
 
     const char* controllers[] = {"Holonomic (Swerve)", "Ramsete (Tank)"};
 
@@ -131,25 +133,29 @@ void NewProjectPopup::present(bool* running) {
   // Robot Length.
   //
   {
-    ImGuiScopedField field(
-        "Robot Length", ICON_FA_RULER_VERTICAL "  Robot Length", COLUMN_WIDTH);
+    ImGuiScopedField field =
+        ImGuiScopedField::Builder(ICON_FA_RULER_VERTICAL "  Robot Length")
+            .build();
 
     ImGui::DragFloat("##Robot Length", &robot_length, 0.1f, 0.0f, 0.0f,
                      "%.2f m");
 
-    if (robot_length < 0.0f) robot_length = 0.0f;
+    if (robot_length < 0.0f)
+      robot_length = 0.0f;
   }
 
   //
   // Robot Width.
   //
   {
-    ImGuiScopedField field(
-        "Robot Width", ICON_FA_RULER_HORIZONTAL "  Robot Width", COLUMN_WIDTH);
+    ImGuiScopedField field =
+        ImGuiScopedField::Builder(ICON_FA_RULER_HORIZONTAL "  Robot Width")
+            .build();
 
     ImGui::DragFloat("##Robot Width", &robot_width, 0.1f, 0.0f, 0.0f, "%.2f m");
 
-    if (robot_width < 0.0f) robot_width = 0.0f;
+    if (robot_width < 0.0f)
+      robot_width = 0.0f;
   }
 
   //
@@ -204,15 +210,15 @@ void NewProjectPopup::present(bool* running) {
         m_field = Field(image_path, m_field->image_rect(), m_field->size());
       }
 
-      m_project = ProjectSettings {.path = project_path,
-                                   .field = m_field.value(),
-                                   .drive_controller = drivetrain,
-                                   .robot_length = robot_length,
-                                   .robot_width = robot_width};
+      m_project = ProjectSettings{.path = project_path,
+                                  .field = m_field.value(),
+                                  .drive_controller = drivetrain,
+                                  .robot_length = robot_length,
+                                  .robot_width = robot_width};
     }
 
-    show_tooltip = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) &&
-        error_text;
+    show_tooltip =
+        ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && error_text;
   }
   if (show_tooltip) {
     ImGui::SetTooltip("* %s", error_text);
@@ -224,4 +230,3 @@ void NewProjectPopup::present(bool* running) {
     *running = false;
   }
 }
-

@@ -57,6 +57,7 @@ class GraphicsDirectX11 final : public Graphics,
 
   ImVec2 window_position() const override;
   void window_set_position(int x, int y) override;
+  void window_move_to_center() override;
 
   void window_set_title(const char* title) override;
   void window_set_should_close(bool value) override;

@@ -204,6 +204,21 @@ void GraphicsDirectX11::window_set_position(int x, int y) {
                SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOSENDCHANGING);
 }
 
+void GraphicsDirectX11::window_move_to_center() {
+  if (!m_hwnd)
+    return;
+
+  int screen_width = GetSystemMetrics(SM_CXSCREEN);
+  int screen_height = GetSystemMetrics(SM_CYSCREEN);
+
+  auto [width, height] = window_size();
+
+  int x = (screen_width - width) / 2;
+  int y = (screen_height - height) / 2;
+
+  window_set_position(x, y);
+}
+
 void GraphicsDirectX11::window_set_title(const char* title) {
   if (!m_hwnd)
     return;
@@ -352,8 +367,7 @@ void GraphicsDirectX11::draw_titlebar_button_hover(
 void GraphicsDirectX11::draw_titlebar_minimize_icon(
     const D2D_RECT_F& button_rect,
     ID2D1SolidColorBrush* brush) {
-  const ImGuiStyle& style = ImGui::GetStyle();
-  float icon_size = style.UserSizes[UISIZE_TITLEBAR_BUTTON_ICON_SIZE];
+  float icon_size = GET_UISIZE(TITLEBAR_BUTTON_ICON_SIZE);
 
   D2D_RECT_F icon_rect = get_centered_rect_in_rect(button_rect, icon_size, 0);
 
@@ -367,14 +381,13 @@ void GraphicsDirectX11::draw_titlebar_maximize_icon(
     const D2D_RECT_F& button_rect,
     ID2D1SolidColorBrush* bg_brush,
     ID2D1SolidColorBrush* icon_brush) {
-  const ImGuiStyle& style = ImGui::GetStyle();
-  float icon_size = style.UserSizes[UISIZE_TITLEBAR_BUTTON_ICON_SIZE];
+  float icon_size = GET_UISIZE(TITLEBAR_BUTTON_ICON_SIZE);
 
   D2D_RECT_F icon_rect =
       get_centered_rect_in_rect(button_rect, icon_size, icon_size);
 
   int box_corner_radius =
-      style.UserSizes[UISIZE_TITLEBAR_BUTTON_MAXIMIZE_ICON_BOX_ROUNDING];
+      GET_UISIZE(TITLEBAR_BUTTON_MAXIMIZE_ICON_BOX_ROUNDING);
 
   if (!is_window_maximized()) {
     D2D1_ROUNDED_RECT icon_rect_rounded =
@@ -383,8 +396,7 @@ void GraphicsDirectX11::draw_titlebar_maximize_icon(
     return;
   }
 
-  float box_offset =
-      style.UserSizes[UISIZE_TITLEBAR_BUTTON_MAXIMIZE_ICON_BOX_OFFSET];
+  float box_offset = GET_UISIZE(TITLEBAR_BUTTON_MAXIMIZE_ICON_BOX_OFFSET);
 
   D2D_RECT_F front_rect = icon_rect;
   front_rect.right -= box_offset;
@@ -406,8 +418,7 @@ void GraphicsDirectX11::draw_titlebar_maximize_icon(
 
 void GraphicsDirectX11::draw_titlebar_close_icon(const D2D_RECT_F& button_rect,
                                                  ID2D1SolidColorBrush* brush) {
-  const ImGuiStyle& style = ImGui::GetStyle();
-  float icon_size = style.UserSizes[UISIZE_TITLEBAR_BUTTON_ICON_SIZE];
+  float icon_size = GET_UISIZE(TITLEBAR_BUTTON_ICON_SIZE);
 
   D2D_RECT_F icon_rect =
       get_centered_rect_in_rect(button_rect, icon_size, icon_size);
@@ -589,8 +600,7 @@ TitleBarButtonRects GraphicsDirectX11::get_title_bar_button_rects() {
   UINT dpi = GetDpiForWindow(m_hwnd);
   TitleBarButtonRects button_rects;
 
-  const ImGuiStyle& style = ImGui::GetStyle();
-  int button_width = (int)style.UserSizes[UISIZE_TITLEBAR_BUTTON_WIDTH];
+  int button_width = (int)GET_UISIZE(TITLEBAR_BUTTON_WIDTH);
   button_rects.close = get_titlebar_rect();
 
   button_rects.close.left = button_rects.close.right - button_width;
@@ -690,13 +700,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     case WM_GETMINMAXINFO: {
       int menu_bar_width = app->menu_bar_width();
 
-      const ImGuiStyle& style = ImGui::GetStyle();
-      int button_width = (int)style.UserSizes[UISIZE_TITLEBAR_BUTTON_WIDTH];
+      int button_width = (int)GET_UISIZE(TITLEBAR_BUTTON_WIDTH);
 
-      int drag_area_width =
-          (int)style.UserSizes[UISIZE_TITLEBAR_DRAG_AREA_WIDTH];
-      int min_width = (int)style.UserSizes[UISIZE_WINDOW_MIN_WIDTH];
-      int min_height = (int)style.UserSizes[UISIZE_WINDOW_MIN_HEIGHT];
+      int drag_area_width = (int)GET_UISIZE(TITLEBAR_DRAG_AREA_MIN_WIDTH);
+      int min_width = (int)GET_UISIZE(WINDOW_MIN_WIDTH);
+      int min_height = (int)GET_UISIZE(WINDOW_MIN_HEIGHT);
 
       MINMAXINFO* minmax = reinterpret_cast<MINMAXINFO*>(lparam);
       minmax->ptMinTrackSize.x =

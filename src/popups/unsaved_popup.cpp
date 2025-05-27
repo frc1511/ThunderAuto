@@ -3,7 +3,8 @@
 void UnsavedPopup::present(bool* running) {
   ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), false,
                           ImVec2(0.5f, 0.5f));
-  ImGui::SetNextWindowSize(ImVec2(125, 115));
+  ImGui::SetNextWindowSize(ImVec2(GET_UISIZE(UNSAVED_POPUP_START_WIDTH),
+                                  GET_UISIZE(UNSAVED_POPUP_START_HEIGHT)));
   if (!ImGui::BeginPopupModal(m_name, nullptr,
                               ImGuiWindowFlags_AlwaysAutoResize)) {
     return;

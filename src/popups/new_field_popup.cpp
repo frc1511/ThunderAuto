@@ -7,7 +7,9 @@
 void NewFieldPopup::present(bool* running) {
   ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), false,
                           ImVec2(0.5f, 0.5f));
-  ImGui::SetNextWindowSize(ImVec2(370, 250), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(GET_UISIZE(NEW_FIELD_POPUP_START_WIDTH),
+                                  GET_UISIZE(NEW_FIELD_POPUP_START_HEIGHT)),
+                           ImGuiCond_FirstUseEver);
   if (!ImGui::BeginPopupModal(m_name, nullptr, ImGuiWindowFlags_None)) {
     return;
   }
@@ -28,7 +30,7 @@ void NewFieldPopup::present(bool* running) {
     std::string img_path;
 
     {
-      ImGuiScopedField field("Field Image", 100);
+      ImGuiScopedField field = ImGuiScopedField::Builder("Field Image").build();
 
       if (ImGui::InputText("##field_image", img_path_buf, 256,
                            ImGuiInputTextFlags_None)) {
@@ -45,11 +47,12 @@ void NewFieldPopup::present(bool* running) {
     }
 
     {
-      ImGuiScopedField field("Field Width", 100);
+      ImGuiScopedField field = ImGuiScopedField::Builder("Field Width").build();
       ImGui::InputFloat("##field_width", &m_field_size.x, 0.f, 0.f, "%0.3f m");
     }
     {
-      ImGuiScopedField field("Field Height", 100);
+      ImGuiScopedField field =
+          ImGuiScopedField::Builder("Field Height").build();
       ImGui::InputFloat("##field_height", &m_field_size.y, 0.f, 0.f, "%0.3f m");
     }
 
@@ -92,7 +95,8 @@ void NewFieldPopup::present_field_setup() {
   const ImGuiIO& io = ImGui::GetIO();
   ImDrawList* draw_list = ImGui::GetWindowDrawList();
   ImGuiWindow* win = ImGui::GetCurrentWindow();
-  if (win->SkipItems) return;
+  if (win->SkipItems)
+    return;
 
   ImVec2 win_size(ImGui::GetWindowSize());
 
@@ -110,7 +114,8 @@ void NewFieldPopup::present_field_setup() {
 
   ImRect bb(win->DC.CursorPos, win->DC.CursorPos + canvas);
   ImGui::ItemSize(bb);
-  if (!ImGui::ItemAdd(bb, 0)) return;
+  if (!ImGui::ItemAdd(bb, 0))
+    return;
 
   draw_list->AddImage(m_field_texture->id(), bb.Min, bb.Max);
 
@@ -169,4 +174,3 @@ void NewFieldPopup::present_field_setup() {
   draw_list->AddCircleFilled(min_pt, POINT_RADIUS, ImColor(252, 186, 3, 255));
   draw_list->AddCircleFilled(max_pt, POINT_RADIUS, ImColor(252, 186, 3, 255));
 }
-
