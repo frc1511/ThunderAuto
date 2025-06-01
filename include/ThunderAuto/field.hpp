@@ -57,5 +57,5 @@ private:
   ImVec2 m_size; // meters
 };
 
-void to_json(nlohmann::json& json, const Field& field);
-void from_json(const nlohmann::json& json, Field& field);
+void to_json(wpi::json& json, const Field& field);
+void from_json(const wpi::json& json, Field& field);

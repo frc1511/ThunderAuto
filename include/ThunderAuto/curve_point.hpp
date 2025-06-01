@@ -191,6 +191,6 @@ public:
 std::array<ImVec2, 4> robot_corners(ImVec2 position, Angle rotation,
                                     float robot_length, float robot_width);
 
-void to_json(nlohmann::json& json, const CurvePoint& point);
-void from_json(const nlohmann::json& json, CurvePoint& point);
+void to_json(wpi::json& json, const CurvePoint& point);
+void from_json(const wpi::json& json, CurvePoint& point);
 

@@ -29,7 +29,7 @@ OpenProjectStatus DocumentManager::open_project(std::filesystem::path path) {
   ProjectState state;
 
   try {
-    nlohmann::json json;
+    wpi::json json;
     file >> json;
 
     m_settings = json.at("settings").get<ProjectSettings>();
@@ -56,7 +56,7 @@ void DocumentManager::save() {
 
   puts("Save project");
 
-  nlohmann::json json = nlohmann::json {
+  wpi::json json = wpi::json {
       {"state", m_history.current_state()},
       {"settings", m_settings},
   };

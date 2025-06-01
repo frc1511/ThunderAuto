@@ -39,7 +39,7 @@ Field::Field(BuiltinImage builtin_image)
     m_image_rect(field_rects[static_cast<std::size_t>(builtin_image)]),
     m_size(field_sizes[static_cast<std::size_t>(builtin_image)]) {}
 
-void to_json(nlohmann::json& json, const Field& field) {
+void to_json(wpi::json& json, const Field& field) {
   std::string image_str;
   Field::ImageType type = field.type();
 
@@ -52,7 +52,7 @@ void to_json(nlohmann::json& json, const Field& field) {
   ImRect image_rect = field.image_rect();
   ImVec2 field_size = field.size();
 
-  json = nlohmann::json {
+  json = wpi::json {
       {"img_type", static_cast<std::size_t>(type)},
       {"img", image_str},
   };
@@ -67,7 +67,7 @@ void to_json(nlohmann::json& json, const Field& field) {
   }
 }
 
-void from_json(const nlohmann::json& json, Field& field) {
+void from_json(const wpi::json& json, Field& field) {
   auto type =
       static_cast<Field::ImageType>(json.at("img_type").get<std::size_t>());
 

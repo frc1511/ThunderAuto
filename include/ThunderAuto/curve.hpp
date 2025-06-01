@@ -101,6 +101,6 @@ private:
 
 extern const Curve default_new_curve;
 
-void to_json(nlohmann::json& json, const Curve& curve);
-void from_json(const nlohmann::json& json, Curve& curve);
+void to_json(wpi::json& json, const Curve& curve);
+void from_json(const wpi::json& json, Curve& curve);
 

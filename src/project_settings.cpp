@@ -1,7 +1,7 @@
 #include <ThunderAuto/project_settings.hpp>
 
-void to_json(nlohmann::json& json, const ProjectSettings& settings) {
-  json = nlohmann::json {
+void to_json(wpi::json& json, const ProjectSettings& settings) {
+  json = wpi::json {
       {"version_major", THUNDER_AUTO_VERSION_MAJOR},
       {"version_minor", THUNDER_AUTO_VERSION_MINOR},
       {"version_patch", THUNDER_AUTO_VERSION_PATCH},
@@ -14,7 +14,7 @@ void to_json(nlohmann::json& json, const ProjectSettings& settings) {
   };
 }
 
-void from_json(const nlohmann::json& json, ProjectSettings& settings) {
+void from_json(const wpi::json& json, ProjectSettings& settings) {
   if (json.contains("version_major")) {
     settings.version_major = json.at("version_major").get<int>();
   }

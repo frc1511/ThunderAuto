@@ -108,15 +108,15 @@ bool ProjectState::export_all_paths_to_csv(
   return !failed;
 }
 
-void to_json(nlohmann::json& json, const ProjectState& project) {
-  json = nlohmann::json {
+void to_json(wpi::json& json, const ProjectState& project) {
+  json = wpi::json {
       {"paths", project.paths()},
       {"actions", project.actions()},
       {"waypoint_links", project.waypoint_links()},
   };
 }
 
-void from_json(const nlohmann::json& json, ProjectState& project) {
+void from_json(const wpi::json& json, ProjectState& project) {
   project.paths() =
       json.at("paths").get<std::vector<std::pair<std::string, Curve>>>();
 

@@ -27,6 +27,6 @@ struct ProjectSettings {
   bool auto_export = false;
 };
 
-void to_json(nlohmann::json& json, const ProjectSettings& settings);
-void from_json(const nlohmann::json& json, ProjectSettings& settings);
+void to_json(wpi::json& json, const ProjectSettings& settings);
+void from_json(const wpi::json& json, ProjectSettings& settings);
 

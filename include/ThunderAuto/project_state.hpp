@@ -69,6 +69,6 @@ public:
   bool export_all_paths_to_csv(const ProjectSettings& settings) const;
 };
 
-void to_json(nlohmann::json& json, const ProjectState& project);
-void from_json(const nlohmann::json& json, ProjectState& project);
+void to_json(wpi::json& json, const ProjectState& project);
+void from_json(const wpi::json& json, ProjectState& project);
 

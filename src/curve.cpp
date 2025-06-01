@@ -370,14 +370,14 @@ void Curve::calc_other_values(std::vector<OutputCurveSegment>& segments,
   }
 }
 
-void to_json(nlohmann::json& json, const Curve& curve) {
-  json = nlohmann::json {
+void to_json(wpi::json& json, const Curve& curve) {
+  json = wpi::json {
       {"points", curve.points()},
       {"settings", curve.settings()},
   };
 }
 
-void from_json(const nlohmann::json& json, Curve& curve) {
+void from_json(const wpi::json& json, Curve& curve) {
   if (json.contains("settings")) {
     curve.settings() = json.at("settings").get<CurveSettings>();
   }

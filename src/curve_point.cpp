@@ -91,7 +91,7 @@ std::array<ImVec2, 4> robot_corners(const ImVec2 position, const Angle rotation,
   return corners;
 }
 
-void to_json(nlohmann::json& json, const CurvePoint& point) {
+void to_json(wpi::json& json, const CurvePoint& point) {
   ImVec2 pos = point.position();
   HeadingAngles headings = point.headings();
   HeadingWeights weights = point.heading_weights();
@@ -99,7 +99,7 @@ void to_json(nlohmann::json& json, const CurvePoint& point) {
   bool stop = point.stop();
   unsigned actions = point.actions();
 
-  json = nlohmann::json {{"x", pos.x},
+  json = wpi::json {{"x", pos.x},
                          {"y", pos.y},
                          {"h0", headings.incoming.radians()},
                          {"h1", headings.outgoing.radians()},
@@ -114,7 +114,7 @@ void to_json(nlohmann::json& json, const CurvePoint& point) {
                          {"link_index", point.link_index()}};
 }
 
-void from_json(const nlohmann::json& json, CurvePoint& point) {
+void from_json(const wpi::json& json, CurvePoint& point) {
   ImVec2 pos;
   pos.x = json.at("x").get<float>();
   pos.y = json.at("y").get<float>();

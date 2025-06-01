@@ -29,7 +29,7 @@ using namespace std::string_view_literals;
 using std::max;
 using std::min;
 
-#include <nlohmann/json.hpp>
+#include <wpi/json.h>
 
 #include <imgui.h>
 #include <imgui_internal.h>

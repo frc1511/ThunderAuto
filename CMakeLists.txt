@@ -244,17 +244,6 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(imgui)
 target_link_libraries(${PROJECT_NAME} imgui)
 
-# json
-
-FetchContent_Declare(
-  json
-  GIT_REPOSITORY https://github.com/nlohmann/json.git
-  GIT_TAG v3.12.0
-  GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(json)
-target_link_libraries(${PROJECT_NAME} nlohmann_json)
-
 # stb_image
 
 add_subdirectory("${THUNDER_AUTO_THIRDPARTY_DIR}/stb_image")
