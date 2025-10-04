@@ -1,22 +1,16 @@
-include("${THUNDER_AUTO_SRC_DIR}/platform/CMakeLists.txt")
-include("${THUNDER_AUTO_SRC_DIR}/pages/CMakeLists.txt")
-include("${THUNDER_AUTO_SRC_DIR}/popups/CMakeLists.txt")
-include("${THUNDER_AUTO_SRC_DIR}/graphics/CMakeLists.txt")
+include("${THUNDERAUTO_SRC_DIR}/Platform/CMakeLists.txt")
+include("${THUNDERAUTO_SRC_DIR}/Pages/CMakeLists.txt")
+include("${THUNDERAUTO_SRC_DIR}/Popups/CMakeLists.txt")
+include("${THUNDERAUTO_SRC_DIR}/Graphics/CMakeLists.txt")
 
 add_thunder_auto_sources(
-  "${THUNDER_AUTO_SRC_DIR}/main.cpp"
-  "${THUNDER_AUTO_SRC_DIR}/app.cpp"
-  "${THUNDER_AUTO_SRC_DIR}/angle.cpp"
-  "${THUNDER_AUTO_SRC_DIR}/curve.cpp"
-  "${THUNDER_AUTO_SRC_DIR}/curve_math.cpp"
-  "${THUNDER_AUTO_SRC_DIR}/curve_point.cpp"
-  "${THUNDER_AUTO_SRC_DIR}/curve_settings.cpp"
-  "${THUNDER_AUTO_SRC_DIR}/document_manager.cpp"
-  "${THUNDER_AUTO_SRC_DIR}/field.cpp"
-  "${THUNDER_AUTO_SRC_DIR}/file_types.cpp"
-  "${THUNDER_AUTO_SRC_DIR}/history_manager.cpp"
-  "${THUNDER_AUTO_SRC_DIR}/macro_util.cpp"
-  "${THUNDER_AUTO_SRC_DIR}/project_settings.cpp"
-  "${THUNDER_AUTO_SRC_DIR}/project_state.cpp"
+  "${THUNDERAUTO_SRC_DIR}/main.cpp"
+  "${THUNDERAUTO_SRC_DIR}/App.cpp"
+  "${THUNDERAUTO_SRC_DIR}/DocumentManager.cpp"
+  "${THUNDERAUTO_SRC_DIR}/DocumentEditManager.cpp"
+  "${THUNDERAUTO_SRC_DIR}/HistoryManager.cpp"
+  "${THUNDERAUTO_SRC_DIR}/Logger.cpp"
+  "${THUNDERAUTO_SRC_DIR}/Shapes.cpp"
+  "${THUNDERAUTO_SRC_DIR}/TrajectoryHelper.cpp"
 )
 

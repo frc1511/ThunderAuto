@@ -1,72 +1,119 @@
-#include <ThunderAuto/app.hpp>
-#include <ThunderAuto/font_library.hpp>
-#include <ThunderAuto/thunder_auto.hpp>
+#include <ThunderAuto/App.hpp>
+#include <ThunderAuto/Logger.hpp>
+#include <ThunderAuto/FontLibrary.hpp>
+#include <ThunderAuto/Graphics/Graphics.hpp>
+#include <imgui.h>
+#include <imgui_internal.h>
 
-#include <ThunderAuto/graphics/graphics.hpp>
-
-static void setup_data_handler(App& app);
-
-int _main(int argc, char** argv) {
-  std::optional<std::filesystem::path> start_project_path;
-  while (argc > 1) {
-    std::filesystem::path path(argv[1]);
-    if (path.extension() != ".thunderauto") {
-      fprintf(stderr, "'%s' does not have a .thunderauto extension\n", argv[1]);
-      break;
-    }
-
-    if (!std::filesystem::exists(path)) {
-      fprintf(stderr, "'%s' does not exist\n", argv[1]);
-      break;
-    }
-
-    start_project_path = std::filesystem::absolute(path);
-
-    break;
+// Returns the path to the project file to open if provided as the first command line argument.
+static std::optional<std::filesystem::path> GetStartProjectPath(int argc, char** argv) {
+  if (argc <= 1) {
+    return std::nullopt;
   }
 
-  int exit_code = 0;
+  std::filesystem::path path(argv[1]);
+  if (path.extension() != ".thunderauto") {
+    ThunderAutoLogger::Error("File '{}' does not have a .thunderauto extension", argv[1]);
+    return std::nullopt;
+
+  } else if (!std::filesystem::exists(path)) {
+    ThunderAutoLogger::Error("Project file '{}' does not exist", argv[1]);
+    return std::nullopt;
+  }
+
+  if (argc > 2) {
+    ThunderAutoLogger::Warn("Received more than one argument, ignoring all but the first file path");
+  }
+
+  std::filesystem::path startProjectPath = std::filesystem::absolute(path);
+  return startProjectPath;
+}
+
+// Tell ImGui to use App to load and save data from/to the imgui.ini file.
+static void SetupDataHandler(App& app) {
+  ImGuiSettingsHandler iniHandler;
+  iniHandler.UserData = reinterpret_cast<void*>(&app);
+
+  iniHandler.ClearAllFn = [](ImGuiContext*, ImGuiSettingsHandler* handler) {
+    App* app = reinterpret_cast<App*>(handler->UserData);
+    app->dataClear();
+  };
+
+  iniHandler.ReadInitFn = [](ImGuiContext*, ImGuiSettingsHandler*) {};
+
+  iniHandler.ReadOpenFn = [](ImGuiContext*, ImGuiSettingsHandler* handler, const char* name) -> void* {
+    App* app = reinterpret_cast<App*>(handler->UserData);
+    return reinterpret_cast<void*>(app->dataShouldOpen(name));
+  };
+
+  iniHandler.ReadLineFn = [](ImGuiContext*, ImGuiSettingsHandler* handler, void*, const char* line) {
+    App* app = reinterpret_cast<App*>(handler->UserData);
+    app->dataReadLine(line);
+  };
+
+  iniHandler.ApplyAllFn = [](ImGuiContext*, ImGuiSettingsHandler* handler) {
+    App* app = reinterpret_cast<App*>(handler->UserData);
+    app->dataApply();
+  };
+
+  iniHandler.WriteAllFn = [](ImGuiContext*, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf) {
+    App* app = reinterpret_cast<App*>(handler->UserData);
+    app->dataWrite(handler->TypeName, buf);
+  };
+
+  iniHandler.TypeName = "ThunderAuto";
+  iniHandler.TypeHash = ImHashStr(iniHandler.TypeName);
+
+  ImGuiContext* context = ImGui::GetCurrentContext();
+  context->SettingsHandlers.push_back(iniHandler);
+}
+
+// The real main function that handles all the important stuff.
+static int main2(int argc, char** argv) {
+  std::optional<std::filesystem::path> startProjectPath = GetStartProjectPath(argc, argv);
+  int exitCode = 0;
 
   App app;
   PlatformGraphics::get().init(app);
 
-  setup_data_handler(app);
+  SetupDataHandler(app);
 
-  if (start_project_path.has_value()) {
-    app.open_from_path(start_project_path.value().string());
+  if (startProjectPath.has_value()) {
+    app.openFromPath(startProjectPath.value().string());
   }
 
   //
   // Main loop.
   //
-  while (app.is_running()) {
-    if (PlatformGraphics::get().poll_events()) {
+  while (app.isRunning()) {
+    if (PlatformGraphics::get().pollEvents()) {
+      PlatformGraphics::get().windowSetShouldClose(false);
       app.close();
     }
 
-    app.process_input();
+    app.processInput();
 
-    static bool was_focused = true;
-    bool is_focused = false;
+    static bool wasFocused = true;
+    bool isFocused = false;
 
-    auto platform_io = ImGui::GetPlatformIO();
-    for (ImGuiViewport* vp : platform_io.Viewports) {
+    auto platformIO = ImGui::GetPlatformIO();
+    for (ImGuiViewport* vp : platformIO.Viewports) {
       if (vp->PlatformWindowCreated) {
-        is_focused |= ImGui::GetPlatformIO().Platform_GetWindowFocus(vp);
+        isFocused |= ImGui::GetPlatformIO().Platform_GetWindowFocus(vp);
       }
     }
 
-    if (is_focused != was_focused) {
-      app.focus_was_changed(is_focused);
-      was_focused = is_focused;
+    if (isFocused != wasFocused) {
+      app.focusWasChanged(isFocused);
+      wasFocused = isFocused;
     }
 
-    if (!is_focused) {
+    if (!isFocused) {
       std::this_thread::sleep_for(std::chrono::milliseconds(1000 / 60));
     }
 
     // New Frame.
-    PlatformGraphics::get().begin_frame();
+    PlatformGraphics::get().beginFrame();
 
     ImGuiViewport* viewport = ImGui::GetMainViewport();
 
@@ -76,9 +123,9 @@ int _main(int argc, char** argv) {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 10.f)); // Half titlebar size
+    // ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 10.f));  // Half titlebar size
 
-    bool running = app.is_running();
+    bool running = app.isRunning();
 
     // clang-format off
     if (!ImGui::Begin("ThunderAuto", &running,
@@ -96,14 +143,14 @@ int _main(int argc, char** argv) {
       break;
     }
 
-    ImGui::PopStyleVar(4);
+    ImGui::PopStyleVar(3);
 
     ImGuiIO* io = &ImGui::GetIO();
 
     // Submit the DockSpace
     if (io->ConfigFlags & ImGuiConfigFlags_DockingEnable) {
-      ImGuiID dockspace_id = ImGui::GetID("DockSpace");
-      app.setup_dockspace(dockspace_id);
+      ImGuiID dockspaceID = ImGui::GetID("DockSpace");
+      app.setupDockspace(dockspaceID);
     }
 
     // Frame Content
@@ -112,43 +159,67 @@ int _main(int argc, char** argv) {
     ImGui::End();
 
     // Render frame.
-    PlatformGraphics::get().end_frame();
+    PlatformGraphics::get().endFrame();
   }
 
   PlatformGraphics::get().deinit();
 
-  return exit_code;
+  return exitCode;
 }
 
-#if THUNDER_AUTO_WINDOWS
+// Wrapper around main2 to catch exceptions and log them.
+static int main1(int argc, char** argv) {
+  int exitCode;
+
+  try {
+    exitCode = main2(argc, argv);
+
+  } catch (std::exception& e) {
+    ThunderAutoLogger::Error("Uncaught exception: {}", e.what());
+    ThunderAutoLogger::Critical("Terminating now");
+    std::terminate();
+
+  } catch (...) {
+    ThunderAutoLogger::Error("Uncaught unknown exception");
+    ThunderAutoLogger::Critical("Terminating now");
+    std::terminate();
+  }
+
+  ThunderAutoLogger::Info("Exiting with code {}", exitCode);
+
+  return exitCode;
+}
+
+//
+// Platform-specific entry points
+//
+
+#if THUNDERAUTO_WINDOWS
 #include <Windows.h>
 
-int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine,
-            int nShowCmd) {
+int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
   (void)hInstance;
   (void)hPrevInstance;
   (void)lpCmdLine;
   (void)nShowCmd;
 
   int argc;
-  LPWSTR* wc_argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-  if (wc_argv == nullptr) {
+  LPWSTR* wcArgv = CommandLineToArgvW(GetCommandLineW(), &argc);
+  if (wcArgv == nullptr) {
     fputs("GetCommandLineW() failed\n", stderr);
     return 1;
   }
 
   char** argv = new char*[argc];
   for (int i = 0; i < argc; ++i) {
-    int len = WideCharToMultiByte(CP_UTF8, 0, wc_argv[i], -1, nullptr, 0,
-                                  nullptr, nullptr);
+    int len = WideCharToMultiByte(CP_UTF8, 0, wcArgv[i], -1, nullptr, 0, nullptr, nullptr);
     argv[i] = new char[len];
-    WideCharToMultiByte(CP_UTF8, 0, wc_argv[i], -1, argv[i], len, nullptr,
-                        nullptr);
+    WideCharToMultiByte(CP_UTF8, 0, wcArgv[i], -1, argv[i], len, nullptr, nullptr);
   }
 
-  LocalFree(wc_argv);
+  LocalFree(wcArgv);
 
-  int exit_code = _main(argc, argv);
+  int exitCode = main1(argc, argv);
 
   for (int i = 0; i < argc; ++i) {
     delete[] argv[i];
@@ -156,50 +227,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine,
 
   delete[] argv;
 
-  return exit_code;
+  return exitCode;
 }
 
 #else
-int main(int argc, char** argv) { return _main(argc, argv); }
-#endif
-
-static void setup_data_handler(App& app) {
-  ImGuiSettingsHandler ini_handler;
-  ini_handler.UserData = reinterpret_cast<void*>(&app);
-
-  ini_handler.ClearAllFn = [](ImGuiContext*, ImGuiSettingsHandler* handler) {
-    App* app = reinterpret_cast<App*>(handler->UserData);
-    app->data_clear();
-  };
-
-  ini_handler.ReadInitFn = [](ImGuiContext*, ImGuiSettingsHandler*) {};
-
-  ini_handler.ReadOpenFn = [](ImGuiContext*, ImGuiSettingsHandler* handler,
-                              const char* name) -> void* {
-    App* app = reinterpret_cast<App*>(handler->UserData);
-    return reinterpret_cast<void*>(app->data_should_open(name));
-  };
-
-  ini_handler.ReadLineFn = [](ImGuiContext*, ImGuiSettingsHandler* handler,
-                              void*, const char* line) {
-    App* app = reinterpret_cast<App*>(handler->UserData);
-    app->data_read_line(line);
-  };
-
-  ini_handler.ApplyAllFn = [](ImGuiContext*, ImGuiSettingsHandler* handler) {
-    App* app = reinterpret_cast<App*>(handler->UserData);
-    app->data_apply();
-  };
-
-  ini_handler.WriteAllFn = [](ImGuiContext*, ImGuiSettingsHandler* handler,
-                              ImGuiTextBuffer* buf) {
-    App* app = reinterpret_cast<App*>(handler->UserData);
-    app->data_write(handler->TypeName, buf);
-  };
-
-  ini_handler.TypeName = "ThunderAuto";
-  ini_handler.TypeHash = ImHashStr(ini_handler.TypeName);
-
-  ImGuiContext* context = ImGui::GetCurrentContext();
-  context->SettingsHandlers.push_back(ini_handler);
+int main(int argc, char** argv) {
+  return main1(argc, argv);
 }
+#endif

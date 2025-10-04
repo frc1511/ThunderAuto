@@ -3,32 +3,32 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>English</string>
+  <string>${THUNDERAUTO_BUNDLE_DEVELOPMENT_REGION}</string>
 	<key>CFBundleExecutable</key>
 	<string>${PROJECT_NAME}</string>
 	<key>CFBundleIconFile</key>
-	<string>${THUNDER_AUTO_BUNDLE_ICON_FILE}</string>
+	<string>${THUNDERAUTO_BUNDLE_ICON_FILE}</string>
 	<key>CFBundleIdentifier</key>
-	<string>${THUNDER_AUTO_BUNDLE_IDENTIFIER}</string>
+	<string>${THUNDERAUTO_BUNDLE_IDENTIFIER}</string>
 	<key>LSApplicationCategoryType</key>
-	<string>${THUNDER_AUTO_APP_CATEGORY}</string>
+	<string>${THUNDERAUTO_APP_CATEGORY}</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleLongVersionString</key>
-	<string>${THUNDER_AUTO_LONG_VERSION_STRING}</string>
+	<string>${THUNDERAUTO_VERSION}</string>
 	<key>CFBundleName</key>
-	<string>${THUNDER_AUTO_BUNDLE_NAME}</string>
+	<string>${THUNDERAUTO_BUNDLE_NAME}</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>${THUNDER_AUTO_SHORT_VERSION_STRING}</string>
+	<string>${THUNDERAUTO_VERSION_MAJOR}.${THUNDERAUTO_VERSION_MINOR}</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>${THUNDER_AUTO_VERSION}</string>
+	<string>${THUNDERAUTO_VERSION}</string>
 	<key>CSResourcesFileMapped</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
-	<string>${THUNDER_AUTO_COPYRIGHT}</string>
+	<string>${THUNDERAUTO_COPYRIGHT}</string>
 </dict>
 </plist>

@@ -15,11 +15,11 @@ You do not need to install any third-party libraries to build or run ThunderAuto
 
 ### Configuration:
 Available options:
-- `THUNDER_AUTO_DIRECTX11=<ON/OFF>`
+- `THUNDERAUTO_DIRECTX11=<ON/OFF>`
   - On Windows, set the graphics backend to DirectX 11 (default on Windows).
-- `THUNDER_AUTO_OPENGL=<ON/OFF>`
+- `THUNDERAUTO_OPENGL=<ON/OFF>`
   - Set the graphics backend to OpenGL (default on macOS+Linux).
-- `THUNDER_LIB_DIR="/path/to/ThunderLib/"`
+- `THUNDERLIB_DIR="/path/to/ThunderLib/"`
   - Instead of fetching the latest version of ThunderLib at compile time, specify a local directory where ThunderLib is located (this is useful for simultaneous development of ThunderAuto and ThunderLib).
 
 Generators:
