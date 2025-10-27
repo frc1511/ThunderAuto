@@ -96,10 +96,11 @@ static int main2(int argc, char** argv) {
     static bool wasFocused = true;
     bool isFocused = false;
 
-    auto platformIO = ImGui::GetPlatformIO();
+    ImGuiPlatformIO& platformIO = ImGui::GetPlatformIO();
     for (ImGuiViewport* vp : platformIO.Viewports) {
       if (vp->PlatformWindowCreated) {
-        isFocused |= ImGui::GetPlatformIO().Platform_GetWindowFocus(vp);
+        void* nativeWindowHandle = vp->PlatformHandle;
+        isFocused |= getPlatformGraphics().isWindowFocused(nativeWindowHandle);
       }
     }
 
