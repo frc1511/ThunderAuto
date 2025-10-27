@@ -1,4 +1,5 @@
-#include <ThunderAuto/Platform/MacOS.hpp>
+#include "PlatformMacOS.hpp"
+
 #import <Foundation/Foundation.h>
 #import <AppKit/AppKit.h>
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
@@ -19,7 +20,7 @@ NSArray* getFileTypes(const FileExtensionList& extensions) {
   return types;
 }
 
-std::filesystem::path PlatformMacOS::openFileDialog(FileType type, const FileExtensionList& extensions) {
+std::filesystem::path PlatformMacOS::openFileDialog(FileType type, const FileExtensionList& extensions) noexcept {
   @autoreleasepool {
 
   NSOpenPanel* openDialog = [NSOpenPanel openPanel];
@@ -56,17 +57,14 @@ std::filesystem::path PlatformMacOS::openFileDialog(FileType type, const FileExt
     // User canceled the dialog.
     return "";
   }
-  else {
-    // An error occurred.
-    return "";
-  }
 
+  // An error occurred.
   return "";
 
   }
 }
 
-std::filesystem::path PlatformMacOS::saveFileDialog(const FileExtensionList& extensions) {
+std::filesystem::path PlatformMacOS::saveFileDialog(const FileExtensionList& extensions) noexcept {
   NSSavePanel* save_dialog = [NSSavePanel savePanel];
 
   if (extensions.size()) {

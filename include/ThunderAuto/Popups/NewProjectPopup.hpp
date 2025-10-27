@@ -1,6 +1,5 @@
 #pragma once
 
-#include <ThunderAuto/Platform/PlatformManager.hpp>
 #include <ThunderAuto/Popups/Popup.hpp>
 #include <ThunderLibCore/Auto/ThunderAutoProject.hpp>
 #include <ThunderLibCore/Auto/ThunderAutoFieldImage.hpp>
@@ -10,8 +9,6 @@
 using namespace thunder::core;
 
 class NewProjectPopup : public Popup {
-  PlatformManager& m_platformManager;
-
   // Result
   ThunderAutoProjectSettings m_project;
 
@@ -26,7 +23,7 @@ class NewProjectPopup : public Popup {
   float m_robotWidth;
 
  public:
-  explicit NewProjectPopup(PlatformManager& platformManager) : m_platformManager(platformManager) { reset(); }
+  NewProjectPopup() { reset(); }
 
   void present(bool* running) override;
   const char* name() const noexcept override { return "New Project"; }

@@ -1,6 +1,7 @@
 #include <ThunderAuto/Popups/SaveProjectErrorPopup.hpp>
 #include <imgui.h>
 #include <imgui_raii.h>
+#include <cmath>
 
 void SaveProjectErrorPopup::present(bool* running) {
   ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), false, ImVec2(0.5f, 0.5f));

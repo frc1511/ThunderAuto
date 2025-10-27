@@ -1,4 +1,4 @@
-#include "graphics_directx11.hpp"
+#include "DX11Graphics.hpp"
 
 #include <wrl/client.h>
 #include <windowsx.h>
@@ -6,7 +6,7 @@
 #include <imgui_impl_dx11.h>
 #include <imgui_impl_win32.h>
 
-static UINT g_resize_width = 0, g_resize_height = 0;
+static UINT g_resizeWidth = 0, g_resizeHeight = 0;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
@@ -44,7 +44,7 @@ void GraphicsDirectX11::init(App& app) {
                       DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, nullptr, nullptr, m_wc.hInstance, nullptr);
 
   // Initialize DirectX
-  if (!init_directx()) {
+  if (!initDirectX()) {
     UnregisterClassW(m_wc.lpszClassName, m_wc.hInstance);
     exit(1);
   }
@@ -60,7 +60,7 @@ void GraphicsDirectX11::init(App& app) {
   apply_ui_style();
 
   ImGui_ImplWin32_Init(m_hwnd);
-  ImGui_ImplDX11_Init(m_device, m_device_context);
+  ImGui_ImplDX11_Init(m_device, m_deviceContext);
 
   m_init = true;
 }
@@ -74,12 +74,12 @@ void GraphicsDirectX11::deinit() {
 
   ImGui::DestroyContext();
 
-  deinit_directx();
+  deinitDirectX();
   DestroyWindow(m_hwnd);
   UnregisterClassW(m_wc.lpszClassName, m_wc.hInstance);
 }
 
-bool GraphicsDirectX11::poll_events() {
+bool GraphicsDirectX11::pollEvents() {
   if (!m_init)
     return false;
 
@@ -92,22 +92,22 @@ bool GraphicsDirectX11::poll_events() {
     }
   }
 
-  if (m_swap_chain_occluded && m_swap_chain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED) {
+  if (m_swapChainOccluded && m_swapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED) {
     Sleep(10);
     return false;
   }
-  m_swap_chain_occluded = false;
+  m_swapChainOccluded = false;
 
-  if (g_resize_width != 0 && g_resize_height != 0) {
-    deinit_render_targets();
-    m_swap_chain->ResizeBuffers(0, g_resize_width, g_resize_height, DXGI_FORMAT_UNKNOWN, 0);
-    g_resize_width = g_resize_height = 0;
-    init_render_targets();
+  if (g_resizeWidth != 0 && g_resizeHeight != 0) {
+    deinitRenderTargets();
+    m_swapChain->ResizeBuffers(0, g_resizeWidth, g_resizeHeight, DXGI_FORMAT_UNKNOWN, 0);
+    g_resizeWidth = g_resizeHeight = 0;
+    initRenderTargets();
   }
   return false;
 }
 
-void GraphicsDirectX11::begin_frame() {
+void GraphicsDirectX11::beginFrame() {
   if (!m_init)
     return;
 
@@ -117,18 +117,18 @@ void GraphicsDirectX11::begin_frame() {
   ImGui::NewFrame();
 }
 
-void GraphicsDirectX11::end_frame() {
+void GraphicsDirectX11::endFrame() {
   if (!m_init)
     return;
 
   ImGui::Render();
 
-  const ImVec4 clear_color = ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
+  const ImVec4 clearColor = ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
 
-  const float clear_color_with_alpha[4] = {clear_color.x * clear_color.w, clear_color.y * clear_color.w,
-                                           clear_color.z * clear_color.w, clear_color.w};
-  m_device_context->OMSetRenderTargets(1, &m_main_render_target_view, nullptr);
-  m_device_context->ClearRenderTargetView(m_main_render_target_view, clear_color_with_alpha);
+  const float clearColorWithAlpha[4] = {clearColor.x * clearColor.w, clearColor.y * clearColor.w,
+                                        clearColor.z * clearColor.w, clearColor.w};
+  m_deviceContext->OMSetRenderTargets(1, &m_mainRenderTargetView, nullptr);
+  m_deviceContext->ClearRenderTargetView(m_mainRenderTargetView, clearColorWithAlpha);
   ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
   // Update and Render additional Platform Windows
@@ -138,22 +138,22 @@ void GraphicsDirectX11::end_frame() {
   }
 
   // Render custom minimize/maximize/close buttons in the title bar.
-  m_d2d_render_target->BeginDraw();
-  draw_titlebar_buttons();
-  m_d2d_render_target->EndDraw();
+  m_d2dRenderTarget->BeginDraw();
+  drawTitlebarButtons();
+  m_d2dRenderTarget->EndDraw();
 
-  HRESULT hr = m_swap_chain->Present(1, 0);  // Present with vsync
-  m_swap_chain_occluded = (hr == DXGI_STATUS_OCCLUDED);
+  HRESULT hr = m_swapChain->Present(1, 0);  // Present with vsync
+  m_swapChainOccluded = (hr == DXGI_STATUS_OCCLUDED);
 }
 
-float GraphicsDirectX11::dpi_scale() const {
+float GraphicsDirectX11::getDPIScale() const {
   if (!m_hwnd)
     return 1.f;
 
   return ImGui_ImplWin32_GetDpiScaleForHwnd(m_hwnd);
 }
 
-ImVec2 GraphicsDirectX11::window_size() const {
+ImVec2 GraphicsDirectX11::getMainWindowSize() const {
   if (!m_hwnd)
     return ImVec2(0, 0);
 
@@ -162,7 +162,7 @@ ImVec2 GraphicsDirectX11::window_size() const {
   return ImVec2((float)(rect.right - rect.left), (float)(rect.bottom - rect.top));
 }
 
-void GraphicsDirectX11::window_set_size(int width, int height) {
+void GraphicsDirectX11::setMainWindowSize(int width, int height) {
   if (!m_hwnd)
     return;
 
@@ -174,7 +174,7 @@ void GraphicsDirectX11::window_set_size(int width, int height) {
   SetWindowPos(m_hwnd, nullptr, x, y, width, height, SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOSENDCHANGING);
 }
 
-ImVec2 GraphicsDirectX11::window_position() const {
+ImVec2 GraphicsDirectX11::getMainWindowPosition() const {
   if (!m_hwnd)
     return ImVec2(0, 0);
 
@@ -183,7 +183,7 @@ ImVec2 GraphicsDirectX11::window_position() const {
   return ImVec2((float)(rect.left), (float)(rect.top));
 }
 
-void GraphicsDirectX11::window_set_position(int x, int y) {
+void GraphicsDirectX11::setMainWindowPosition(int x, int y) {
   if (!m_hwnd)
     return;
 
@@ -195,29 +195,29 @@ void GraphicsDirectX11::window_set_position(int x, int y) {
   SetWindowPos(m_hwnd, nullptr, x, y, width, height, SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOSENDCHANGING);
 }
 
-void GraphicsDirectX11::window_move_to_center() {
+void GraphicsDirectX11::moveMainWindowToCenter() {
   if (!m_hwnd)
     return;
 
-  int screen_width = GetSystemMetrics(SM_CXSCREEN);
-  int screen_height = GetSystemMetrics(SM_CYSCREEN);
+  int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+  int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
-  auto [width, height] = window_size();
+  auto [width, height] = getMainWindowSize();
 
-  int x = (screen_width - width) / 2;
-  int y = (screen_height - height) / 2;
+  int x = (screenWidth - width) / 2;
+  int y = (screenHeight - height) / 2;
 
-  window_set_position(x, y);
+  setMainWindowPosition(x, y);
 }
 
-void GraphicsDirectX11::window_set_title(const char* title) {
+void GraphicsDirectX11::setMainWindowTitle(const char* title) {
   if (!m_hwnd)
     return;
 
   SetWindowTextA(m_hwnd, title);
 }
 
-void GraphicsDirectX11::window_set_should_close(bool value) {
+void GraphicsDirectX11::setMainWindowShouldClose(bool value) {
   if (!m_hwnd)
     return;
 
@@ -228,7 +228,7 @@ void GraphicsDirectX11::window_set_should_close(bool value) {
   }
 }
 
-void GraphicsDirectX11::window_focus() {
+void GraphicsDirectX11::focusMainWindow() {
   if (!m_hwnd)
     return;
 
@@ -236,14 +236,22 @@ void GraphicsDirectX11::window_focus() {
   SetFocus(m_hwnd);
 }
 
-bool GraphicsDirectX11::is_window_focused() {
+bool GraphicsDirectX11::isMainWindowFocused() {
   if (!m_hwnd)
     return true;
 
   return GetFocus() == m_hwnd;
 }
 
-bool GraphicsDirectX11::is_window_maximized() {
+bool GraphicsDirectX11::isWindowFocused(void* platformHandle) override {
+  if (!platformHandle)
+    return false;
+
+  HWND hwnd = reinterpret_cast<HWND>(platformHandle);
+  return GetFocus() == hwnd;
+}
+
+bool GraphicsDirectX11::isMainWindowMaximized() {
   if (!m_hwnd)
     return false;
 
@@ -260,181 +268,179 @@ static inline D2D_RECT_F to_d2d_rect(const RECT& rect) {
   return D2D1::RectF((float)rect.left, (float)rect.top, (float)rect.right, (float)rect.bottom);
 }
 
-static D2D_RECT_F get_centered_rect_in_rect(const D2D_RECT_F& outer_rect,
-                                            float center_width,
-                                            float center_height) {
-  float outer_width = outer_rect.right - outer_rect.left;
-  float outer_height = outer_rect.bottom - outer_rect.top;
+static D2D_RECT_F get_centered_rect_in_rect(const D2D_RECT_F& outerRect,
+                                            float centerWidth,
+                                            float centerHeight) {
+  float outerWidth = outerRect.right - outerRect.left;
+  float outerHeight = outerRect.bottom - outerRect.top;
 
-  center_width = min(center_width, outer_width);
-  center_height = min(center_height, outer_height);
+  centerWidth = min(centerWidth, outerWidth);
+  centerHeight = min(centerHeight, outerHeight);
 
-  float padding_x = (outer_width - center_width) / 2.f;
-  float padding_y = (outer_height - center_height) / 2.f;
+  float padding_x = (outerWidth - centerWidth) / 2.f;
+  float padding_y = (outerHeight - centerHeight) / 2.f;
 
   D2D_RECT_F center;
-  center.left = outer_rect.left + padding_x;
-  center.top = outer_rect.top + padding_y;
-  center.right = center.left + center_width;
-  center.bottom = center.top + center_height;
+  center.left = outerRect.left + padding_x;
+  center.top = outerRect.top + padding_y;
+  center.right = center.left + centerWidth;
+  center.bottom = center.top + centerHeight;
 
   return center;
 }
 
-void GraphicsDirectX11::draw_titlebar_buttons() {
+void GraphicsDirectX11::drawTitlebarButtons() {
   HRESULT hr;
-  D2D1_BRUSH_PROPERTIES brush_props;
-  brush_props.opacity = 1.f;
+  D2D1_BRUSH_PROPERTIES brushProps;
+  brushProps.opacity = 1.f;
 
   const ImGuiStyle& style = ImGui::GetStyle();
 
-  Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> title_bar_bg_brush;
-  D2D1_COLOR_F* title_bar_color = (D2D1_COLOR_F*)&style.Colors[ImGuiCol_TitleBg];
-  hr = m_d2d_render_target->CreateSolidColorBrush(title_bar_color, &brush_props, &title_bar_bg_brush);
+  Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> titlebarBgBrush;
+  D2D1_COLOR_F* titlebarColor = (D2D1_COLOR_F*)&style.Colors[ImGuiCol_TitleBg];
+  hr = m_d2dRenderTarget->CreateSolidColorBrush(titlebarColor, &brushProps, &titlebarBgBrush);
   if (FAILED(hr))
     return;
 
-  Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> button_hovered_bg_brush;
-  D2D1_COLOR_F* button_hovered_color = (D2D1_COLOR_F*)&style.Colors[ImGuiCol_HeaderHovered];
-  hr = m_d2d_render_target->CreateSolidColorBrush(button_hovered_color, &brush_props,
-                                                  &button_hovered_bg_brush);
+  Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> buttonHoveredBgBrush;
+  D2D1_COLOR_F* buttonHoveredColor = (D2D1_COLOR_F*)&style.Colors[ImGuiCol_HeaderHovered];
+  hr = m_d2dRenderTarget->CreateSolidColorBrush(buttonHoveredColor, &brushProps, &buttonHoveredBgBrush);
   if (FAILED(hr))
     return;
 
-  Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> close_button_hovered_bg_brush;
-  D2D1_COLOR_F close_button_hovered_color = D2D1::ColorF(0.8f, 0.f, 0.f, 1.f);
-  hr = m_d2d_render_target->CreateSolidColorBrush(&close_button_hovered_color, &brush_props,
-                                                  &close_button_hovered_bg_brush);
+  Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> close_buttonHoveredBgBrush;
+  D2D1_COLOR_F closeButtonHoveredColor = D2D1::ColorF(0.8f, 0.f, 0.f, 1.f);
+  hr = m_d2dRenderTarget->CreateSolidColorBrush(&closeButtonHoveredColor, &brushProps,
+                                                &close_buttonHoveredBgBrush);
   if (FAILED(hr))
     return;
 
-  Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> button_icon_brush;
-  D2D1_COLOR_F button_icon_color = *(D2D1_COLOR_F*)&style.Colors[ImGuiCol_Text];
-  if (!is_window_focused())
-    button_icon_color.a = .5f;
-  hr = m_d2d_render_target->CreateSolidColorBrush(&button_icon_color, &brush_props, &button_icon_brush);
+  Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> buttonIconBrush;
+  D2D1_COLOR_F buttonIconColor = *(D2D1_COLOR_F*)&style.Colors[ImGuiCol_Text];
+  if (!isMainWindowFocused()) {
+    buttonIconColor.a = .5f;
+  }
+  hr = m_d2dRenderTarget->CreateSolidColorBrush(&buttonIconColor, &brushProps, &buttonIconBrush);
   if (FAILED(hr))
     return;
 
-  TitleBarButtonRects button_rects = get_title_bar_button_rects();
+  TitleBarButtonRects buttonRects = getTitlebarButtonRects();
 
   // Draw background color when hovering a button.
 
-  TitleBarButton hovered_button = static_cast<TitleBarButton>(GetWindowLongPtrW(m_hwnd, GWLP_USERDATA));
+  TitleBarButton hoveredButton = static_cast<TitleBarButton>(GetWindowLongPtrW(m_hwnd, GWLP_USERDATA));
 
-  if (hovered_button != BUTTON_NONE) {
-    auto rect = to_d2d_rect(button_rects.rects[hovered_button]);
-    auto brush = (hovered_button == BUTTON_CLOSE) ? close_button_hovered_bg_brush.Get()
-                                                  : button_hovered_bg_brush.Get();
-    draw_titlebar_button_hover(rect, brush);
+  if (hoveredButton != BUTTON_NONE) {
+    auto rect = to_d2d_rect(buttonRects.rects[hoveredButton]);
+    auto brush =
+        (hoveredButton == BUTTON_CLOSE) ? close_buttonHoveredBgBrush.Get() : buttonHoveredBgBrush.Get();
+    drawTitlebarButtonHover(rect, brush);
   }
 
   // Draw the icons on the buttons.
 
-  auto minimize_rect = to_d2d_rect(button_rects.minimize);
-  auto maximize_rect = to_d2d_rect(button_rects.maximize);
-  auto close_rect = to_d2d_rect(button_rects.close);
+  auto minimizeRect = to_d2d_rect(buttonRects.minimize);
+  auto maximizeRect = to_d2d_rect(buttonRects.maximize);
+  auto closeRect = to_d2d_rect(buttonRects.close);
 
-  draw_titlebar_minimize_icon(minimize_rect, button_icon_brush.Get());
-  draw_titlebar_maximize_icon(maximize_rect, title_bar_bg_brush.Get(), button_icon_brush.Get());
-  draw_titlebar_close_icon(close_rect, button_icon_brush.Get());
+  drawTitlebarMinimizeIcon(minimizeRect, buttonIconBrush.Get());
+  drawTitlebarMaximizeIcon(maximizeRect, titlebarBgBrush.Get(), buttonIconBrush.Get());
+  drawTitlebarCloseIcon(closeRect, buttonIconBrush.Get());
 }
 
-void GraphicsDirectX11::draw_titlebar_button_hover(const D2D_RECT_F& button_rect,
-                                                   ID2D1SolidColorBrush* brush) {
-  m_d2d_render_target->FillRectangle(&button_rect, brush);
+void GraphicsDirectX11::drawTitlebarButtonHover(const D2D_RECT_F& buttonRect, ID2D1SolidColorBrush* brush) {
+  m_d2dRenderTarget->FillRectangle(&buttonRect, brush);
 }
 
-void GraphicsDirectX11::draw_titlebar_minimize_icon(const D2D_RECT_F& button_rect,
-                                                    ID2D1SolidColorBrush* brush) {
-  float icon_size = GET_UISIZE(TITLEBAR_BUTTON_ICON_SIZE);
+void GraphicsDirectX11::drawTitlebarMinimizeIcon(const D2D_RECT_F& buttonRect, ID2D1SolidColorBrush* brush) {
+  float iconSize = GET_UISIZE(TITLEBAR_BUTTON_ICON_SIZE);
 
-  D2D_RECT_F icon_rect = get_centered_rect_in_rect(button_rect, icon_size, 0);
+  D2D_RECT_F iconRect = get_centered_rect_in_rect(buttonRect, iconSize, 0);
 
-  D2D1_POINT_2F line_begin = D2D1::Point2F(icon_rect.left, icon_rect.top);
-  D2D1_POINT_2F line_end = D2D1::Point2F(icon_rect.right, icon_rect.top);
+  D2D1_POINT_2F lineBegin = D2D1::Point2F(iconRect.left, iconRect.top);
+  D2D1_POINT_2F lineEnd = D2D1::Point2F(iconRect.right, iconRect.top);
 
-  m_d2d_render_target->DrawLine(line_begin, line_end, brush);
+  m_d2dRenderTarget->DrawLine(lineBegin, lineEnd, brush);
 }
 
-void GraphicsDirectX11::draw_titlebar_maximize_icon(const D2D_RECT_F& button_rect,
-                                                    ID2D1SolidColorBrush* bg_brush,
-                                                    ID2D1SolidColorBrush* icon_brush) {
-  float icon_size = GET_UISIZE(TITLEBAR_BUTTON_ICON_SIZE);
+void GraphicsDirectX11::drawTitlebarMaximizeIcon(const D2D_RECT_F& buttonRect,
+                                                 ID2D1SolidColorBrush* bgBrush,
+                                                 ID2D1SolidColorBrush* iconBrush) {
+  float iconSize = GET_UISIZE(TITLEBAR_BUTTON_ICON_SIZE);
 
-  D2D_RECT_F icon_rect = get_centered_rect_in_rect(button_rect, icon_size, icon_size);
+  D2D_RECT_F iconRect = get_centered_rect_in_rect(buttonRect, iconSize, iconSize);
 
-  int box_corner_radius = GET_UISIZE(TITLEBAR_BUTTON_MAXIMIZE_ICON_BOX_ROUNDING);
+  int boxCornerRadius = GET_UISIZE(TITLEBAR_BUTTON_MAXIMIZE_ICON_BOX_ROUNDING);
 
-  if (!is_window_maximized()) {
-    D2D1_ROUNDED_RECT icon_rect_rounded = D2D1::RoundedRect(icon_rect, box_corner_radius, box_corner_radius);
-    m_d2d_render_target->DrawRoundedRectangle(&icon_rect_rounded, icon_brush);
+  if (!isMainWindowMaximized()) {
+    D2D1_ROUNDED_RECT icon_rect_rounded = D2D1::RoundedRect(iconRect, boxCornerRadius, boxCornerRadius);
+    m_d2dRenderTarget->DrawRoundedRectangle(&icon_rect_rounded, iconBrush);
     return;
   }
 
-  float box_offset = GET_UISIZE(TITLEBAR_BUTTON_MAXIMIZE_ICON_BOX_OFFSET);
+  float boxOffset = GET_UISIZE(TITLEBAR_BUTTON_MAXIMIZE_ICON_BOX_OFFSET);
 
-  D2D_RECT_F front_rect = icon_rect;
-  front_rect.right -= box_offset;
-  front_rect.top += box_offset;
+  D2D_RECT_F frontRect = iconRect;
+  frontRect.right -= boxOffset;
+  frontRect.top += boxOffset;
 
-  D2D_RECT_F back_rect = icon_rect;
-  back_rect.left += box_offset;
-  back_rect.bottom -= box_offset;
+  D2D_RECT_F backRect = iconRect;
+  backRect.left += boxOffset;
+  backRect.bottom -= boxOffset;
 
-  D2D1_ROUNDED_RECT front_rect_rounded = D2D1::RoundedRect(front_rect, box_corner_radius, box_corner_radius);
-  D2D1_ROUNDED_RECT back_rect_rounded = D2D1::RoundedRect(back_rect, box_corner_radius, box_corner_radius);
+  D2D1_ROUNDED_RECT frontRectRounded = D2D1::RoundedRect(frontRect, boxCornerRadius, boxCornerRadius);
+  D2D1_ROUNDED_RECT backRectRounded = D2D1::RoundedRect(backRect, boxCornerRadius, boxCornerRadius);
 
-  m_d2d_render_target->DrawRoundedRectangle(&back_rect_rounded, icon_brush);
-  m_d2d_render_target->FillRoundedRectangle(&front_rect_rounded, bg_brush);
-  m_d2d_render_target->DrawRoundedRectangle(&front_rect_rounded, icon_brush);
+  m_d2dRenderTarget->DrawRoundedRectangle(&backRectRounded, iconBrush);
+  m_d2dRenderTarget->FillRoundedRectangle(&frontRectRounded, bgBrush);
+  m_d2dRenderTarget->DrawRoundedRectangle(&frontRectRounded, iconBrush);
 }
 
-void GraphicsDirectX11::draw_titlebar_close_icon(const D2D_RECT_F& button_rect, ID2D1SolidColorBrush* brush) {
-  float icon_size = GET_UISIZE(TITLEBAR_BUTTON_ICON_SIZE);
+void GraphicsDirectX11::drawTitlebarCloseIcon(const D2D_RECT_F& buttonRect, ID2D1SolidColorBrush* brush) {
+  float iconSize = GET_UISIZE(TITLEBAR_BUTTON_ICON_SIZE);
 
-  D2D_RECT_F icon_rect = get_centered_rect_in_rect(button_rect, icon_size, icon_size);
+  D2D_RECT_F iconRect = get_centered_rect_in_rect(buttonRect, iconSize, iconSize);
 
-  D2D1_POINT_2F line_begin, line_end;
+  D2D1_POINT_2F lineBegin, lineEnd;
 
-  line_begin = D2D1::Point2F(icon_rect.left, icon_rect.top);
-  line_end = D2D1::Point2F(icon_rect.right, icon_rect.bottom);
+  lineBegin = D2D1::Point2F(iconRect.left, iconRect.top);
+  lineEnd = D2D1::Point2F(iconRect.right, iconRect.bottom);
 
-  m_d2d_render_target->DrawLine(line_begin, line_end, brush);
+  m_d2dRenderTarget->DrawLine(lineBegin, lineEnd, brush);
 
-  line_begin = D2D1::Point2F(icon_rect.left, icon_rect.bottom);
-  line_end = D2D1::Point2F(icon_rect.right, icon_rect.top);
+  lineBegin = D2D1::Point2F(iconRect.left, iconRect.bottom);
+  lineEnd = D2D1::Point2F(iconRect.right, iconRect.top);
 
-  m_d2d_render_target->DrawLine(line_begin, line_end, brush);
+  m_d2dRenderTarget->DrawLine(lineBegin, lineEnd, brush);
 }
 
-bool GraphicsDirectX11::init_directx() {
-  if (!init_d3d_and_swapchain()) {
-    deinit_swapchain();
-    deinit_d3d();
+bool GraphicsDirectX11::initDirectX() {
+  if (!initD3DAndSwapChain()) {
+    deinitSwapChain();
+    deinitD3D();
     return false;
   }
 
-  if (!init_d2d()) {
-    deinit_swapchain();
-    deinit_d3d();
-    deinit_d2d();
+  if (!initD2D()) {
+    deinitSwapChain();
+    deinitD3D();
+    deinitD2D();
     return false;
   }
 
-  init_render_targets();
+  initRenderTargets();
 
   return true;
 }
 
-void GraphicsDirectX11::deinit_directx() {
-  deinit_render_targets();
-  deinit_swapchain();
-  deinit_d3d();
-  deinit_d2d();
+void GraphicsDirectX11::deinitDirectX() {
+  deinitRenderTargets();
+  deinitSwapChain();
+  deinitD3D();
+  deinitD2D();
 }
 
-bool GraphicsDirectX11::init_d3d_and_swapchain() {
+bool GraphicsDirectX11::initD3DAndSwapChain() {
   // Setup swap chain
   DXGI_SWAP_CHAIN_DESC sd;
   ZeroMemory(&sd, sizeof(sd));
@@ -462,28 +468,28 @@ bool GraphicsDirectX11::init_d3d_and_swapchain() {
       D3D_FEATURE_LEVEL_10_0,
   };
   HRESULT res = D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags,
-                                              featureLevelArray, 2, D3D11_SDK_VERSION, &sd, &m_swap_chain,
-                                              &m_device, &featureLevel, &m_device_context);
-  if (res == DXGI_ERROR_UNSUPPORTED)  // Try high-performance WARP software
-                                      // driver if hardware is not available.
+                                              featureLevelArray, 2, D3D11_SDK_VERSION, &sd, &m_swapChain,
+                                              &m_device, &featureLevel, &m_deviceContext);
+  if (res ==
+      DXGI_ERROR_UNSUPPORTED)  // Try high-performance WARP software driver if hardware is not available.
     res = D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_WARP, nullptr, createDeviceFlags,
-                                        featureLevelArray, 2, D3D11_SDK_VERSION, &sd, &m_swap_chain,
-                                        &m_device, &featureLevel, &m_device_context);
+                                        featureLevelArray, 2, D3D11_SDK_VERSION, &sd, &m_swapChain, &m_device,
+                                        &featureLevel, &m_deviceContext);
 
   return res == S_OK;
 }
 
-void GraphicsDirectX11::deinit_swapchain() {
-  if (m_swap_chain) {
-    m_swap_chain->Release();
-    m_swap_chain = nullptr;
+void GraphicsDirectX11::deinitSwapChain() {
+  if (m_swapChain) {
+    m_swapChain->Release();
+    m_swapChain = nullptr;
   }
 }
 
-void GraphicsDirectX11::deinit_d3d() {
-  if (m_device_context) {
-    m_device_context->Release();
-    m_device_context = nullptr;
+void GraphicsDirectX11::deinitD3D() {
+  if (m_deviceContext) {
+    m_deviceContext->Release();
+    m_deviceContext = nullptr;
   }
   if (m_device) {
     m_device->Release();
@@ -491,92 +497,92 @@ void GraphicsDirectX11::deinit_d3d() {
   }
 }
 
-bool GraphicsDirectX11::init_d2d() {
+bool GraphicsDirectX11::initD2D() {
   D2D1_FACTORY_OPTIONS d2dOptions = {};
 #ifndef NDEBUG
   d2dOptions.debugLevel = D2D1_DEBUG_LEVEL_INFORMATION;
 #endif
   // Create the D2D factory
-  HRESULT res = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, d2dOptions, &m_d2d_factory);
+  HRESULT res = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, d2dOptions, &m_d2dFactory);
   return res == S_OK;
 }
 
-void GraphicsDirectX11::deinit_d2d() {
-  if (m_d2d_factory) {
-    m_d2d_factory->Release();
-    m_d2d_factory = nullptr;
+void GraphicsDirectX11::deinitD2D() {
+  if (m_d2dFactory) {
+    m_d2dFactory->Release();
+    m_d2dFactory = nullptr;
   }
 }
 
-void GraphicsDirectX11::init_render_targets() {
-  init_d3d_render_target();
-  init_d2d_render_target();
+void GraphicsDirectX11::initRenderTargets() {
+  initD3DRenderTarget();
+  initD2DRenderTarget();
 }
 
-void GraphicsDirectX11::deinit_render_targets() {
-  deinit_d3d_render_target();
-  deinit_d2d_render_target();
+void GraphicsDirectX11::deinitRenderTargets() {
+  deinitD3DRenderTarget();
+  deinitD2DRenderTarget();
 }
 
-void GraphicsDirectX11::init_d3d_render_target() {
+void GraphicsDirectX11::initD3DRenderTarget() {
   ID3D11Texture2D* pBackBuffer;
-  m_swap_chain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
-  m_device->CreateRenderTargetView(pBackBuffer, nullptr, &m_main_render_target_view);
+  m_swapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
+  m_device->CreateRenderTargetView(pBackBuffer, nullptr, &m_mainRenderTargetView);
   pBackBuffer->Release();
 }
 
-void GraphicsDirectX11::deinit_d3d_render_target() {
-  if (m_main_render_target_view) {
-    m_main_render_target_view->Release();
-    m_main_render_target_view = nullptr;
+void GraphicsDirectX11::deinitD3DRenderTarget() {
+  if (m_mainRenderTargetView) {
+    m_mainRenderTargetView->Release();
+    m_mainRenderTargetView = nullptr;
   }
 }
 
-void GraphicsDirectX11::init_d2d_render_target() {
+void GraphicsDirectX11::initD2DRenderTarget() {
   HRESULT res;
 
   IDXGISurface* dxgiSurface;
-  res = m_swap_chain->GetBuffer(0, IID_PPV_ARGS(&dxgiSurface));
+  res = m_swapChain->GetBuffer(0, IID_PPV_ARGS(&dxgiSurface));
 
   D2D1_RENDER_TARGET_PROPERTIES props = D2D1::RenderTargetProperties(
       D2D1_RENDER_TARGET_TYPE_DEFAULT,
       D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED), USER_DEFAULT_SCREEN_DPI,
       USER_DEFAULT_SCREEN_DPI);
 
-  res = m_d2d_factory->CreateDxgiSurfaceRenderTarget(dxgiSurface, &props, &m_d2d_render_target);
+  res = m_d2dFactory->CreateDxgiSurfaceRenderTarget(dxgiSurface, &props, &m_d2dRenderTarget);
 
   dxgiSurface->Release();
 }
 
-void GraphicsDirectX11::deinit_d2d_render_target() {
-  if (m_d2d_render_target) {
-    m_d2d_render_target->Release();
-    m_d2d_render_target = nullptr;
+void GraphicsDirectX11::deinitD2DRenderTarget() {
+  if (m_d2dRenderTarget) {
+    m_d2dRenderTarget->Release();
+    m_d2dRenderTarget = nullptr;
   }
 }
 
-RECT GraphicsDirectX11::get_titlebar_rect() {
+RECT GraphicsDirectX11::getTitlebarRect() {
   RECT rect;
   GetClientRect(m_hwnd, &rect);
   rect.bottom = rect.top + m_app->menu_bar_height();
   return rect;
 }
 
-TitleBarButtonRects GraphicsDirectX11::get_title_bar_button_rects() {
+TitleBarButtonRects GraphicsDirectX11::getTitlebarButtonRects() {
   UINT dpi = GetDpiForWindow(m_hwnd);
-  TitleBarButtonRects button_rects;
+  TitleBarButtonRects buttonRects;
 
   int button_width = (int)GET_UISIZE(TITLEBAR_BUTTON_WIDTH);
-  button_rects.close = get_titlebar_rect();
+  buttonRects.close = getTitlebarRect();
 
-  button_rects.close.left = button_rects.close.right - button_width;
-  button_rects.maximize = button_rects.close;
-  button_rects.maximize.left -= button_width;
-  button_rects.maximize.right -= button_width;
-  button_rects.minimize = button_rects.maximize;
-  button_rects.minimize.left -= button_width;
-  button_rects.minimize.right -= button_width;
-  return button_rects;
+  buttonRects.close.left = buttonRects.close.right - button_width;
+  buttonRects.maximize = buttonRects.close;
+  buttonRects.maximize.left -= button_width;
+  buttonRects.maximize.right -= button_width;
+  buttonRects.minimize = buttonRects.maximize;
+  buttonRects.minimize.left -= button_width;
+  buttonRects.minimize.right -= button_width;
+  return buttonRects;
 }
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd,
@@ -591,7 +597,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   GraphicsDirectX11& graphics = GraphicsDirectX11::get();
   App* app = graphics.m_app;
 
-  TitleBarButton hovered_button = static_cast<TitleBarButton>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+  TitleBarButton hoveredButton = static_cast<TitleBarButton>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
 
   switch (msg) {
     case WM_NCCALCSIZE: {
@@ -599,19 +605,19 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
         return DefWindowProcW(hwnd, msg, wparam, lparam);
       UINT dpi = GetDpiForWindow(hwnd);
 
-      int frame_x = GetSystemMetricsForDpi(SM_CXFRAME, dpi);
-      int frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
+      int frameX = GetSystemMetricsForDpi(SM_CXFRAME, dpi);
+      int frameY = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
       int padding = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
 
       NCCALCSIZE_PARAMS* params = reinterpret_cast<NCCALCSIZE_PARAMS*>(lparam);
-      RECT* requested_client_rect = params->rgrc;
+      RECT* requestedClientRect = params->rgrc;
 
-      requested_client_rect->right -= frame_x + padding;
-      requested_client_rect->left += frame_x + padding;
-      requested_client_rect->bottom -= frame_y + padding;
+      requestedClientRect->right -= frameX + padding;
+      requestedClientRect->left += frameX + padding;
+      requestedClientRect->bottom -= frameY + padding;
 
-      if (graphics.is_window_maximized()) {
-        requested_client_rect->top += padding;
+      if (graphics.isMainWindowMaximized()) {
+        requestedClientRect->top += padding;
       }
 
       return 0;
@@ -635,87 +641,87 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
           return hit;
       }
 
-      if (hovered_button == BUTTON_MAXIMIZE) {
+      if (hoveredButton == BUTTON_MAXIMIZE) {
         // Show SnapLayout on Windows 11
         return HTMAXBUTTON;
       }
 
       UINT dpi = GetDpiForWindow(hwnd);
-      int frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
+      int frameY = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
       int padding = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
-      POINT cursor_point;
-      cursor_point.x = GET_X_LPARAM(lparam);
-      cursor_point.y = GET_Y_LPARAM(lparam);
-      ScreenToClient(hwnd, &cursor_point);
-      if (cursor_point.y > 0 && cursor_point.y < frame_y + padding) {
+      POINT cursorPoint;
+      cursorPoint.x = GET_X_LPARAM(lparam);
+      cursorPoint.y = GET_Y_LPARAM(lparam);
+      ScreenToClient(hwnd, &cursorPoint);
+      if (cursorPoint.y > 0 && cursorPoint.y < frameY + padding) {
         return HTTOP;
       }
 
-      int menu_bar_width = app->menu_bar_width();  // dpi?
+      int menuBarWidth = app->menuBarWidth();  // dpi?
 
-      RECT title_bar_rect = graphics.get_titlebar_rect();
-      if (cursor_point.y < title_bar_rect.bottom && cursor_point.x > title_bar_rect.left + menu_bar_width) {
+      RECT titlebarRect = graphics.getTitlebarRect();
+      if (cursorPoint.y < titlebarRect.bottom && cursorPoint.x > titlebarRect.left + menuBarWidth) {
         return HTCAPTION;
       }
 
       return HTCLIENT;
     }
     case WM_GETMINMAXINFO: {
-      int menu_bar_width = app->menu_bar_width();
+      int menuBarWidth = app->menuBarWidth();
 
-      int button_width = (int)GET_UISIZE(TITLEBAR_BUTTON_WIDTH);
+      int buttonWidth = (int)GET_UISIZE(TITLEBAR_BUTTON_WIDTH);
 
-      int drag_area_width = (int)GET_UISIZE(TITLEBAR_DRAG_AREA_MIN_WIDTH);
-      int min_width = (int)GET_UISIZE(WINDOW_MIN_WIDTH);
-      int min_height = (int)GET_UISIZE(WINDOW_MIN_HEIGHT);
+      int dragAreaWidth = (int)GET_UISIZE(TITLEBAR_DRAG_AREA_MIN_WIDTH);
+      int minWidth = (int)GET_UISIZE(WINDOW_MIN_WIDTH);
+      int minHeight = (int)GET_UISIZE(WINDOW_MIN_HEIGHT);
 
       MINMAXINFO* minmax = reinterpret_cast<MINMAXINFO*>(lparam);
-      minmax->ptMinTrackSize.x = max(menu_bar_width + 3 * button_width + drag_area_width, min_width);
-      minmax->ptMinTrackSize.y = min_height;
+      minmax->ptMinTrackSize.x = max(menuBarWidth + 3 * buttonWidth + dragAreaWidth, minWidth);
+      minmax->ptMinTrackSize.y = minHeight;
       return 0;
     }
     case WM_NCMOUSEMOVE: {
-      POINT cursor_point;
-      GetCursorPos(&cursor_point);
-      ScreenToClient(hwnd, &cursor_point);
+      POINT cursorPoint;
+      GetCursorPos(&cursorPoint);
+      ScreenToClient(hwnd, &cursorPoint);
 
-      TitleBarButtonRects rects = graphics.get_title_bar_button_rects();
+      TitleBarButtonRects rects = graphics.getTitlebarButtonRects();
 
-      TitleBarButton new_hovered_button = BUTTON_NONE;
-      if (PtInRect(&rects.close, cursor_point)) {
-        new_hovered_button = BUTTON_CLOSE;
-      } else if (PtInRect(&rects.minimize, cursor_point)) {
-        new_hovered_button = BUTTON_MINIMIZE;
-      } else if (PtInRect(&rects.maximize, cursor_point)) {
-        new_hovered_button = BUTTON_MAXIMIZE;
+      TitleBarButton newHoveredButton = BUTTON_NONE;
+      if (PtInRect(&rects.close, cursorPoint)) {
+        newHoveredButton = BUTTON_CLOSE;
+      } else if (PtInRect(&rects.minimize, cursorPoint)) {
+        newHoveredButton = BUTTON_MINIMIZE;
+      } else if (PtInRect(&rects.maximize, cursorPoint)) {
+        newHoveredButton = BUTTON_MAXIMIZE;
       }
-      if (new_hovered_button != hovered_button) {
-        SetWindowLongPtrW(hwnd, GWLP_USERDATA, static_cast<LONG_PTR>(new_hovered_button));
+      if (newHoveredButton != hoveredButton) {
+        SetWindowLongPtrW(hwnd, GWLP_USERDATA, static_cast<LONG_PTR>(newHoveredButton));
       }
       break;
     }
     case WM_MOUSEMOVE: {
-      if (hovered_button != BUTTON_NONE) {
-        RECT title_bar_rect = graphics.get_titlebar_rect();
+      if (hoveredButton != BUTTON_NONE) {
+        RECT titlebarRect = graphics.getTitlebarRect();
         SetWindowLongPtrW(hwnd, GWLP_USERDATA, static_cast<LONG_PTR>(BUTTON_NONE));
       }
       break;
     }
     case WM_NCLBUTTONDOWN: {
-      if (hovered_button != BUTTON_NONE) {
+      if (hoveredButton != BUTTON_NONE) {
         return 0;
       }
       break;
     }
     case WM_NCLBUTTONUP: {
-      if (hovered_button == BUTTON_CLOSE) {
+      if (hoveredButton == BUTTON_CLOSE) {
         app->close();
         return 0;
-      } else if (hovered_button == BUTTON_MINIMIZE) {
+      } else if (hoveredButton == BUTTON_MINIMIZE) {
         ShowWindow(hwnd, SW_MINIMIZE);
         return 0;
-      } else if (hovered_button == BUTTON_MAXIMIZE) {
-        int mode = graphics.is_window_maximized() ? SW_NORMAL : SW_MAXIMIZE;
+      } else if (hoveredButton == BUTTON_MAXIMIZE) {
+        int mode = graphics.isMainWindowMaximized() ? SW_NORMAL : SW_MAXIMIZE;
         ShowWindow(hwnd, mode);
         return 0;
       }
@@ -725,24 +731,24 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
       if (wparam == HTCAPTION) {
         BOOL const isMaximized = IsZoomed(hwnd);
 
-        MENUITEMINFOW menu_item_info;
-        ZeroMemory(&menu_item_info, sizeof(menu_item_info));
-        menu_item_info.cbSize = sizeof(menu_item_info);
-        menu_item_info.fMask = MIIM_STATE;
+        MENUITEMINFOW menuItemInfo;
+        ZeroMemory(&menuItemInfo, sizeof(menuItemInfo));
+        menuItemInfo.cbSize = sizeof(menuItemInfo);
+        menuItemInfo.fMask = MIIM_STATE;
 
         HMENU const sys_menu = GetSystemMenu(hwnd, false);
 
-        auto set_menu_item_state = [&](UINT item, bool enabled) {
-          menu_item_info.fState = enabled ? MF_ENABLED : MF_DISABLED;
-          SetMenuItemInfoW(sys_menu, item, false, &menu_item_info);
+        auto setMenuItemState = [&](UINT item, bool enabled) {
+          menuItemInfo.fState = enabled ? MF_ENABLED : MF_DISABLED;
+          SetMenuItemInfoW(sys_menu, item, false, &menuItemInfo);
         };
 
-        set_menu_item_state(SC_RESTORE, isMaximized);
-        set_menu_item_state(SC_MOVE, !isMaximized);
-        set_menu_item_state(SC_SIZE, !isMaximized);
-        set_menu_item_state(SC_MINIMIZE, true);
-        set_menu_item_state(SC_MAXIMIZE, !isMaximized);
-        set_menu_item_state(SC_CLOSE, true);
+        setMenuItemState(SC_RESTORE, isMaximized);
+        setMenuItemState(SC_MOVE, !isMaximized);
+        setMenuItemState(SC_SIZE, !isMaximized);
+        setMenuItemState(SC_MINIMIZE, true);
+        setMenuItemState(SC_MAXIMIZE, !isMaximized);
+        setMenuItemState(SC_CLOSE, true);
 
         BOOL const result = TrackPopupMenu(sys_menu, TPM_RETURNCMD, GET_X_LPARAM(lparam),
                                            GET_Y_LPARAM(lparam), 0, hwnd, NULL);
@@ -759,8 +765,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     case WM_SIZE:
       if (wparam == SIZE_MINIMIZED)
         return 0;
-      g_resize_width = static_cast<UINT>(LOWORD(lparam));
-      g_resize_height = static_cast<UINT>(HIWORD(lparam));
+      g_resizeWidth = static_cast<UINT>(LOWORD(lparam));
+      g_resizeHeight = static_cast<UINT>(HIWORD(lparam));
       return 0;
     case WM_SYSCOMMAND:
       if ((wparam & 0xfff0) == SC_KEYMENU)  // Disable ALT application menu

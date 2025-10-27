@@ -5,7 +5,7 @@ bool TextureDirectX11::setup() {
   if (m_width == m_texture_width && m_height == m_texture_height)
     return true;
 
-  if (!GraphicsDirectX11::get().is_initialized()) {
+  if (!GraphicsDirectX11::get().isInitialized()) {
     assert(false);
     return false;
   }

@@ -1,5 +1,6 @@
 #include <ThunderAuto/App.hpp>
 
+#include <ThunderAuto/Platform/Platform.hpp>
 #include <ThunderAuto/Graphics/Graphics.hpp>
 #include <ThunderAuto/Logger.hpp>
 #include <ThunderAuto/Error.hpp>
@@ -297,7 +298,7 @@ void App::presentMenuBar() {
 
   if (ImGui::BeginMainMenuBar()) {
     {
-      auto scopedDisabled = ImGui::Scoped::Disabled(!PlatformGraphics::get().isWindowFocused());
+      auto scopedDisabled = ImGui::Scoped::Disabled(!getPlatformGraphics().isMainWindowFocused());
 
       presentFileMenu();
 
@@ -347,7 +348,7 @@ void App::presentMenuBarTitle() {
   if (win->SkipItems)
     return;
 
-  auto scopedDisabled = ImGui::Scoped::Disabled(!PlatformGraphics::get().isWindowFocused());
+  auto scopedDisabled = ImGui::Scoped::Disabled(!getPlatformGraphics().isMainWindowFocused());
   // auto scopedFont = ImGui::Scoped::Font(FontLibrary::get().boldFont);
 
   const double spacerWidth = ImGui::GetContentRegionAvail().x - 3 * GET_UISIZE(TITLEBAR_BUTTON_WIDTH);
@@ -742,7 +743,7 @@ void App::presentNewFieldPopup() {
 }
 
 void App::openProject() {
-  std::filesystem::path path = m_platformManager.openFileDialog(FileType::FILE, {kThunderAutoFileFilter});
+  std::filesystem::path path = getPlatform().openFileDialog(FileType::FILE, {kThunderAutoFileFilter});
 
   if (path.empty()) {  // Open cancelled.
     m_eventState = EventState::NONE;
@@ -1020,7 +1021,7 @@ void App::save() {
 }
 
 void App::saveAs() {
-  std::filesystem::path path = m_platformManager.saveFileDialog({kThunderAutoFileFilter});
+  std::filesystem::path path = getPlatform().saveFileDialog({kThunderAutoFileFilter});
   if (path.empty())
     return;
 
@@ -1141,7 +1142,7 @@ void App::redo() {
 void App::updateTitlebarTitle() {
   if (!m_documentManager.isOpen()) {
     m_titlebarFilename = "";
-    PlatformGraphics::get().windowSetTitle("");
+    getPlatformGraphics().setMainWindowTitle("");
     return;
   }
 
@@ -1152,7 +1153,7 @@ void App::updateTitlebarTitle() {
   title += m_documentManager.name();
 
   m_titlebarFilename = title;
-  PlatformGraphics::get().windowSetTitle(m_titlebarFilename.c_str());
+  getPlatformGraphics().setMainWindowTitle(m_titlebarFilename.c_str());
 }
 
 void App::processInput() {

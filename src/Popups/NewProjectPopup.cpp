@@ -1,5 +1,6 @@
 #include <ThunderAuto/Popups/NewProjectPopup.hpp>
 
+#include <ThunderAuto/Platform/Platform.hpp>
 #include <ThunderAuto/Error.hpp>
 #include <ThunderAuto/ImGuiScopedField.hpp>
 #include <IconsFontAwesome5.h>
@@ -37,7 +38,7 @@ void NewProjectPopup::present(bool* running) {
     ImGui::SameLine();
 
     if (ImGui::Button("Browse")) {
-      std::filesystem::path selectedProjectPath = m_platformManager.saveFileDialog({kThunderAutoFileFilter});
+      std::filesystem::path selectedProjectPath = getPlatform().saveFileDialog({kThunderAutoFileFilter});
       if (!selectedProjectPath.empty()) {
         m_projectPath = selectedProjectPath;
 

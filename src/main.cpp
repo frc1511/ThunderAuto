@@ -74,7 +74,7 @@ static int main2(int argc, char** argv) {
   int exitCode = 0;
 
   App app;
-  PlatformGraphics::get().init(app);
+  getPlatformGraphics().init(app);
 
   SetupDataHandler(app);
 
@@ -86,8 +86,8 @@ static int main2(int argc, char** argv) {
   // Main loop.
   //
   while (app.isRunning()) {
-    if (PlatformGraphics::get().pollEvents()) {
-      PlatformGraphics::get().windowSetShouldClose(false);
+    if (getPlatformGraphics().pollEvents()) {
+      getPlatformGraphics().setMainWindowShouldClose(false);
       app.close();
     }
 
@@ -113,7 +113,7 @@ static int main2(int argc, char** argv) {
     }
 
     // New Frame.
-    PlatformGraphics::get().beginFrame();
+    getPlatformGraphics().beginFrame();
 
     ImGuiViewport* viewport = ImGui::GetMainViewport();
 
@@ -159,10 +159,10 @@ static int main2(int argc, char** argv) {
     ImGui::End();
 
     // Render frame.
-    PlatformGraphics::get().endFrame();
+    getPlatformGraphics().endFrame();
   }
 
-  PlatformGraphics::get().deinit();
+  getPlatformGraphics().deinit();
 
   return exitCode;
 }

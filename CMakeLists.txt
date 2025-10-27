@@ -296,6 +296,14 @@ endif()
 
 if(THUNDERAUTO_MACOS)
   target_link_libraries(${PROJECT_NAME} "-framework Foundation -framework AppKit -framework UniformTypeIdentifiers")
+elseif(THUNDERAUTO_LINUX)
+  FetchContent_Declare(
+    nfd
+    GIT_REPOSITORY https://github.com/btzy/nativefiledialog-extended.git
+    GIT_TAG 86d5f20
+  )
+  FetchContent_MakeAvailable(nfd)
+  target_link_libraries(${PROJECT_NAME} nfd)
 endif()
 
 ###

@@ -1,3 +1,5 @@
+#pragma once
+
 #include <ThunderAuto/Graphics/Graphics.hpp>
 
 #include <glad/glad.h>
@@ -26,17 +28,18 @@ class GraphicsOpenGL final : public Graphics, public Singleton<GraphicsOpenGL> {
   void beginFrame() override;
   void endFrame() override;
 
-  Vec2 windowSize() const override;
-  void windowSetSize(int width, int height) override;
+  Vec2 getMainWindowSize() const override;
+  void setMainWindowSize(int width, int height) override;
 
-  Vec2 windowPosition() const override;
-  void windowSetPosition(int x, int y) override;
+  Vec2 getMainWindowPosition() const override;
+  void setMainWindowPosition(int x, int y) override;
 
-  void windowSetTitle(const char* title) override;
-  void windowSetShouldClose(bool value) override;
-  void windowFocus() override;
-  bool isWindowFocused() override;
-  bool isWindowMaximized() override;
+  void setMainWindowTitle(const char* title) override;
+  void setMainWindowShouldClose(bool value) override;
+  void focusMainWindow() override;
+  bool isMainWindowFocused() override;
+  bool isWindowFocused(void* platformHandle) override;
+  bool isMainWindowMaximized() override;
 
   void* getPlatformHandle() override {
 #if THUNDERAUTO_WINDOWS

@@ -1,4 +1,5 @@
 #include <ThunderAuto/Popups/WelcomePopup.hpp>
+#include <ThunderAuto/Platform/Platform.hpp>
 #include <ThunderAuto/ImGuiScopedField.hpp>
 #include <ThunderAuto/Logger.hpp>
 #include <IconsFontAwesome5.h>
@@ -160,7 +161,7 @@ void WelcomePopup::present(bool* running) {
                              .build();
 
       if (ImGui::Button("Documentation")) {
-        m_platformManager.openURL("https://frc1511.github.io/thunderauto");
+        getPlatform().openURL("https://frc1511.github.io/thunderauto");
       }
     }
   }

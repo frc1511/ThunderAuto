@@ -1,6 +1,5 @@
 #pragma once
 
-#include <ThunderAuto/Platform/PlatformManager.hpp>
 #include <ThunderAuto/Popups/Popup.hpp>
 #include <ThunderAuto/FontLibrary.hpp>
 #include <ThunderLibCore/RecentItemList.hpp>
@@ -12,14 +11,11 @@ using namespace thunder::core;
 class WelcomePopup : public Popup {
   using RecentProjectList = RecentItemList<std::filesystem::path, 15>;
 
-  PlatformManager& m_platformManager;
-
   RecentProjectList& m_recentProjects;
   std::optional<RecentProjectList::const_iterator> m_recentProjectIt;
 
  public:
-  WelcomePopup(PlatformManager& platformManager, RecentProjectList& recentProjects)
-      : m_platformManager(platformManager), m_recentProjects(recentProjects) {}
+  explicit WelcomePopup(RecentProjectList& recentProjects) : m_recentProjects(recentProjects) {}
 
   void present(bool* running) override;
 

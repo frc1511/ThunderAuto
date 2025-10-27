@@ -1,4 +1,6 @@
-#include <ThunderAuto/graphics/graphics.hpp>
+#pragma once
+
+#include <ThunderAuto/Graphics/Graphics.hpp>
 
 #include <Windows.h>
 #include <d3d11.h>
@@ -22,17 +24,17 @@ union TitleBarButtonRects {
 
 class GraphicsDirectX11 final : public Graphics, public Singleton<GraphicsDirectX11> {
   ID3D11Device* m_device = nullptr;
-  ID3D11DeviceContext* m_device_context = nullptr;
-  IDXGISwapChain* m_swap_chain = nullptr;
-  ID3D11RenderTargetView* m_main_render_target_view = nullptr;
+  ID3D11DeviceContext* m_deviceContext = nullptr;
+  IDXGISwapChain* m_swapChain = nullptr;
+  ID3D11RenderTargetView* m_mainRenderTargetView = nullptr;
 
-  ID2D1Factory* m_d2d_factory = nullptr;
-  ID2D1RenderTarget* m_d2d_render_target = nullptr;
+  ID2D1Factory* m_d2dFactory = nullptr;
+  ID2D1RenderTarget* m_d2dRenderTarget = nullptr;
 
   HWND m_hwnd = nullptr;
   WNDCLASSEXW m_wc = {};
 
-  bool m_swap_chain_occluded = false;
+  bool m_swapChainOccluded = false;
 
   App* m_app = nullptr;
 
@@ -42,67 +44,68 @@ class GraphicsDirectX11 final : public Graphics, public Singleton<GraphicsDirect
   void init(App& app) override;
   void deinit() override;
 
-  bool is_initialized() const override { return m_init; }
+  bool isInitialized() const override { return m_init; }
 
-  bool poll_events() override;
+  bool pollEvents() override;
 
-  void begin_frame() override;
-  void end_frame() override;
+  void beginFrame() override;
+  void endFrame() override;
 
-  float dpi_scale() const;
+  float getDPIScale() const;
 
-  ImVec2 window_size() const override;
-  void window_set_size(int width, int height) override;
+  ImVec2 getMainWindowSize() const override;
+  void setMainWindowSize(int width, int height) override;
 
-  ImVec2 window_position() const override;
-  void window_set_position(int x, int y) override;
-  void window_move_to_center() override;
+  ImVec2 getMainWindowPosition() const override;
+  void setMainWindowPosition(int x, int y) override;
+  void moveMainWindowToCenter() override;
 
-  void window_set_title(const char* title) override;
-  void window_set_should_close(bool value) override;
-  void window_focus() override;
-  bool is_window_focused() override;
-  bool is_window_maximized() override;
+  void setMainWindowTitle(const char* title) override;
+  void setMainWindowShouldClose(bool value) override;
+  void focusMainWindow() override;
+  bool isMainWindowFocused() override;
+  bool isWindowFocused(void* platformHandle) override;
+  bool isMainWindowMaximized() override;
 
-  void* get_platform_handle() override { return reinterpret_cast<void*>(m_hwnd); }
+  void* getPlatformHandle() override { return reinterpret_cast<void*>(m_hwnd); }
 
   ID3D11Device* device() { return m_device; }
-  ID3D11DeviceContext* context() { return m_device_context; }
+  ID3D11DeviceContext* context() { return m_deviceContext; }
 
  private:
-  void draw_titlebar_buttons();
-  void draw_titlebar_button_hover(const D2D_RECT_F& button_rect, ID2D1SolidColorBrush* brush);
-  void draw_titlebar_minimize_icon(const D2D_RECT_F& button_rect, ID2D1SolidColorBrush* icon_brush);
-  void draw_titlebar_maximize_icon(const D2D_RECT_F& button_rect,
+  void drawTitlebarButtons();
+  void drawTitlebarButtonHover(const D2D_RECT_F& button_rect, ID2D1SolidColorBrush* brush);
+  void drawTitlebarMinimizeIcon(const D2D_RECT_F& button_rect, ID2D1SolidColorBrush* icon_brush);
+  void drawTitlebarMaximizeIcon(const D2D_RECT_F& button_rect,
                                    ID2D1SolidColorBrush* bg_brush,
                                    ID2D1SolidColorBrush* icon_brush);
-  void draw_titlebar_close_icon(const D2D_RECT_F& button_rect, ID2D1SolidColorBrush* icon_brush);
+  void drawTitlebarCloseIcon(const D2D_RECT_F& button_rect, ID2D1SolidColorBrush* icon_brush);
 
   // DirectX helper functions.
 
-  bool init_directx();
-  void deinit_directx();
+  bool initDirectX();
+  void deinitDirectX();
 
-  bool init_d3d_and_swapchain();
-  void deinit_swapchain();
-  void deinit_d3d();
+  bool initD3DAndSwapChain();
+  void deinitSwapChain();
+  void deinitD3D();
 
-  bool init_d2d();
-  void deinit_d2d();
+  bool initD2D();
+  void deinitD2D();
 
-  void init_render_targets();
-  void deinit_render_targets();
+  void initRenderTargets();
+  void deinitRenderTargets();
 
-  void init_d3d_render_target();
-  void deinit_d3d_render_target();
+  void initD3DRenderTarget();
+  void deinitD3DRenderTarget();
 
-  void init_d2d_render_target();
-  void deinit_d2d_render_target();
+  void initD2DRenderTarget();
+  void deinitD2DRenderTarget();
 
   // Window helper functions.
 
-  RECT get_titlebar_rect();
-  TitleBarButtonRects get_title_bar_button_rects();
+  RECT getTitlebarRect();
+  TitleBarButtonRects getTitlebarButtonRects();
 
   friend LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 };

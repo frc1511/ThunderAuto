@@ -3,7 +3,6 @@
 #include <ThunderAuto/DocumentEditManager.hpp>
 #include <ThunderAuto/DocumentManager.hpp>
 #include <ThunderAuto/FontLibrary.hpp>
-#include <ThunderAuto/Platform/PlatformManager.hpp>
 
 #include <ThunderAuto/Popups/NewFieldPopup.hpp>
 #include <ThunderAuto/Popups/NewProjectPopup.hpp>
@@ -41,8 +40,6 @@ struct GLFWwindow;
 
 class App {
   bool m_running = true;
-
-  PlatformManager m_platformManager;
 
   // The state of the application (used to manage popups and stuff).
   enum class EventState {
@@ -93,10 +90,10 @@ class App {
 
   // Popup Modals
 
-  NewFieldPopup m_newFieldPopup{m_platformManager};
-  NewProjectPopup m_newProjectPopup{m_platformManager};
+  NewFieldPopup m_newFieldPopup;
+  NewProjectPopup m_newProjectPopup;
   UnsavedPopup m_unsavedPopup;
-  WelcomePopup m_welcomePopup{m_platformManager, m_recentProjects};
+  WelcomePopup m_welcomePopup{m_recentProjects};
   OpenProjectErrorPopup m_openProjectErrorPopup;
   SaveProjectErrorPopup m_saveProjectErrorPopup;
   ProjectVersionPopup m_projectVersionPopup;

@@ -141,7 +141,7 @@ void GraphicsOpenGL::endFrame() {
   glfwSwapBuffers(m_window);
 }
 
-Vec2 GraphicsOpenGL::windowSize() const {
+Vec2 GraphicsOpenGL::getMainWindowSize() const {
   if (!m_init)
     return Vec2(0, 0);
 
@@ -150,14 +150,14 @@ Vec2 GraphicsOpenGL::windowSize() const {
   return Vec2(width, height);
 }
 
-void GraphicsOpenGL::windowSetSize(int width, int height) {
+void GraphicsOpenGL::setMainWindowSize(int width, int height) {
   if (!m_init)
     return;
 
   glfwSetWindowSize(m_window, width, height);
 }
 
-Vec2 GraphicsOpenGL::windowPosition() const {
+Vec2 GraphicsOpenGL::getMainWindowPosition() const {
   if (!m_init)
     return Vec2(0, 0);
 
@@ -166,42 +166,51 @@ Vec2 GraphicsOpenGL::windowPosition() const {
   return Vec2(x, y);
 }
 
-void GraphicsOpenGL::windowSetPosition(int x, int y) {
+void GraphicsOpenGL::setMainWindowPosition(int x, int y) {
   if (!m_init)
     return;
 
   glfwSetWindowPos(m_window, x, y);
 }
 
-void GraphicsOpenGL::windowSetTitle(const char* title) {
+void GraphicsOpenGL::setMainWindowTitle(const char* title) {
   if (!m_init)
     return;
 
   glfwSetWindowTitle(m_window, title);
 }
 
-void GraphicsOpenGL::windowSetShouldClose(bool value) {
+void GraphicsOpenGL::setMainWindowShouldClose(bool value) {
   if (!m_init)
     return;
 
   glfwSetWindowShouldClose(m_window, value);
 }
 
-void GraphicsOpenGL::windowFocus() {
+void GraphicsOpenGL::focusMainWindow() {
   if (!m_init)
     return;
 
   glfwFocusWindow(m_window);
 }
 
-bool GraphicsOpenGL::isWindowFocused() {
+bool GraphicsOpenGL::isMainWindowFocused() {
   if (!m_init)
     return true;
 
   return glfwGetWindowAttrib(m_window, GLFW_FOCUSED) != 0;
 }
 
-bool GraphicsOpenGL::isWindowMaximized() {
+bool GraphicsOpenGL::isWindowFocused(void* platformHandle) {
+  if (!platformHandle) {
+    return false;
+  }
+
+  GLFWwindow* window = static_cast<GLFWwindow*>(platformHandle);
+  return glfwGetWindowAttrib(window, GLFW_FOCUSED) != 0;
+}
+
+bool GraphicsOpenGL::isMainWindowMaximized() {
   if (!m_init)
     return false;
 

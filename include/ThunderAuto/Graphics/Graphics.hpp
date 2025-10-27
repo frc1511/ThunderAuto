@@ -28,29 +28,33 @@ class Graphics : public SingletonBase {
   virtual void beginFrame() = 0;
   virtual void endFrame() = 0;
 
-  virtual double dpiScale() const { return 1.0; }
+  virtual double getDPIScale() const { return 1.0; }
 
-  virtual Vec2 windowSize() const { return Vec2(0, 0); }
-  virtual void windowSetSize(int width, int height) {
+  virtual Vec2 getMainWindowSize() const { return Vec2(0, 0); }
+  virtual void setMainWindowSize(int width, int height) {
     UNUSED(width);
     UNUSED(height);
   }
 
-  virtual Vec2 windowPosition() const { return Vec2(0, 0); }
-  virtual void windowSetPosition(int x, int y) {
+  virtual Vec2 getMainWindowPosition() const { return Vec2(0, 0); }
+  virtual void setMainWindowPosition(int x, int y) {
     UNUSED(x);
     UNUSED(y);
   }
-  virtual void windowMoveToCenter() {}
+  virtual void moveMainWindowToCenter() {}
 
-  virtual void windowSetTitle(const char* title) { UNUSED(title); }
-  virtual void windowSetShouldClose(bool value) { UNUSED(value); }
+  virtual void setMainWindowTitle(const char* title) { UNUSED(title); }
+  virtual void setMainWindowShouldClose(bool value) { UNUSED(value); }
 
-  virtual void windowFocus() {}
-  virtual bool isWindowFocused() { return false; }
+  virtual void focusMainWindow() {}
+  virtual bool isMainWindowFocused() { return false; }
+  virtual bool isWindowFocused(void* platformHandle) {
+    UNUSED(platformHandle);
+    return false;
+  }
 
-  virtual void windowSetMaximized(bool value) { UNUSED(value); }
-  virtual bool isWindowMaximized() { return false; }
+  virtual void setMainWindowMaximized(bool value) { UNUSED(value); }
+  virtual bool isMainWindowMaximized() { return false; }
 
   virtual void* getPlatformHandle() { return nullptr; }
 
@@ -63,7 +67,4 @@ class Graphics : public SingletonBase {
   void loadFonts(double scale);
 };
 
-class PlatformGraphics {
- public:
-  static Graphics& get();
-};
+Graphics& getPlatformGraphics();

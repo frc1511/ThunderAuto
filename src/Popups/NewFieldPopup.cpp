@@ -1,5 +1,6 @@
 #include <ThunderAuto/Popups/NewFieldPopup.hpp>
 
+#include <ThunderAuto/Platform/Platform.hpp>
 #include <ThunderAuto/ImGuiScopedField.hpp>
 #include <ThunderAuto/Logger.hpp>
 #include <imgui.h>
@@ -71,7 +72,7 @@ void NewFieldPopup::present(bool* running) {
       ImGui::SameLine();
 
       if (ImGui::Button("Browse")) {
-        std::filesystem::path selectedImagePath = m_platformManager.openFileDialog(FileType::FILE, {});
+        std::filesystem::path selectedImagePath = getPlatform().openFileDialog(FileType::FILE, {});
 
         if (!selectedImagePath.empty()) {
           imagePath = selectedImagePath;

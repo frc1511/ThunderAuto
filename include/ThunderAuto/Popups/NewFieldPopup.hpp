@@ -1,6 +1,5 @@
 #pragma once
 
-#include <ThunderAuto/Platform/PlatformManager.hpp>
 #include <ThunderAuto/Popups/Popup.hpp>
 #include <ThunderAuto/Graphics/Texture.hpp>
 #include <ThunderLibCore/Auto/ThunderAutoFieldImage.hpp>
@@ -10,8 +9,6 @@
 using namespace thunder::core;
 
 class NewFieldPopup : public Popup {
-  PlatformManager& m_platformManager;
-
   // Result
   std::optional<ThunderAutoFieldImage> m_field;
 
@@ -25,7 +22,7 @@ class NewFieldPopup : public Popup {
   float m_fieldLength;
 
  public:
-  explicit NewFieldPopup(PlatformManager& platformManager) : m_platformManager(platformManager) { reset(); }
+  NewFieldPopup() { reset(); }
 
   void present(bool* running) override;
   const char* name() const noexcept override { return "New Field"; }

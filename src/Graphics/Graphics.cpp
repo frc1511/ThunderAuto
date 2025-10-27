@@ -93,7 +93,7 @@ void Graphics::applyUIStyle(bool darkMode) {
 
   style.Colors[ImGuiCol_DockingPreview] = redLow;
 
-  double dpiscale = PlatformGraphics::get().dpiScale();
+  double dpiscale = getPlatformGraphics().getDPIScale();
   updateUIScale(dpiscale);
 }
 
@@ -191,8 +191,8 @@ void Graphics::updateUIScale(double scale) {
 
   loadFonts(scale);
 
-  PlatformGraphics::get().windowSetSize(DEFAULT_WINDOW_WIDTH * scale, DEFAULT_WINDOW_HEIGHT * scale);
-  PlatformGraphics::get().windowMoveToCenter();
+  getPlatformGraphics().setMainWindowSize(DEFAULT_WINDOW_WIDTH * scale, DEFAULT_WINDOW_HEIGHT * scale);
+  getPlatformGraphics().moveMainWindowToCenter();
 }
 
 #include <Ubuntu_Bold_ttf.h>
@@ -254,7 +254,7 @@ void Graphics::loadFonts(double scale) {
   mergeFontAwesomeIconsWithFont(15.0 * scale);
 }
 
-Graphics& PlatformGraphics::get() {
+Graphics& getPlatformGraphics() {
 #if THUNDERAUTO_DIRECTX11
   return GraphicsDirectX11::get();
 #else  // THUNDERAUTO_OPENGL
