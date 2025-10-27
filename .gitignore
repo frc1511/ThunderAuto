@@ -93,3 +93,12 @@ _deps
 
 # Build dir
 [Bb]uild*/
+
+# Log files
+*.log
+
+# ImGui generated files
+imgui.ini
+
+# VSCode
+.vscode/
