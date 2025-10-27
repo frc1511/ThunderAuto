@@ -1,6 +1,7 @@
 #include "PlatformLinux.hpp"
 #include <nfd.h>
 #include <vector>
+#include <cstring>
 
 std::filesystem::path PlatformLinux::openFileDialog(FileType type,
                                                     const FileExtensionList& extensions) noexcept {
@@ -15,17 +16,24 @@ std::filesystem::path PlatformLinux::openFileDialog(FileType type,
   }
 
   nfdopendialogu8args_t args;
+  std::memset(&args, 0, sizeof(nfdopendialogu8args_t));
+
   args.filterList = filterItems.data();
   args.filterCount = static_cast<nfdfiltersize_t>(numExtensions);
 
-  nfdu8char_t* outPath = nullptr;
-  nfdresult_t result = NFD_OpenDialogU8_With(&outPath, &args);
-  if (result == NFD_OKAY) {
-    return std::filesystem::path(outPath);
+  nfdu8char_t* outPathStr = nullptr;
+  nfdresult_t result = NFD_OpenDialogU8_With(&outPathStr, &args);
+
+  std::filesystem::path outPath;
+
+  if (outPathStr != nullptr) {
+    if (result == NFD_OKAY) {
+      outPath = std::filesystem::path(outPathStr);
+    }
+    NFD_FreePathU8(outPathStr);
   }
 
-  // Error or cancel.
-  return "";
+  return outPath;
 }
 
 std::filesystem::path PlatformLinux::saveFileDialog(const FileExtensionList& extensions) noexcept {
@@ -40,15 +48,21 @@ std::filesystem::path PlatformLinux::saveFileDialog(const FileExtensionList& ext
   }
 
   nfdsavedialogu8args_t args;
+  std::memset(&args, 0, sizeof(nfdsavedialogu8args_t));
+
   args.filterList = filterItems.data();
   args.filterCount = static_cast<nfdfiltersize_t>(numExtensions);
 
-  nfdu8char_t* outPath = nullptr;
-  nfdresult_t result = NFD_SaveDialogU8_With(&outPath, &args);
-  if (result == NFD_OKAY) {
-    return std::filesystem::path(outPath);
+  nfdu8char_t* outPathStr = nullptr;
+  nfdresult_t result = NFD_SaveDialogU8_With(&outPathStr, &args);
+
+  std::filesystem::path outPath;
+  if (outPathStr != nullptr) {
+    if (result == NFD_OKAY) {
+      outPath = std::filesystem::path(outPathStr);
+    }
+    NFD_FreePathU8(outPathStr);
   }
 
-  // Error or cancel.
-  return "";
+  return outPath;
 }
