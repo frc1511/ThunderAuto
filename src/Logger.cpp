@@ -16,13 +16,13 @@ static void InitLogger(const std::filesystem::path& logsDir) {
   sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
 
   if (!logsDir.empty()) {
-    std::filesystem::path logFile = MakeLogFilePath(logsDir, "ThunderLibCoreTests");
+    std::filesystem::path logFile = MakeLogFilePath(logsDir, "ThunderAuto");
     sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(logFile.string(), true));
-    CleanupLogsDirectory("logs", 10);
+    CleanupLogsDirectory(logsDir, 10);
   }
 
   s_thunderAutoLogger = std::make_shared<spdlog::logger>(kThunderAutoLoggerName, sinks.begin(), sinks.end());
-  ThunderLibLogger::make(sinks.begin(), sinks.end());  // ThunderLibLogger gets the same sinks
+  ThunderLibCoreLogger::make(sinks.begin(), sinks.end());  // ThunderLibCoreLogger gets the same sinks
 }
 
 spdlog::logger* ThunderAutoLogger::get() {
