@@ -89,6 +89,17 @@ _deps
 **.xcworkspace/
 **.pbxproj
 
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# VSCode debugger environment file
+!.vscode/launch.env
+
 .cache/
 
 # Build dir
@@ -99,6 +110,3 @@ _deps
 
 # ImGui generated files
 imgui.ini
-
-# VSCode
-.vscode/
