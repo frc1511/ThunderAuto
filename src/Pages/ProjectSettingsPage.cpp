@@ -7,8 +7,6 @@
 #include <imgui_raii.h>
 
 void ProjectSettingsPage::present(bool* running) {
-  ImGui::ShowDemoWindow();
-
   ImGui::SetNextWindowSize(
       ImVec2(GET_UISIZE(PROJECT_SETTINGS_PAGE_START_WIDTH), GET_UISIZE(PROJECT_SETTINGS_PAGE_START_HEIGHT)),
       ImGuiCond_FirstUseEver);
