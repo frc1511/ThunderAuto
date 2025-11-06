@@ -1048,6 +1048,14 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
     if (m_dragPoint != PointType::NONE) {
       // End drag.
 
+      if (m_dragPoint == PointType::ROTATION_POSITION || m_dragPoint == PointType::WAYPOINT_POSITION ||
+          m_dragPoint == PointType::WAYPOINT_HEADING_IN || m_dragPoint == PointType::WAYPOINT_HEADING_OUT) {
+        std::unique_ptr<ThunderAutoPartialOutputTrajectory> trajectoryPositionData =
+            BuildThunderAutoPartialOutputTrajectory(skeleton, kPreviewOutputTrajectorySettings);
+
+        skeleton.separateRotations(kMinRotationTargetSeparation, trajectoryPositionData.get());
+      }
+
       if (m_dragPoint == PointType::WAYPOINT_POSITION) {
         state.trajectoryUpdateLinkedWaypointsFromSelected();
       }
