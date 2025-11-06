@@ -61,23 +61,23 @@ class PropertiesPage : public Page {
   bool presentTrajectoryEndRotationProperty(ThunderAutoTrajectorySkeleton& skeleton);
 
   // Present some action list property with the given name and add/remove action functions.
-  bool presentActionsProperty(const char* name,
-                              const char* tooltip,
-                              const std::unordered_set<std::string>& actions,
-                              std::function<bool(const std::string&)> removeAction,
-                              std::function<bool(const std::string&)> addAction,
-                              std::span<const std::string> availableActions);
+  bool presentActionProperty(const char* name,
+                             const char* tooltip,
+                             std::function<const std::string&()> getActionName,
+                             std::function<void(const std::string&)> setActionName,
+                             std::span<const std::string> availableActionNames);
 
-  bool presentPointStopActionsProperty(ThunderAutoTrajectorySkeletonWaypoint& point,
-                                       const ThunderAutoProjectState& state);
-  bool presentTrajectoryStartActionsProperty(ThunderAutoTrajectorySkeleton& skeleton,
-                                             const ThunderAutoProjectState& state);
-  bool presentTrajectoryEndActionsProperty(ThunderAutoTrajectorySkeleton& skeleton,
-                                           const ThunderAutoProjectState& state);
+  bool presentPointStopActionProperty(ThunderAutoTrajectorySkeletonWaypoint& point,
+                                      const ThunderAutoProjectState& state);
+  bool presentTrajectoryStartActionProperty(ThunderAutoTrajectorySkeleton& skeleton,
+                                            const ThunderAutoProjectState& state);
+  bool presentTrajectoryEndActionProperty(ThunderAutoTrajectorySkeleton& skeleton,
+                                          const ThunderAutoProjectState& state);
 
   void presentTrajectorySelectedRotationProperties(ThunderAutoProjectState& state);
   void presentTrajectorySelectedActionProperties(ThunderAutoProjectState& state);
 
+  void presentTrajectoryOtherProperties(ThunderAutoProjectState& state);
   void presentTrajectorySpeedConstraintProperties(ThunderAutoProjectState& state);
 
   // void presentAutoModeProperties(ThunderAutoProjectState& state);

@@ -51,12 +51,15 @@ void PropertiesPage::presentTrajectoryProperties(ThunderAutoProjectState& state)
 
   presentTrajectoryItemList(state);
   presentTrajectorySelectedItemProperties(state);
+  presentTrajectoryOtherProperties(state);
   presentTrajectorySpeedConstraintProperties(state);
 }
 
 void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
   if (!ImGui::CollapsingHeader("Trajectory Items", nullptr, ImGuiTreeNodeFlags_DefaultOpen))
     return;
+
+  auto scopedID = ImGui::Scoped::ID("Trajectory Items List");
 
   if (auto scopedTabBar = ImGui::Scoped::TabBar("TrajectoryItems")) {
     const char* const childWindowName = "TrajectoryItemsChildWindow";
@@ -355,6 +358,8 @@ void PropertiesPage::presentTrajectorySelectedItemProperties(ThunderAutoProjectS
   if (!ImGui::CollapsingHeader("Selected Trajectory Item", nullptr, ImGuiTreeNodeFlags_DefaultOpen))
     return;
 
+  auto scopedID = ImGui::Scoped::ID("Selected Trajectory Item Properties");
+
   switch (editorState.trajectorySelection) {
     using enum ThunderAutoTrajectoryEditorState::TrajectorySelection;
     case NONE:
@@ -404,23 +409,16 @@ void PropertiesPage::presentTrajectorySelectedPointProperties(ThunderAutoProject
   // Heading weights.
   changed |= presentPointWeightProperties(point, showIncomingWeights, showOutgoingWeights);
 
-  // Start/end rotations.
-
+  // Start/End rotations & actions
   if (isFirstPoint) {
     ImGui::Separator();
     changed |= presentTrajectoryStartRotationProperty(skeleton);
+    changed |= presentTrajectoryStartActionProperty(skeleton, state);
+
   } else if (isLastPoint) {
     ImGui::Separator();
     changed |= presentTrajectoryEndRotationProperty(skeleton);
-  }
-
-  // Actions
-  if (isFirstPoint) {
-    ImGui::Separator();
-    changed |= presentTrajectoryStartActionsProperty(skeleton, state);
-  } else if (isLastPoint) {
-    ImGui::Separator();
-    changed |= presentTrajectoryEndActionsProperty(skeleton, state);
+    changed |= presentTrajectoryEndActionProperty(skeleton, state);
   }
 
   ImGui::Separator();
@@ -431,7 +429,7 @@ void PropertiesPage::presentTrajectorySelectedPointProperties(ThunderAutoProject
 
   if (!isFirstPoint && !isLastPoint && point.isStopped()) {
     changed |= presentPointStopRotationProperty(point);
-    changed |= presentPointStopActionsProperty(point, state);
+    changed |= presentPointStopActionProperty(point, state);
   }
 
   if (changed) {
@@ -733,115 +731,66 @@ bool PropertiesPage::presentTrajectoryEndRotationProperty(ThunderAutoTrajectoryS
   return presentRotationProperty("End Rotation", getRotation, setRotation);
 }
 
-bool PropertiesPage::presentActionsProperty(const char* name,
-                                            const char* tooltip,
-                                            const std::unordered_set<std::string>& actions,
-                                            std::function<bool(const std::string&)> removeAction,
-                                            std::function<bool(const std::string&)> addAction,
-                                            std::span<const std::string> availableActions) {
-  bool changed = false;
-
+bool PropertiesPage::presentActionProperty(const char* name,
+                                           const char* tooltip,
+                                           std::function<const std::string&()> getActionName,
+                                           std::function<void(const std::string&)> setActionName,
+                                           std::span<const std::string> availableActionNames) {
   auto scopedField = ImGui::ScopedField::Builder(name).tooltip(tooltip).build();
 
-  {
-    auto scopedChildWindow = ImGui::Scoped::ChildWindow(
-        "Actions", ImVec2(0.f, GET_UISIZE(PROPERTIES_PAGE_ACTIONS_LIST_CHILD_WINDOW_START_SIZE_Y)),
-        ImGuiChildFlags_ResizeY | ImGuiChildFlags_Borders);
+  std::string currentActionName = getActionName();
+  bool changed = false;
 
-    auto scopedPadding =
-        ImGui::Scoped::StyleVarY(ImGuiStyleVar_ItemSpacing, GET_UISIZE(SELECTABLE_LIST_ITEM_SPACING_Y));
+  if (auto scopedCombo = ImGui::Scoped::Combo("##Action Name", currentActionName.c_str())) {
+    if (ImGui::Selectable("<none>", currentActionName.empty()) && !currentActionName.empty()) {
+      setActionName("");
+      changed = true;
+    }
 
-    size_t i = 0;
-    for (const std::string& action : actions) {
-      auto scopedID = ImGui::Scoped::ID(i++);
+    if (!availableActionNames.empty()) {
+      ImGui::Separator();
+    }
 
-      (void)ImGui::Selectable(action.c_str(), false, ImGuiSelectableFlags_AllowOverlap);
-
-      ImGui::SameLine();
-
-      const ImGuiStyle& style = ImGui::GetStyle();
-      const float removeButtonWidthNeeded = ImGui::CalcTextSize(ICON_FA_TRASH).x + style.ItemSpacing.x;
-      const float removeButtonCursorOffset = ImGui::GetContentRegionAvail().x - removeButtonWidthNeeded;
-      if (removeButtonCursorOffset > 0) {
-        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + removeButtonCursorOffset);
-      }
-
-      auto scopedButtonColor = ImGui::Scoped::StyleColor(ImGuiCol_Button, 0);
-      auto scopedButtonHoveredColor = ImGui::Scoped::StyleColor(ImGuiCol_ButtonHovered, 0);
-      auto scopedButtonActiveColor = ImGui::Scoped::StyleColor(ImGuiCol_ButtonActive, 0);
-
-      if (ImGui::SmallButton(ICON_FA_TRASH)) {
-        changed |= removeAction(action);
+    for (const std::string& action : availableActionNames) {
+      bool isActionSelected = action == currentActionName;
+      if (ImGui::Selectable(action.c_str(), isActionSelected) && !isActionSelected) {
+        setActionName(action);
+        changed = true;
         break;
       }
-    }
-  }
-  if (auto scopedDragTarget = ImGui::Scoped::DragDropTarget()) {
-    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Action")) {
-      std::string payloadActionName = reinterpret_cast<const char*>(payload->Data);
-      changed |= addAction(payloadActionName);
-    }
-  }
-
-  std::string addActionPopupName = fmt::format("Add Action ({})", name);
-
-  ImVec2 buttonSize(ImGui::GetContentRegionAvail().x, 0.f);
-  if (ImGui::Button("+ Add Action", buttonSize)) {
-    ImGui::OpenPopup(addActionPopupName.c_str());
-  }
-  if (auto scopedPopup = ImGui::Scoped::Popup(addActionPopupName.c_str())) {
-    std::string selectedAction;
-
-    if (auto scopedCombo = ImGui::Scoped::Combo("##Action Name", "")) {
-      for (const std::string& action : availableActions) {
-        auto scopedDisabled = ImGui::Scoped::Disabled(actions.contains(action));
-
-        if (ImGui::Selectable(action.c_str(), false)) {
-          selectedAction = action;
-          break;
-        }
-      }
-    }
-
-    if (!selectedAction.empty()) {
-      changed |= addAction(selectedAction);
-      ImGui::CloseCurrentPopup();
     }
   }
 
   return changed;
 }
 
-bool PropertiesPage::presentPointStopActionsProperty(ThunderAutoTrajectorySkeletonWaypoint& point,
-                                                     const ThunderAutoProjectState& state) {
+bool PropertiesPage::presentPointStopActionProperty(ThunderAutoTrajectorySkeletonWaypoint& point,
+                                                    const ThunderAutoProjectState& state) {
   ThunderAutoAssert(point.isStopped());
 
-  auto removeAction = [&](const std::string& actionName) { return point.removeStopAction(actionName); };
-  auto addAction = [&](const std::string& actionName) { return point.addStopAction(actionName); };
+  auto getActionName = [&]() -> const std::string& { return point.stopAction(); };
+  auto setActionName = [&](const std::string& actionName) { point.setStopAction(actionName); };
 
-  return presentActionsProperty("Stop Actions",
-                                "Actions to perform (concurrently) before the robot resumes driving",
-                                point.stopActions(), removeAction, addAction, state.actionsOrder);
+  return presentActionProperty("Stop Action", "Action to perform before the robot resumes driving",
+                               getActionName, setActionName, state.actionsOrder);
 }
 
-bool PropertiesPage::presentTrajectoryStartActionsProperty(ThunderAutoTrajectorySkeleton& skeleton,
-                                                           const ThunderAutoProjectState& state) {
-  auto removeAction = [&](const std::string& actionName) { return skeleton.removeStartAction(actionName); };
-  auto addAction = [&](const std::string& actionName) { return skeleton.addStartAction(actionName); };
+bool PropertiesPage::presentTrajectoryStartActionProperty(ThunderAutoTrajectorySkeleton& skeleton,
+                                                          const ThunderAutoProjectState& state) {
+  auto getActionName = [&]() -> const std::string& { return skeleton.startAction(); };
+  auto setActionName = [&](const std::string& actionName) { skeleton.setStartAction(actionName); };
 
-  return presentActionsProperty("Actions",
-                                "Actions to perform (concurrently) before the robot starts driving",
-                                skeleton.startActions(), removeAction, addAction, state.actionsOrder);
+  return presentActionProperty("Start Action", "Action to perform before the robot starts driving",
+                               getActionName, setActionName, state.actionsOrder);
 }
 
-bool PropertiesPage::presentTrajectoryEndActionsProperty(ThunderAutoTrajectorySkeleton& skeleton,
-                                                         const ThunderAutoProjectState& state) {
-  auto removeAction = [&](const std::string& actionName) { return skeleton.removeEndAction(actionName); };
-  auto addAction = [&](const std::string& actionName) { return skeleton.addEndAction(actionName); };
+bool PropertiesPage::presentTrajectoryEndActionProperty(ThunderAutoTrajectorySkeleton& skeleton,
+                                                        const ThunderAutoProjectState& state) {
+  auto getActionName = [&]() -> const std::string& { return skeleton.endAction(); };
+  auto setActionName = [&](const std::string& actionName) { skeleton.setEndAction(actionName); };
 
-  return presentActionsProperty("Actions",
-                                "Actions to perform (concurrently) after the robot has finished driving",
-                                skeleton.endActions(), removeAction, addAction, state.actionsOrder);
+  return presentActionProperty("End Action", "Action to perform after the robot has finished driving",
+                               getActionName, setActionName, state.actionsOrder);
 }
 
 void PropertiesPage::presentTrajectorySelectedRotationProperties(ThunderAutoProjectState& state) {
@@ -955,9 +904,34 @@ void PropertiesPage::presentTrajectorySelectedActionProperties(ThunderAutoProjec
   }
 }
 
-void PropertiesPage::presentTrajectorySpeedConstraintProperties(ThunderAutoProjectState& state) {
-  if (!ImGui::CollapsingHeader("Trajectory Speed Constraints", nullptr, ImGuiTreeNodeFlags_DefaultOpen))
+void PropertiesPage::presentTrajectoryOtherProperties(ThunderAutoProjectState& state) {
+  if (!ImGui::CollapsingHeader("Trajectory Properties"))
     return;
+
+  auto scopedID = ImGui::Scoped::ID("Trajectory Other Properties");
+
+  ThunderAutoTrajectorySkeleton& skeleton = state.currentTrajectory();
+
+  bool changed = false;
+
+  changed |= presentTrajectoryStartRotationProperty(skeleton);
+  changed |= presentTrajectoryEndRotationProperty(skeleton);
+
+  changed |= presentTrajectoryStartActionProperty(skeleton, state);
+  changed |= presentTrajectoryEndActionProperty(skeleton, state);
+
+  if (changed) {
+    m_history.addState(state);
+    m_editorPage.invalidateCachedTrajectory();
+    m_editorPage.resetPlayback();
+  }
+}
+
+void PropertiesPage::presentTrajectorySpeedConstraintProperties(ThunderAutoProjectState& state) {
+  if (!ImGui::CollapsingHeader("Trajectory Speed Constraints"))
+    return;
+
+  auto scopedID = ImGui::Scoped::ID("Trajectory Speed Constraint Properties");
 
   ThunderAutoTrajectorySkeleton& skeleton = state.currentTrajectory();
   ThunderAutoTrajectorySkeletonSettings& settings = skeleton.settings();
@@ -1107,9 +1081,9 @@ PropertiesPage::GetAllActionSelections(const ThunderAutoTrajectorySkeleton& skel
   std::multimap<ThunderAutoTrajectoryPosition, PropertiesPage::TrajectoryItemSelection<std::string>>
       actionSelections;
 
-  if (skeleton.hasStartActions()) {
+  if (skeleton.hasStartAction()) {
     PropertiesPage::TrajectoryItemSelection<std::string> startActionSelection{
-        .item = "... <start actions> ...",
+        .item = "<start> " + skeleton.startAction(),
         .editorLocked = skeleton.front().isEditorLocked(),
         .trajectorySelection = ThunderAutoTrajectoryEditorState::TrajectorySelection::WAYPOINT,
         .selectionIndex = 0,
@@ -1139,9 +1113,9 @@ PropertiesPage::GetAllActionSelections(const ThunderAutoTrajectorySkeleton& skel
     size_t waypointIndex = 1;
     for (auto waypointIt = std::next(skeleton.begin()); waypointIt != std::prev(skeleton.end());
          ++waypointIt, ++waypointIndex) {
-      if (waypointIt->isStopped() && waypointIt->hasStopActions()) {
+      if (waypointIt->isStopped() && waypointIt->hasStopAction()) {
         PropertiesPage::TrajectoryItemSelection<std::string> acitionSelection{
-            .item = "... <stop actions> ...",
+            .item = "<stop> " + waypointIt->stopAction(),
             .editorLocked = waypointIt->isEditorLocked(),
             .trajectorySelection = ThunderAutoTrajectoryEditorState::TrajectorySelection::WAYPOINT,
             .selectionIndex = waypointIndex,
@@ -1153,16 +1127,16 @@ PropertiesPage::GetAllActionSelections(const ThunderAutoTrajectorySkeleton& skel
     }
   }
 
-  if (skeleton.hasEndActions()) {
-    PropertiesPage::TrajectoryItemSelection<std::string> startActionSelection{
-        .item = "... <end actions> ...",
+  if (skeleton.hasEndAction()) {
+    PropertiesPage::TrajectoryItemSelection<std::string> endActionSelection{
+        .item = "<end> " + skeleton.endAction(),
         .editorLocked = skeleton.back().isEditorLocked(),
         .trajectorySelection = ThunderAutoTrajectoryEditorState::TrajectorySelection::WAYPOINT,
         .selectionIndex = skeleton.numPoints() - 1,
     };
 
     actionSelections.emplace(ThunderAutoTrajectoryPosition(static_cast<double>(skeleton.numPoints() - 1)),
-                             startActionSelection);
+                             endActionSelection);
   }
 
   return actionSelections;
