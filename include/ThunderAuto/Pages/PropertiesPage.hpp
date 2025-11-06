@@ -99,8 +99,8 @@ class PropertiesPage : public Page {
   static std::map<ThunderAutoTrajectoryPosition, TrajectoryItemSelection<CanonicalAngle>>
   GetAllRotationSelections(const ThunderAutoTrajectorySkeleton& skeleton);
 
-  static std::map<ThunderAutoTrajectoryPosition, TrajectoryItemSelection<std::string>> GetAllActionSelections(
-      const ThunderAutoTrajectorySkeleton& skeleton);
+  static std::multimap<ThunderAutoTrajectoryPosition, TrajectoryItemSelection<std::string>>
+  GetAllActionSelections(const ThunderAutoTrajectorySkeleton& skeleton);
 
  private:
   Event m_event = Event::NONE;

@@ -262,7 +262,7 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
       auto scopedPadding =
           ImGui::Scoped::StyleVarY(ImGuiStyleVar_ItemSpacing, GET_UISIZE(SELECTABLE_LIST_ITEM_SPACING_Y));
 
-      std::map<ThunderAutoTrajectoryPosition, TrajectoryItemSelection<std::string>> actions =
+      std::multimap<ThunderAutoTrajectoryPosition, TrajectoryItemSelection<std::string>> actions =
           GetAllActionSelections(skeleton);
 
       for (const auto& [position, selection] : actions) {
@@ -1102,9 +1102,9 @@ PropertiesPage::GetAllRotationSelections(const ThunderAutoTrajectorySkeleton& sk
   return rotationSelections;
 }
 
-std::map<ThunderAutoTrajectoryPosition, PropertiesPage::TrajectoryItemSelection<std::string>>
+std::multimap<ThunderAutoTrajectoryPosition, PropertiesPage::TrajectoryItemSelection<std::string>>
 PropertiesPage::GetAllActionSelections(const ThunderAutoTrajectorySkeleton& skeleton) {
-  std::map<ThunderAutoTrajectoryPosition, PropertiesPage::TrajectoryItemSelection<std::string>>
+  std::multimap<ThunderAutoTrajectoryPosition, PropertiesPage::TrajectoryItemSelection<std::string>>
       actionSelections;
 
   if (skeleton.hasStartActions()) {
