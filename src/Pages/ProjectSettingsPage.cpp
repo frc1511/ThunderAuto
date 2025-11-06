@@ -20,10 +20,10 @@ void ProjectSettingsPage::present(bool* running) {
     auto scopedItemSpacing =
         ImGui::Scoped::StyleVarY(ImGuiStyleVar_ItemSpacing, GET_UISIZE(SELECTABLE_LIST_ITEM_SPACING_Y));
 
-    const float kSideBarWidthPercent = 0.3f;
+    const float kSideBarWidthPercent = 0.36f;
     auto scopedChild = ImGui::Scoped::ChildWindow(
         "SubPageSelectChild", ImVec2(ImGui::GetContentRegionAvail().x * kSideBarWidthPercent, 0.f),
-        ImGuiChildFlags_Borders);
+        ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX);
 
     if (ImGui::Selectable("Robot Settings", m_subPage == SettingsSubPage::ROBOT_SETTINGS)) {
       m_subPage = SettingsSubPage::ROBOT_SETTINGS;
