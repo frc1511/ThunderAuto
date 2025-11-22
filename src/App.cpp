@@ -29,13 +29,17 @@ void App::setupDockspace(ImGuiID dockspaceID) {
     ImGuiID dockspaceIDRightDown =
         ImGui::DockBuilderSplitNode(dockspaceIDRightUp, ImGuiDir_Down, 0.22f, nullptr, &dockspaceIDRightUp);
 
-    ImGuiID dockspaceIDLeft =
+    ImGuiID dockspaceIDLeftUp =
         ImGui::DockBuilderSplitNode(dockspaceID, ImGuiDir_Left, 0.2f, nullptr, &dockspaceID);
+
+    ImGuiID dockspaceIDLeftDown =
+        ImGui::DockBuilderSplitNode(dockspaceIDLeftUp, ImGuiDir_Down, 0.5f, nullptr, &dockspaceIDLeftUp);
 
     ImGui::DockBuilderDockWindow(m_editorPage.name(), dockspaceID);
     ImGui::DockBuilderDockWindow(m_propertiesPage.name(), dockspaceIDRightUp);
     ImGui::DockBuilderDockWindow(m_actionsPage.name(), dockspaceIDRightDown);
-    ImGui::DockBuilderDockWindow(m_trajectoryManagerPage.name(), dockspaceIDLeft);
+    ImGui::DockBuilderDockWindow(m_trajectoryManagerPage.name(), dockspaceIDLeftUp);
+    ImGui::DockBuilderDockWindow(m_autoModeManagerPage.name(), dockspaceIDLeftDown);
   }
 }
 
@@ -238,7 +242,30 @@ void App::presentProjectPages() {
     }
   }
 
-  // TODO: Auto Mode manager page
+  if (m_showAutoModeManager) {
+    m_autoModeManagerPage.present(&m_showAutoModeManager);
+
+    if (m_showAutoModeManager) {
+      switch (m_autoModeManagerPage.lastPresentEvent()) {
+        using enum AutoModeManagerPage::Event;
+        case NONE:
+          break;
+        case NEW_AUTO_MODE:
+          m_projectEvent = ProjectEvent::NEW_AUTO_MODE;
+          break;
+        case RENAME_AUTO_MODE:
+          m_projectEvent = ProjectEvent::RENAME_AUTO_MODE;
+          m_renameAutoModePopup.setOldAutoModeName(m_autoModeManagerPage.eventAutoMode());
+          break;
+        case DUPLICATE_AUTO_MODE:
+          m_projectEvent = ProjectEvent::DUPLICATE_AUTO_MODE;
+          m_duplicateAutoModePopup.setOldAutoModeName(m_autoModeManagerPage.eventAutoMode());
+          break;
+        default:
+          ThunderAutoUnreachable("Unknown auto mode manager event");
+      }
+    }
+  }
 
   if (m_showEditor) {
     m_editorPage.present(&m_showEditor);
@@ -273,6 +300,15 @@ void App::presentProjectEventPopups() {
       break;
     case DUPLICATE_TRAJECTORY:
       presentDuplicateTrajectoryPopup();
+      break;
+    case NEW_AUTO_MODE:
+      presentNewAutoModePopup();
+      break;
+    case RENAME_AUTO_MODE:
+      presentRenameAutoModePopup();
+      break;
+    case DUPLICATE_AUTO_MODE:
+      presentDuplicateAutoModePopup();
       break;
     case LINK_TRAJECTORY_POINT:
       presentLinkTrajectoryPointPopup();
@@ -318,9 +354,17 @@ void App::presentMenuBar() {
             if (hasCurrentTrajectory) {
               presentTrajectoryMenu();
             }
-          } break;
-          case AUTO_MODE:
             break;
+          }
+          case AUTO_MODE: {
+            const ThunderAutoModeEditorState& autoModeEditorState = state.editorState.autoModeEditorState;
+            const bool hasCurrentAutoMode = !autoModeEditorState.currentAutoModeName.empty();
+
+            if (hasCurrentAutoMode) {
+              presentAutoModeMenu();
+            }
+            break;
+          }
           case NONE:
             break;
           default:
@@ -575,8 +619,6 @@ void App::presentTrajectoryMenu() {
     csvExportCurrentTrajectory();
   }
 
-  // ThunderAutoTrajectorySkeleton& skeleton = state.currentTrajectory();
-
   const std::string currentTrajectoryName = state.editorState.trajectoryEditorState.currentTrajectoryName;
 
   if (itemRename) {
@@ -604,6 +646,46 @@ void App::presentTrajectoryMenu() {
   }
 }
 
+void App::presentAutoModeMenu() {
+  bool itemRename = false, itemDuplicate = false, itemDelete = false;
+
+  ThunderAutoProjectState state = m_documentEditManager.currentState();
+
+  bool showMenu;
+  {
+    auto scopedItemSpacing =
+        ImGui::Scoped::StyleVarY(ImGuiStyleVar_ItemSpacing, GET_UISIZE(TITLEBAR_ITEM_SPACING_Y));
+
+    showMenu = ImGui::BeginMenu("Auto Mode");
+  }
+
+  if (showMenu) {
+    ImGui::MenuItem(ICON_FA_PENCIL_ALT "  Rename", nullptr, &itemRename);
+    ImGui::MenuItem(ICON_FA_COPY "  Duplicate", nullptr, &itemDuplicate);
+    ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete", nullptr, &itemDelete);
+    ImGui::EndMenu();
+  }
+
+  const std::string currentAutoModeName = state.editorState.autoModeEditorState.currentAutoModeName;
+
+  if (itemRename) {
+    m_renameAutoModePopup.setOldAutoModeName(currentAutoModeName);
+    m_projectEvent = ProjectEvent::RENAME_AUTO_MODE;
+  }
+
+  if (itemDuplicate) {
+    m_duplicateAutoModePopup.setOldAutoModeName(currentAutoModeName);
+    m_projectEvent = ProjectEvent::DUPLICATE_AUTO_MODE;
+  }
+
+  if (itemDelete) {
+    state.autoModeDelete(currentAutoModeName);
+    m_documentEditManager.addState(state);
+    m_editorPage.invalidateCachedTrajectory();
+    m_editorPage.resetPlayback();
+  }
+}
+
 void App::presentToolsMenu() {
   bool showMenu;
   {
@@ -615,6 +697,7 @@ void App::presentToolsMenu() {
 
   if (showMenu) {
     ImGui::MenuItem(ICON_FA_LIST "  Trajectories", nullptr, &m_showTrajectoryManager);
+    ImGui::MenuItem(ICON_FA_LIST "  Auto Modes", nullptr, &m_showAutoModeManager);
     ImGui::MenuItem(ICON_FA_BEZIER_CURVE "  Editor", nullptr, &m_showEditor);
     ImGui::MenuItem(ICON_FA_SLIDERS_H "  Properties", nullptr, &m_showProperties);
     ImGui::MenuItem(ICON_FA_PAPERCLIP "  Actions", nullptr, &m_showActions);
@@ -933,6 +1016,45 @@ void App::presentDuplicateTrajectoryPopup() {
   m_projectEvent = ProjectEvent::NONE;
 }
 
+void App::presentNewAutoModePopup() {
+  ImGui::OpenPopup(m_newAutoModePopup.name());
+
+  bool showingPopup = true;
+
+  m_newAutoModePopup.present(&showingPopup);
+
+  if (showingPopup)
+    return;
+
+  m_projectEvent = ProjectEvent::NONE;
+}
+
+void App::presentRenameAutoModePopup() {
+  ImGui::OpenPopup(m_renameAutoModePopup.name());
+
+  bool showingPopup = true;
+
+  m_renameAutoModePopup.present(&showingPopup);
+
+  if (showingPopup)
+    return;
+
+  m_projectEvent = ProjectEvent::NONE;
+}
+
+void App::presentDuplicateAutoModePopup() {
+  ImGui::OpenPopup(m_duplicateAutoModePopup.name());
+
+  bool showingPopup = true;
+
+  m_duplicateAutoModePopup.present(&showingPopup);
+
+  if (showingPopup)
+    return;
+
+  m_projectEvent = ProjectEvent::NONE;
+}
+
 void App::presentLinkTrajectoryPointPopup() {
   ImGui::OpenPopup(m_linkTrajectoryPointPopup.name());
 
@@ -1186,4 +1308,3 @@ void App::processInput() {
     }
   }
 }
-

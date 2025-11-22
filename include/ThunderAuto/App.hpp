@@ -15,6 +15,9 @@
 #include <ThunderAuto/Popups/NewTrajectoryPopup.hpp>
 #include <ThunderAuto/Popups/RenameTrajectoryPopup.hpp>
 #include <ThunderAuto/Popups/DuplicateTrajectoryPopup.hpp>
+#include <ThunderAuto/Popups/NewAutoModePopup.hpp>
+#include <ThunderAuto/Popups/RenameAutoModePopup.hpp>
+#include <ThunderAuto/Popups/DuplicateAutoModePopup.hpp>
 #include <ThunderAuto/Popups/LinkTrajectoryPointPopup.hpp>
 #include <ThunderAuto/Popups/NewActionPopup.hpp>
 #include <ThunderAuto/Popups/RenameActionPopup.hpp>
@@ -23,6 +26,7 @@
 #include <ThunderAuto/Pages/ActionsPage.hpp>
 #include <ThunderAuto/Pages/EditorPage.hpp>
 #include <ThunderAuto/Pages/TrajectoryManagerPage.hpp>
+#include <ThunderAuto/Pages/AutoModeManagerPage.hpp>
 #include <ThunderAuto/Pages/PropertiesPage.hpp>
 #include <ThunderAuto/Pages/ProjectSettingsPage.hpp>
 
@@ -51,9 +55,7 @@ class App {
     OPEN_PROJECT,
     CLOSE_PROJECT,
     CLOSE_EVERYTHING,
-    // UNSAVED,
     OPEN_PROJECT_ERROR,
-    // SAVE_PROJECT_ERROR,
   };
 
   EventState m_eventState = EventState::WELCOME;
@@ -69,6 +71,10 @@ class App {
     NEW_TRAJECTORY,
     RENAME_TRAJECTORY,
     DUPLICATE_TRAJECTORY,
+
+    NEW_AUTO_MODE,
+    RENAME_AUTO_MODE,
+    DUPLICATE_AUTO_MODE,
 
     LINK_TRAJECTORY_POINT,
 
@@ -98,9 +104,13 @@ class App {
   SaveProjectErrorPopup m_saveProjectErrorPopup;
   ProjectVersionPopup m_projectVersionPopup;
   CSVExportPopup m_csvExportPopup;
+
   NewTrajectoryPopup m_newTrajectoryPopup{m_documentEditManager, m_editorPage};
   RenameTrajectoryPopup m_renameTrajectoryPopup{m_documentEditManager, m_editorPage};
   DuplicateTrajectoryPopup m_duplicateTrajectoryPopup{m_documentEditManager, m_editorPage};
+  NewAutoModePopup m_newAutoModePopup{m_documentEditManager, m_editorPage};
+  RenameAutoModePopup m_renameAutoModePopup{m_documentEditManager, m_editorPage};
+  DuplicateAutoModePopup m_duplicateAutoModePopup{m_documentEditManager, m_editorPage};
   LinkTrajectoryPointPopup m_linkTrajectoryPointPopup{m_documentEditManager, m_editorPage};
   NewActionPopup m_newActionPopup{m_documentEditManager};
   RenameActionPopup m_renameActionPopup{m_documentEditManager};
@@ -110,12 +120,14 @@ class App {
 
   EditorPage m_editorPage{m_documentEditManager};
   TrajectoryManagerPage m_trajectoryManagerPage{m_documentEditManager, m_editorPage};
+  AutoModeManagerPage m_autoModeManagerPage{m_documentEditManager, m_editorPage};
   PropertiesPage m_propertiesPage{m_documentEditManager, m_editorPage};
   ActionsPage m_actionsPage{m_documentEditManager};
   ProjectSettingsPage m_projectSettingsPage{m_documentManager, m_editorPage};
 
   bool m_showEditor = true;
   bool m_showTrajectoryManager = true;
+  bool m_showAutoModeManager = true;
   bool m_showProperties = true;
   bool m_showActions = true;
   bool m_showProjectSettings = false;
@@ -165,6 +177,7 @@ class App {
   void presentEditMenu();
   void presentViewMenu();
   void presentTrajectoryMenu();
+  void presentAutoModeMenu();
   void presentToolsMenu();
 
   bool tryChangeState(EventState eventState);
@@ -182,6 +195,9 @@ class App {
   void presentNewTrajectoryPopup();
   void presentRenameTrajectoryPopup();
   void presentDuplicateTrajectoryPopup();
+  void presentNewAutoModePopup();
+  void presentRenameAutoModePopup();
+  void presentDuplicateAutoModePopup();
   void presentLinkTrajectoryPointPopup();
   void presentNewActionPopup();
   void presentRenameActionPopup();

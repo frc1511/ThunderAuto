@@ -7,31 +7,31 @@
 
 using namespace thunder::core;
 
-class TrajectoryManagerPage : public Page {
+class AutoModeManagerPage : public Page {
   DocumentEditManager& m_history;
 
   EditorPage& m_editorPage;
 
  public:
-  TrajectoryManagerPage(DocumentEditManager& history, EditorPage& editorPage)
+  AutoModeManagerPage(DocumentEditManager& history, EditorPage& editorPage)
       : m_history(history), m_editorPage(editorPage) {}
 
-  const char* name() const noexcept override { return "Trajectories"; }
+  const char* name() const noexcept override { return "Auto Modes"; }
 
   void present(bool* running) override;
 
   enum class Event {
     NONE = 0,
-    NEW_TRAJECTORY,
-    RENAME_TRAJECTORY,
-    DUPLICATE_TRAJECTORY,
+    NEW_AUTO_MODE,
+    RENAME_AUTO_MODE,
+    DUPLICATE_AUTO_MODE,
   };
 
   Event lastPresentEvent() const noexcept { return m_event; }
 
-  const std::string& eventTrajectory() const noexcept { return m_eventTrajectory; }
+  const std::string& eventAutoMode() const noexcept { return m_eventAutoMode; }
 
  private:
   Event m_event = Event::NONE;
-  std::string m_eventTrajectory;
+  std::string m_eventAutoMode;
 };

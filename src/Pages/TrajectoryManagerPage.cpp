@@ -1,7 +1,5 @@
 #include <ThunderAuto/Pages/TrajectoryManagerPage.hpp>
 
-#include <ThunderAuto/FontLibrary.hpp>
-
 #include <IconsFontAwesome5.h>
 #include <imgui_raii.h>
 
@@ -22,7 +20,7 @@ void TrajectoryManagerPage::present(bool* running) {
 
   std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories = state.trajectories;
 
-  std::string trajectoryNameToDelete;
+  std::string trajectoryToDeleteName;
 
   for (auto& [trajectoryName, trajectorySkeleton] : trajectories) {
     const bool isTrajectorySelected =
@@ -64,7 +62,7 @@ void TrajectoryManagerPage::present(bool* running) {
       }
 
       if (ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete")) {
-        trajectoryNameToDelete = trajectoryName;
+        trajectoryToDeleteName = trajectoryName;
       }
     }
   }
@@ -75,8 +73,8 @@ void TrajectoryManagerPage::present(bool* running) {
     m_event = Event::NEW_TRAJECTORY;
   }
 
-  if (!trajectoryNameToDelete.empty()) {
-    state.trajectoryDelete(trajectoryNameToDelete);
+  if (!trajectoryToDeleteName.empty()) {
+    state.trajectoryDelete(trajectoryToDeleteName);
     m_editorPage.invalidateCachedTrajectory();
     m_editorPage.resetPlayback();
 
