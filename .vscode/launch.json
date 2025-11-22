@@ -12,7 +12,7 @@
         "envFile": "${workspaceFolder}/.vscode/launch.env",
         "args": [],
         "stopAtEntry": false,
-        "cwd": "${fileDirname}",
+        "cwd": "${workspaceFolder}",
         "environment": [],
         "externalConsole": false,
         "MIMode": "gdb",
