@@ -1,6 +1,7 @@
 #include <ThunderAuto/Popups/WelcomePopup.hpp>
 #include <ThunderAuto/Platform/Platform.hpp>
 #include <ThunderAuto/ImGuiScopedField.hpp>
+#include <ThunderAuto/ColorPalette.hpp>
 #include <ThunderAuto/Logger.hpp>
 #include <IconsFontAwesome5.h>
 #include <imgui.h>
@@ -84,6 +85,14 @@ void WelcomePopup::present(bool* running) {
 
   {
     auto scopedChildWindow = ImGui::Scoped::ChildWindow("WindowRight");
+
+    ImU32 redHighColor = ThunderAutoColorPalette::kRedHigh;
+    ImU32 redMidColor = ThunderAutoColorPalette::kRedMid;
+    ImU32 redLowColor = ThunderAutoColorPalette::kRedLow;
+
+    auto scopedButtonColor = ImGui::Scoped::StyleColor(ImGuiCol_Button, redLowColor);
+    auto scopedButtonHoveredColor = ImGui::Scoped::StyleColor(ImGuiCol_ButtonHovered, redMidColor);
+    auto scopedButtonActiveColor = ImGui::Scoped::StyleColor(ImGuiCol_ButtonActive, redHighColor);
 
     {
       auto scopedFont =

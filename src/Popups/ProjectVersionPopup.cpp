@@ -46,16 +46,13 @@ void ProjectVersionPopup::present(bool* running) {
 
   const ImGuiStyle& style = ImGui::GetStyle();
 
-  ImVec2 regionAvail = ImGui::GetContentRegionAvail();
-  ImVec2 buttonSize((regionAvail.x - style.ItemSpacing.x) / 2.f, 0.f);
-
-  if (ImGui::Button("Close", buttonSize)) {
+  if (ImGui::Button("Close")) {
     m_result = Result::CANCEL;
   }
 
   ImGui::SameLine();
 
-  if (ImGui::Button("Ok", buttonSize) || ImGui::IsKeyPressed(ImGuiKey_Escape) ||
+  if (ImGui::Button("Ok") || ImGui::IsKeyPressed(ImGuiKey_Escape) ||
       ImGui::IsKeyPressed(ImGuiKey_Enter)) {
     m_result = Result::OK;
   }

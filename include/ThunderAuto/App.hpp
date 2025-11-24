@@ -131,6 +131,9 @@ class App {
   bool m_showProperties = true;
   bool m_showActions = true;
   bool m_showProjectSettings = false;
+#ifdef THUNDERAUTO_DEBUG
+  bool m_showImGuiDemoWindow = false;
+#endif
 
   // Graphics stuff
 
@@ -218,4 +221,3 @@ class App {
   int menuBarWidth() const { return m_menuBarWidth; }
   int menuBarHeight() const { return m_menuBarHeight; }
 };
-

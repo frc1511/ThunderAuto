@@ -27,8 +27,10 @@ void ActionsPage::present(bool* running) {
       auto scopedID = ImGui::Scoped::ID(actionIndex);
       auto scopedPadding = ImGui::Scoped::StyleVarY(ImGuiStyleVar_ItemSpacing, 0.f);
 
-      ImGui::InvisibleButton("Drag Separator", ImVec2(std::max(ImGui::GetContentRegionAvail().x, 1.f),
-                                                      GET_UISIZE(SELECTABLE_LIST_ITEM_SPACING_Y) / 3.f));
+      const float spacingX = std::max(ImGui::GetContentRegionAvail().x, 1.f);
+      const float spacingY = GET_UISIZE(SELECTABLE_LIST_ITEM_SPACING_Y) / 3.f;
+      (void)ImGui::InvisibleButton("Drag Separator", ImVec2(spacingX, spacingY));
+
       if (auto scopedDragTarget = ImGui::Scoped::DragDropTarget()) {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Action")) {
           std::string payloadActionName = reinterpret_cast<const char*>(payload->Data);
@@ -43,7 +45,9 @@ void ActionsPage::present(bool* running) {
 
     {
       ImGui::PushStyleVarY(ImGuiStyleVar_ItemSpacing, 0.f);
-      auto scopedTreeNode = ImGui::Scoped::TreeNodeEx(actionName.c_str(), ImGuiTreeNodeFlags_FramePadding);
+      const ImGuiTreeNodeFlags treeNodeFlags =
+          ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth;
+      auto scopedTreeNode = ImGui::Scoped::TreeNodeEx(actionName.c_str(), treeNodeFlags);
       ImGui::PopStyleVar();
 
       if (auto popup = ImGui::Scoped::PopupContextItem()) {
@@ -202,11 +206,11 @@ void ActionsPage::present(bool* running) {
     }
 
     if (actionIndex == actionsOrder.size() - 1) {
-      auto scopedID = ImGui::Scoped::ID("bottom drag target");
+      auto scopedID = ImGui::Scoped::ID("Bottom Drag Target");
 
       const float spacingX = std::max(ImGui::GetContentRegionAvail().x, 1.f);
       const float spacingY = GET_UISIZE(SELECTABLE_LIST_ITEM_SPACING_Y) / 3.f;
-      (void)ImGui::InvisibleButton("Drag here", ImVec2(spacingX, spacingY));
+      (void)ImGui::InvisibleButton("Drag Separator", ImVec2(spacingX, spacingY));
 
       if (auto scopedDragTarget = ImGui::Scoped::DragDropTarget()) {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Action")) {
@@ -241,4 +245,3 @@ bool ActionsPage::verifyAddedGroupAction(const ThunderAutoProjectState& state,
 
   return true;
 }
-

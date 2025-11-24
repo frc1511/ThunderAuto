@@ -2,6 +2,7 @@
 
 #include <ThunderAuto/ImGuiScopedField.hpp>
 #include <ThunderAuto/FontLibrary.hpp>
+#include <ThunderAuto/ColorPalette.hpp>
 #include <ThunderAuto/Platform/Platform.hpp>
 #include <ThunderAuto/App.hpp>
 #include <IconsFontAwesome5.h>
@@ -56,13 +57,12 @@ void PropertiesPage::presentTrajectoryProperties(ThunderAutoProjectState& state)
 }
 
 void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
-  if (!ImGui::CollapsingHeader("Trajectory Items", nullptr, ImGuiTreeNodeFlags_DefaultOpen))
-    return;
+  presentSeparatorText("Trajectory Items");
 
   auto scopedID = ImGui::Scoped::ID("Trajectory Items List");
 
   if (auto scopedTabBar = ImGui::Scoped::TabBar("TrajectoryItems")) {
-    const char* const childWindowName = "TrajectoryItemsChildWindow";
+    const char* const childWindowName = "Trajectory Items Child Window";
 
     ThunderAutoTrajectoryEditorState& editorState = state.editorState.trajectoryEditorState;
     ThunderAutoTrajectorySkeleton& skeleton = state.currentTrajectory();
@@ -355,8 +355,7 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
 void PropertiesPage::presentTrajectorySelectedItemProperties(ThunderAutoProjectState& state) {
   ThunderAutoTrajectoryEditorState& editorState = state.editorState.trajectoryEditorState;
 
-  if (!ImGui::CollapsingHeader("Selected Trajectory Item", nullptr, ImGuiTreeNodeFlags_DefaultOpen))
-    return;
+  presentSeparatorText("Selected Trajectory Item");
 
   auto scopedID = ImGui::Scoped::ID("Selected Trajectory Item Properties");
 
@@ -455,11 +454,7 @@ bool PropertiesPage::presentPointPositionProperties(ThunderAutoTrajectorySkeleto
 
     const ImVec2 buttonSize = {lineHeight + 3.f, lineHeight};
 
-    {
-      auto scopedFont = ImGui::Scoped::Font(FontLibrary::get().boldFont, 0.f);
-      auto scopedNoNav = ImGui::Scoped::ItemFlag(ImGuiItemFlags_NoNav, true);
-      (void)ImGui::Button("X", buttonSize);
-    }
+    presentColoredUnclickableButton("X", buttonSize, ThunderAutoColorPalette::kRed);
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
       ImGui::SetTooltip("X Position");
     }
@@ -471,11 +466,7 @@ bool PropertiesPage::presentPointPositionProperties(ThunderAutoTrajectorySkeleto
 
     ImGui::SameLine();
 
-    {
-      auto scopedFont = ImGui::Scoped::Font(FontLibrary::get().boldFont, 0.f);
-      auto scopedNoNav = ImGui::Scoped::ItemFlag(ImGuiItemFlags_NoNav, true);
-      (void)ImGui::Button("Y", buttonSize);
-    }
+    presentColoredUnclickableButton("Y", buttonSize, ThunderAutoColorPalette::kGreen);
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
       ImGui::SetTooltip("Y Position");
     }
@@ -511,11 +502,7 @@ bool PropertiesPage::presentPointHeadingProperties(ThunderAutoTrajectorySkeleton
 
     const ImVec2 buttonSize = {lineHeight + 3.f, lineHeight};
 
-    {
-      auto scopedFont = ImGui::Scoped::Font(FontLibrary::get().boldFont, 0.f);
-      auto scopedNoNav = ImGui::Scoped::ItemFlag(ImGuiItemFlags_NoNav, true);
-      (void)ImGui::Button(ICON_FA_ARROW_LEFT, buttonSize);
-    }
+    presentColoredUnclickableButton(ICON_FA_ARROW_LEFT, buttonSize, ThunderAutoColorPalette::kBlue);
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
       ImGui::SetTooltip("Incoming Heading");
     }
@@ -527,11 +514,7 @@ bool PropertiesPage::presentPointHeadingProperties(ThunderAutoTrajectorySkeleton
 
     ImGui::SameLine();
 
-    {
-      auto scopedFont = ImGui::Scoped::Font(FontLibrary::get().boldFont, 0.f);
-      auto scopedNoNav = ImGui::Scoped::ItemFlag(ImGuiItemFlags_NoNav, true);
-      (void)ImGui::Button(ICON_FA_ARROW_RIGHT, buttonSize);
-    }
+    presentColoredUnclickableButton(ICON_FA_ARROW_RIGHT, buttonSize, ThunderAutoColorPalette::kOrange);
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
       ImGui::SetTooltip("Outgoing Heading");
     }
@@ -582,11 +565,7 @@ bool PropertiesPage::presentPointWeightProperties(ThunderAutoTrajectorySkeletonW
 
     const ImVec2 buttonSize = {lineHeight + 3.f, lineHeight};
 
-    {
-      auto scopedFont = ImGui::Scoped::Font(FontLibrary::get().boldFont, 0.f);
-      auto scopedNoNav = ImGui::Scoped::ItemFlag(ImGuiItemFlags_NoNav, true);
-      (void)ImGui::Button(ICON_FA_ARROW_LEFT, buttonSize);
-    }
+    presentColoredUnclickableButton(ICON_FA_ARROW_LEFT, buttonSize, ThunderAutoColorPalette::kBlue);
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
       ImGui::SetTooltip("Incoming Weight");
     }
@@ -598,11 +577,7 @@ bool PropertiesPage::presentPointWeightProperties(ThunderAutoTrajectorySkeletonW
 
     ImGui::SameLine();
 
-    {
-      auto scopedFont = ImGui::Scoped::Font(FontLibrary::get().boldFont, 0.f);
-      auto scopedNoNav = ImGui::Scoped::ItemFlag(ImGuiItemFlags_NoNav, true);
-      (void)ImGui::Button(ICON_FA_ARROW_RIGHT, buttonSize);
-    }
+    presentColoredUnclickableButton(ICON_FA_ARROW_RIGHT, buttonSize, ThunderAutoColorPalette::kOrange);
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
       ImGui::SetTooltip("Outgoing Weight");
     }
@@ -905,8 +880,7 @@ void PropertiesPage::presentTrajectorySelectedActionProperties(ThunderAutoProjec
 }
 
 void PropertiesPage::presentTrajectoryOtherProperties(ThunderAutoProjectState& state) {
-  if (!ImGui::CollapsingHeader("Trajectory Properties"))
-    return;
+  presentSeparatorText("Trajectory Properties");
 
   auto scopedID = ImGui::Scoped::ID("Trajectory Other Properties");
 
@@ -928,8 +902,7 @@ void PropertiesPage::presentTrajectoryOtherProperties(ThunderAutoProjectState& s
 }
 
 void PropertiesPage::presentTrajectorySpeedConstraintProperties(ThunderAutoProjectState& state) {
-  if (!ImGui::CollapsingHeader("Trajectory Speed Constraints"))
-    return;
+  presentSeparatorText("Trajectory Speed Constraints");
 
   auto scopedID = ImGui::Scoped::ID("Trajectory Speed Constraint Properties");
 
@@ -1176,4 +1149,21 @@ bool PropertiesPage::presentSlider(const char* id,
   }
 
   return active;
+}
+
+void PropertiesPage::presentColoredUnclickableButton(const char* label, ImVec2 size, const ImColor& color) {
+  auto scopedFont = ImGui::Scoped::Font(FontLibrary::get().boldFont, 0.f);
+  auto scopedNoNav = ImGui::Scoped::ItemFlag(ImGuiItemFlags_NoNav, true);
+
+  const ImU32 colorU32 = color;
+  auto scopedButtonColor = ImGui::Scoped::StyleColor(ImGuiCol_Button, colorU32);
+  auto scopedButtonHoveredColor = ImGui::Scoped::StyleColor(ImGuiCol_ButtonHovered, colorU32);
+  auto scopedButtonActiveColor = ImGui::Scoped::StyleColor(ImGuiCol_ButtonActive, colorU32);
+
+  (void)ImGui::Button(label, size);
+}
+
+void PropertiesPage::presentSeparatorText(const char* text) {
+  auto scopedFont = ImGui::Scoped::Font(FontLibrary::get().boldFont, 0.f);
+  ImGui::SeparatorText(text);
 }

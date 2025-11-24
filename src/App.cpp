@@ -56,6 +56,12 @@ void App::focusWasChanged(bool focused) {
 void App::present() {
   presentMenuBar();
 
+#ifdef THUNDERAUTO_DEBUG
+  if (m_showImGuiDemoWindow) {
+    ImGui::ShowDemoWindow(&m_showImGuiDemoWindow);
+  }
+#endif
+
   const ThunderAutoProjectSettings& settings = m_documentManager.settings();
 
   switch (m_eventState) {
@@ -372,6 +378,12 @@ void App::presentMenuBar() {
         }
 
         presentToolsMenu();
+
+#ifdef THUNDERAUTO_DEBUG
+        if (ImGui::MenuItem("ImGui Demo Window")) {
+          m_showImGuiDemoWindow = !m_showImGuiDemoWindow;
+        }
+#endif
       }
 
       m_menuBarWidth = ImGui::GetCursorPosX();

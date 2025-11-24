@@ -88,6 +88,10 @@ class PropertiesPage : public Page {
                      const char* format = "%.2f",
                      bool* isFinished = nullptr);
 
+  static void presentColoredUnclickableButton(const char* label, ImVec2 size, const ImColor& color);
+
+  static void presentSeparatorText(const char* text);
+
   template <typename T>
   struct TrajectoryItemSelection {
     T item;

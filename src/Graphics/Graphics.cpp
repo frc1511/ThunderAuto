@@ -4,6 +4,7 @@
 #include <ThunderAuto/Error.hpp>
 
 #include <ThunderAuto/UISizes.hpp>
+#include <ThunderAuto/ColorPalette.hpp>
 #include <ThunderLibCore/Error.hpp>
 
 #if THUNDERAUTO_DIRECTX11
@@ -35,63 +36,54 @@ void Graphics::applyUIStyle(bool darkMode) {
 
   ImGuiStyle& style = ImGui::GetStyle();
 
-  // Colors.
-  ImVec4 yellowHigh = ImVec4(1.00f, 0.95f, 0.00f, 1.00f);
-  ImVec4 yellowLow = ImVec4(1.00f, 0.95f, 0.00f, 0.70f);
-  ImVec4 redVeryLow = ImVec4(0.93f, 0.11f, 0.14f, 0.20f);
-  ImVec4 redLow = ImVec4(0.93f, 0.11f, 0.14f, 0.50f);
-  ImVec4 redMid = ImVec4(0.93f, 0.11f, 0.14f, 0.65f);
-  ImVec4 redHigh = ImVec4(0.93f, 0.11f, 0.14f, 0.75f);
-  ImVec4 greyLow = ImVec4(0.10f, 0.12f, 0.15f, 1.00f);
-  ImVec4 greyMid = ImVec4(0.13f, 0.15f, 0.17f, 1.00f);
-  ImVec4 greyHigh = ImVec4(0.14f, 0.16f, 0.18f, 1.00f);
-  ImVec4 bg = ImVec4(0.05f, 0.07f, 0.09f, 1.00f);
-  ImVec4 border = ImVec4(0.17f, 0.18f, 0.21f, 1.00f);
-  ImVec4 titleHigh = ImVec4(0.09f, 0.11f, 0.13f, 1.00f);
-  ImVec4 titleLow = ImVec4(0.07f, 0.09f, 0.11f, 1.00f);
+  style.Colors[ImGuiCol_WindowBg] = ThunderAutoColorPalette::kBackground;
+  style.Colors[ImGuiCol_PopupBg] = ThunderAutoColorPalette::kBackground;
+  style.Colors[ImGuiCol_ChildBg] = ThunderAutoColorPalette::kBackground;
 
-  style.Colors[ImGuiCol_WindowBg] = bg;
-  style.Colors[ImGuiCol_PopupBg] = bg;
-  style.Colors[ImGuiCol_ChildBg] = bg;
+  style.Colors[ImGuiCol_Border] = ThunderAutoColorPalette::kGrayMid;
+  style.Colors[ImGuiCol_TitleBg] = ThunderAutoColorPalette::kBackground;
+  style.Colors[ImGuiCol_TitleBgCollapsed] = ThunderAutoColorPalette::kBackground;
+  style.Colors[ImGuiCol_TitleBgActive] = ThunderAutoColorPalette::kGrayLow;
 
-  style.Colors[ImGuiCol_Border] = border;
+  style.Colors[ImGuiCol_MenuBarBg] = ThunderAutoColorPalette::kBackground;
 
-  style.Colors[ImGuiCol_TitleBg] = titleLow;
-  style.Colors[ImGuiCol_TitleBgCollapsed] = titleLow;
-  style.Colors[ImGuiCol_TitleBgActive] = titleHigh;
+  // CollapsingHeader & Selected Selectables
+  style.Colors[ImGuiCol_Header] = ThunderAutoColorPalette::kGrayLow;
+  style.Colors[ImGuiCol_HeaderHovered] = ThunderAutoColorPalette::kGrayMid;
+  style.Colors[ImGuiCol_HeaderActive] = ThunderAutoColorPalette::kGrayHigh;
 
-  style.Colors[ImGuiCol_MenuBarBg] = titleHigh;
+  style.Colors[ImGuiCol_Separator] = ThunderAutoColorPalette::kGrayHigh;
+  style.Colors[ImGuiCol_Separator].w = 0.5f;
 
-  style.Colors[ImGuiCol_Header] = greyLow;
-  style.Colors[ImGuiCol_HeaderHovered] = greyMid;
-  style.Colors[ImGuiCol_HeaderActive] = greyHigh;
+  style.Colors[ImGuiCol_FrameBg] = ThunderAutoColorPalette::kGrayLow;
+  style.Colors[ImGuiCol_FrameBgHovered] = ThunderAutoColorPalette::kGrayMid;
+  style.Colors[ImGuiCol_FrameBgActive] = ThunderAutoColorPalette::kGrayHigh;
+  style.Colors[ImGuiCol_Button] = ThunderAutoColorPalette::kGrayLow;
+  style.Colors[ImGuiCol_ButtonHovered] = ThunderAutoColorPalette::kGrayMid;
+  style.Colors[ImGuiCol_ButtonActive] = ThunderAutoColorPalette::kGrayHigh;
+  
+  style.Colors[ImGuiCol_ScrollbarGrab] = ThunderAutoColorPalette::kGrayLow;
+  style.Colors[ImGuiCol_ScrollbarGrabHovered] = ThunderAutoColorPalette::kGrayMid;
+  style.Colors[ImGuiCol_ScrollbarGrabActive] = ThunderAutoColorPalette::kGrayHigh;
 
-  style.Colors[ImGuiCol_FrameBg] = greyLow;
-  style.Colors[ImGuiCol_FrameBgHovered] = greyMid;
-  style.Colors[ImGuiCol_FrameBgActive] = greyHigh;
+  style.Colors[ImGuiCol_CheckMark] = ThunderAutoColorPalette::kRedHigh;
+  style.Colors[ImGuiCol_SliderGrab] = ThunderAutoColorPalette::kRedLow;
+  style.Colors[ImGuiCol_SliderGrabActive] = ThunderAutoColorPalette::kRedHigh;
 
-  style.Colors[ImGuiCol_Button] = redLow;
-  style.Colors[ImGuiCol_ButtonHovered] = redMid;
-  style.Colors[ImGuiCol_ButtonActive] = redHigh;
+  style.Colors[ImGuiCol_SeparatorHovered] = ThunderAutoColorPalette::kYellowLow;
+  style.Colors[ImGuiCol_SeparatorActive] = ThunderAutoColorPalette::kYellowHigh;
+  style.Colors[ImGuiCol_ResizeGrip] = ThunderAutoColorPalette::kRedVeryLow;
+  style.Colors[ImGuiCol_ResizeGripHovered] = ThunderAutoColorPalette::kYellowLow;
+  style.Colors[ImGuiCol_ResizeGripActive] = ThunderAutoColorPalette::kYellowHigh;
 
-  style.Colors[ImGuiCol_CheckMark] = redHigh;
-  style.Colors[ImGuiCol_SliderGrab] = redLow;
-  style.Colors[ImGuiCol_SliderGrabActive] = redHigh;
+  style.Colors[ImGuiCol_Tab] = ThunderAutoColorPalette::kGrayMid;
+  style.Colors[ImGuiCol_TabHovered] = ThunderAutoColorPalette::kRedMid;
+  style.Colors[ImGuiCol_TabSelected] = ThunderAutoColorPalette::kRedHigh;
+  style.Colors[ImGuiCol_TabDimmed] = ThunderAutoColorPalette::kGrayLow;
+  style.Colors[ImGuiCol_TabDimmedSelected] = ThunderAutoColorPalette::kRedLow;
+  style.Colors[ImGuiCol_DockingPreview] = ThunderAutoColorPalette::kRedLow;
 
-  style.Colors[ImGuiCol_SeparatorHovered] = yellowLow;
-  style.Colors[ImGuiCol_SeparatorActive] = yellowHigh;
-
-  style.Colors[ImGuiCol_ResizeGrip] = redVeryLow;
-  style.Colors[ImGuiCol_ResizeGripHovered] = redMid;
-  style.Colors[ImGuiCol_ResizeGripActive] = redHigh;
-
-  style.Colors[ImGuiCol_Tab] = greyMid;
-  style.Colors[ImGuiCol_TabHovered] = redMid;
-  style.Colors[ImGuiCol_TabSelected] = redHigh;
-  style.Colors[ImGuiCol_TabDimmed] = greyLow;
-  style.Colors[ImGuiCol_TabDimmedSelected] = redLow;
-
-  style.Colors[ImGuiCol_DockingPreview] = redLow;
+  style.Colors[ImGuiCol_DragDropTarget] = ThunderAutoColorPalette::kYellowHigh;
 
   double dpiscale = getPlatformGraphics().getDPIScale();
   updateUIScale(dpiscale);
@@ -103,15 +95,19 @@ void Graphics::updateUIScale(double scale) {
 
   // ScaleAllSizes will change the original size, so reset all style config
   style = ImGuiStyle();
-  style.PopupRounding = 2;
-  style.WindowRounding = 2;
-  style.ChildRounding = 2;
-  style.FrameRounding = 2;
-  style.ScrollbarRounding = 12;
-  style.GrabRounding = 2;
-  style.TabRounding = 2;
+  style.PopupRounding = 2.0f;
+  style.WindowRounding = 2.0f;
+  style.ChildRounding = 2.0f;
+  style.FrameRounding = 2.0f;
+  style.ScrollbarRounding = 12.0f;
+  style.GrabRounding = 2.0f;
+  style.TabRounding = 2.0f;
   style.WindowMenuButtonPosition = ImGuiDir_None;
   style.WindowTitleAlign.x = 0.5f;
+  style.FrameBorderSize = 1.0f;
+  style.SeparatorTextBorderSize = 8.0f;
+  style.SeparatorTextPadding.x = 25.0f;
+  style.SeparatorTextPadding.y = 6.0f;
 
   // Titlebar sizes
   style.UserSizes[UISIZE_TITLEBAR_BUTTON_WIDTH] = 47.f;
@@ -189,7 +185,7 @@ void Graphics::updateUIScale(double scale) {
   style.UserSizes[UISIZE_NEW_ACTION_POPUP_CHILD_WINDOW_START_SIZE_Y] = 105.f;
   // Other sizes
   style.UserSizes[UISIZE_SELECTABLE_LIST_ITEM_SPACING_Y] = 10.f;
-  style.UserSizes[UISIZE_FIELD_NORMAL_LEFT_COLUMN_WIDTH] = 135.f;
+  style.UserSizes[UISIZE_FIELD_NORMAL_LEFT_COLUMN_WIDTH] = 138.f;
   style.UserSizes[UISIZE_INDENT_SMALL] = 10.f, style.UserSizes[UISIZE_INDENT_MEDIUM] = 20.f,
   style.UserSizes[UISIZE_INDENT_LARGE] = 30.f;
 

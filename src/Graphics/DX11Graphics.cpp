@@ -297,7 +297,7 @@ void GraphicsDirectX11::drawTitlebarButtons() {
   const ImGuiStyle& style = ImGui::GetStyle();
 
   Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> titlebarBgBrush;
-  D2D1_COLOR_F* titlebarColor = (D2D1_COLOR_F*)&style.Colors[ImGuiCol_TitleBg];
+  D2D1_COLOR_F* titlebarColor = (D2D1_COLOR_F*)&style.Colors[ImGuiCol_MenuBarBg];
   hr = m_d2dRenderTarget->CreateSolidColorBrush(titlebarColor, &brushProps, &titlebarBgBrush);
   if (FAILED(hr))
     return;

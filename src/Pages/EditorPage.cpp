@@ -2,6 +2,7 @@
 
 #include <ThunderAuto/Input.hpp>
 #include <ThunderAuto/Types.hpp>
+#include <ThunderAuto/ColorPalette.hpp>
 #include <ThunderLibCore/Math.hpp>
 #include <IconsFontAwesome5.h>
 #include <stb_image.h>
@@ -13,23 +14,23 @@ static const units::meter_t kMinRotationTargetSeparation = 0.1_m;
 
 // Colors
 
-static const ImU32 kPointColor = IM_COL32(255, 255, 255, 255);
-static const ImU32 kPointSelectedColor = IM_COL32(255, 242, 0, 255);
+static const ImU32 kPointColor = ThunderAutoColorPalette::kWhite;
+static const ImU32 kPointSelectedColor = ThunderAutoColorPalette::kYellowHigh;
 
 static const ImU32 kPointPreviewColor = IM_COL32(128, 128, 128, 255);
 static const ImU32 kPointLockedColor = IM_COL32(192, 192, 192, 255);
 
-static const ImU32 kStartPointColor = IM_COL32(100, 255, 100, 255);
-static const ImU32 kStartPointSelectedColor = IM_COL32(0, 255, 0, 255);
+static const ImU32 kStartPointColor = ThunderAutoColorPalette::kGreenHigh;
+static const ImU32 kStartPointSelectedColor = ThunderAutoColorPalette::kGreenMid;
 
-static const ImU32 kEndPointColor = IM_COL32(255, 100, 100, 255);
-static const ImU32 kEndPointSelectedColor = IM_COL32(255, 0, 0, 255);
+static const ImU32 kEndPointColor = ThunderAutoColorPalette::kRedHigh;
+static const ImU32 kEndPointSelectedColor = ThunderAutoColorPalette::kRedMid;
 
-static const ImU32 kHandleColor = IM_COL32(225, 225, 225, 255);
-static const ImU32 kHandleSelectedColor = IM_COL32(178, 169, 0, 255);
+static const ImU32 kHandleColor = ThunderAutoColorPalette::kWhite;
+static const ImU32 kHandleSelectedColor = ThunderAutoColorPalette::kYellowMid;
 
-static const ImU32 kActionColor = IM_COL32(255, 128, 0, 255);
-static const ImU32 kActionSelectedColor = IM_COL32(255, 200, 0, 255);
+static const ImU32 kActionColor = ThunderAutoColorPalette::kOrangeMid;
+static const ImU32 kActionSelectedColor = ThunderAutoColorPalette::kOrangeHigh;
 
 ImVec2 EditorPage::ToScreenCoordinate(const Point2d& fieldCoordinate,
                                       const ThunderAutoFieldImage& fieldImage,
@@ -905,6 +906,10 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
           invalidateCachedTrajectory();
         }
       }
+    }
+    ImGui::Separator();
+    if (ImGui::MenuItem(ICON_FA_REDO "  Reset View")) {
+      resetView();
     }
   } else if (auto scopedPopup = ImGui::Scoped::PopupContextItem("TrajectoryEditorContextMenu_Waypoint")) {
     {

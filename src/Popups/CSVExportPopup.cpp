@@ -17,10 +17,7 @@ void CSVExportPopup::present(bool* running) {
 
   ImGui::Spacing();
 
-  ImVec2 regionAvail = ImGui::GetContentRegionAvail();
-  ImVec2 buttonSize = ImVec2(regionAvail.x, 0.f);
-
-  if (ImGui::Button("Ok", buttonSize) || ImGui::IsKeyPressed(ImGuiKey_Escape) ||
+  if (ImGui::Button("Ok") || ImGui::IsKeyPressed(ImGuiKey_Escape) ||
       ImGui::IsKeyPressed(ImGuiKey_Enter)) {
     *running = false;
   }

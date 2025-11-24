@@ -27,9 +27,7 @@ void SaveProjectErrorPopup::present(bool* running) {
 
   ImGui::Spacing();
 
-  ImVec2 buttonSize = ImVec2(regionAvail.x, 0.f);
-
-  if (ImGui::Button("Close", buttonSize) || ImGui::IsKeyPressed(ImGuiKey_Escape) ||
+  if (ImGui::Button("Close") || ImGui::IsKeyPressed(ImGuiKey_Escape) ||
       ImGui::IsKeyPressed(ImGuiKey_Enter)) {
     *running = false;
   }

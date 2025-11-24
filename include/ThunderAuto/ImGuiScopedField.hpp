@@ -31,8 +31,15 @@ class ScopedField final {
       if (!buildLeft) {
         buildLeft = [&]() {
           ImGui::Text("%s", m_text);
-          if (m_tooltip && ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
-            ImGui::SetTooltip("%s", m_tooltip);
+          if (m_tooltip) {
+            ImGui::SameLine();
+            ImGui::TextDisabled("(?)");
+            if (ImGui::BeginItemTooltip()) {
+              ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+              ImGui::TextUnformatted(m_tooltip);
+              ImGui::PopTextWrapPos();
+              ImGui::EndTooltip();
+            }
           }
         };
       }
