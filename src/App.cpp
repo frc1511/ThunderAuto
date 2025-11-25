@@ -217,6 +217,9 @@ void App::presentProjectPages() {
           m_projectEvent = ProjectEvent::LINK_TRAJECTORY_POINT;
           m_linkTrajectoryPointPopup.prepareForOpen();
           break;
+        case AUTO_MODE_ADD_STEP:
+          m_projectEvent = ProjectEvent::ADD_AUTO_MODE_STEP;
+          break;
         default:
           ThunderAutoUnreachable("Unknown properties page event");
       }
@@ -318,6 +321,9 @@ void App::presentProjectEventPopups() {
       break;
     case LINK_TRAJECTORY_POINT:
       presentLinkTrajectoryPointPopup();
+      break;
+    case ADD_AUTO_MODE_STEP:
+      presentAddAutoModeStepPopup();
       break;
     case NEW_ACTION:
     case NEW_ACTION_ADD_TO_GROUP:
@@ -1073,6 +1079,19 @@ void App::presentLinkTrajectoryPointPopup() {
   bool showingPopup = true;
 
   m_linkTrajectoryPointPopup.present(&showingPopup);
+
+  if (showingPopup)
+    return;
+
+  m_projectEvent = ProjectEvent::NONE;
+}
+
+void App::presentAddAutoModeStepPopup() {
+  ImGui::OpenPopup(m_addAutoModeStepPopup.name());
+
+  bool showingPopup = true;
+
+  m_addAutoModeStepPopup.present(&showingPopup);
 
   if (showingPopup)
     return;

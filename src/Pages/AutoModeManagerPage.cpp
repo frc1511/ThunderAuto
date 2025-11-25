@@ -34,7 +34,7 @@ void AutoModeManagerPage::present(bool* running) {
 
       state.editorState.view = ThunderAutoEditorState::View::AUTO_MODE;
       autoModeEditorState.currentAutoModeName = autoModeName;
-      // TODO: rest of selection state
+      autoModeEditorState.selectedStepPath = std::nullopt;
 
       m_history.addState(state);
 
@@ -56,6 +56,11 @@ void AutoModeManagerPage::present(bool* running) {
       if (ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete")) {
         autoModeToDeleteName = autoModeName;
       }
+    }
+
+    if (auto scopedDragSource = ImGui::Scoped::DragDropSource()) {
+      ImGui::SetDragDropPayload("Auto Mode", autoModeName.c_str(), autoModeName.size() + 1);
+      ImGui::Text("%s", autoModeName.c_str());
     }
   }
 

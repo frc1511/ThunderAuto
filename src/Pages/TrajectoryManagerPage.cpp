@@ -65,6 +65,11 @@ void TrajectoryManagerPage::present(bool* running) {
         trajectoryToDeleteName = trajectoryName;
       }
     }
+
+    if (auto scopedDragSource = ImGui::Scoped::DragDropSource()) {
+      ImGui::SetDragDropPayload("Trajectory", trajectoryName.c_str(), trajectoryName.size() + 1);
+      ImGui::Text("%s", trajectoryName.c_str());
+    }
   }
 
   ImGui::Separator();

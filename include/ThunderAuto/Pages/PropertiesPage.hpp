@@ -29,6 +29,7 @@ class PropertiesPage : public Page {
   enum class Event {
     NONE = 0,
     TRAJECTORY_POINT_LINK,
+    AUTO_MODE_ADD_STEP,
   };
 
   Event lastPresentEvent() const noexcept { return m_event; }
@@ -80,7 +81,32 @@ class PropertiesPage : public Page {
   void presentTrajectoryOtherProperties(ThunderAutoProjectState& state);
   void presentTrajectorySpeedConstraintProperties(ThunderAutoProjectState& state);
 
-  // void presentAutoModeProperties(ThunderAutoProjectState& state);
+  void presentAutoModeProperties(ThunderAutoProjectState& state);
+
+  void presentAutoModeStepList(ThunderAutoProjectState& state);
+
+  // Draw step tree. Returns true if tree was modified and the rest of the tree should not be drawn (to avoid
+  // accessing bad iterators).
+  bool drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeStep>& step,
+                                const ThunderAutoModeStepPath& path,
+                                ThunderAutoProjectState& state);
+  bool drawAutoModeStepsTree(std::list<std::unique_ptr<ThunderAutoModeStep>>& steps,
+                             const ThunderAutoModeStepPath& path,
+                             ThunderAutoProjectState& state);
+
+  enum class AutoModeStepDragDropInsertMethod {
+    BEFORE,
+    AFTER,
+    INTO,
+  };
+
+  void autoModeStepDragDropTarget(const ThunderAutoModeStepPath& closestStepPath,
+                                  AutoModeStepDragDropInsertMethod insertMethod,
+                                  bool acceptAutoModeSteps,
+                                  ThunderAutoProjectState& state);
+
+  void presentAutoModeSelectedStepProperties(ThunderAutoProjectState& state);
+  void presentAutoModeSpeedConstraintProperties(ThunderAutoProjectState& state);
 
   bool presentSlider(const char* id,
                      double& value,

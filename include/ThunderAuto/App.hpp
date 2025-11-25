@@ -19,6 +19,7 @@
 #include <ThunderAuto/Popups/RenameAutoModePopup.hpp>
 #include <ThunderAuto/Popups/DuplicateAutoModePopup.hpp>
 #include <ThunderAuto/Popups/LinkTrajectoryPointPopup.hpp>
+#include <ThunderAuto/Popups/AddAutoModeStepPopup.hpp>
 #include <ThunderAuto/Popups/NewActionPopup.hpp>
 #include <ThunderAuto/Popups/RenameActionPopup.hpp>
 #include <ThunderAuto/Popups/RecursiveActionErrorPopup.hpp>
@@ -77,6 +78,7 @@ class App {
     DUPLICATE_AUTO_MODE,
 
     LINK_TRAJECTORY_POINT,
+    ADD_AUTO_MODE_STEP,
 
     NEW_ACTION,
     NEW_ACTION_ADD_TO_GROUP,
@@ -112,6 +114,7 @@ class App {
   RenameAutoModePopup m_renameAutoModePopup{m_documentEditManager, m_editorPage};
   DuplicateAutoModePopup m_duplicateAutoModePopup{m_documentEditManager, m_editorPage};
   LinkTrajectoryPointPopup m_linkTrajectoryPointPopup{m_documentEditManager, m_editorPage};
+  AddAutoModeStepPopup m_addAutoModeStepPopup{m_documentEditManager, m_editorPage};
   NewActionPopup m_newActionPopup{m_documentEditManager};
   RenameActionPopup m_renameActionPopup{m_documentEditManager};
   RecursiveActionErrorPopup m_recursiveActionErrorPopup;
@@ -202,6 +205,7 @@ class App {
   void presentRenameAutoModePopup();
   void presentDuplicateAutoModePopup();
   void presentLinkTrajectoryPointPopup();
+  void presentAddAutoModeStepPopup();
   void presentNewActionPopup();
   void presentRenameActionPopup();
   void presentRecursiveActionErrorPopup();

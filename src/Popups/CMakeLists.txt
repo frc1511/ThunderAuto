@@ -16,6 +16,7 @@ add_thunder_auto_sources(
   "${THUNDERAUTO_POPUP_DIR}/RenameAutoModePopup.cpp"
   "${THUNDERAUTO_POPUP_DIR}/DuplicateAutoModePopup.cpp"
   "${THUNDERAUTO_POPUP_DIR}/LinkTrajectoryPointPopup.cpp"
+  "${THUNDERAUTO_POPUP_DIR}/AddAutoModeStepPopup.cpp"
   "${THUNDERAUTO_POPUP_DIR}/NewActionPopup.cpp"
   "${THUNDERAUTO_POPUP_DIR}/RenameActionPopup.cpp"
   "${THUNDERAUTO_POPUP_DIR}/RecursiveActionErrorPopup.cpp"
