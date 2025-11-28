@@ -1238,15 +1238,9 @@ bool PropertiesPage::drawAutoModeStepsTree(std::list<std::unique_ptr<ThunderAuto
   ThunderAutoModeStepPath path = parentPath;
   size_t stepIndex = 0;
   for (auto& step : steps) {
-    path.lastNode().stepIndex = stepIndex;
+    path.endNode().stepIndex = stepIndex++;
 
-    /**
-     * TODO:
-     * This current method of differentiating steps for ImGui using just their index is not ideal because the
-     * IDs of tree nodes can shift when steps are added/removed, causing nodes to close/open unexpectedly. A
-     * better method would be to assign each step a unique ID upon creation and use that instead.
-     */
-    auto scopedID = ImGui::Scoped::ID(stepIndex++);
+    auto scopedID = ImGui::Scoped::ID(static_cast<void*>(step.get()));
 
     bool shouldStop = drawAutoModeStepTreeNode(step, path, state);
     if (shouldStop) {
@@ -1312,11 +1306,11 @@ void PropertiesPage::autoModeStepDragDropTarget(const ThunderAutoModeStepPath& s
             }
             break;
           case AFTER:
-            isInSameLocation = (payloadPath == (stepPath.parentPath() / (stepPath.lastNode().next())));
+            isInSameLocation = (payloadPath == (stepPath.parentPath() / (stepPath.endNode().next())));
             break;
           case BEFORE:
-            if (stepPath.lastNode().stepIndex > 0) {
-              isInSameLocation = (payloadPath == (stepPath.parentPath() / (stepPath.lastNode().prev())));
+            if (stepPath.endNode().stepIndex > 0) {
+              isInSameLocation = (payloadPath == (stepPath.parentPath() / (stepPath.endNode().prev())));
             }
             break;
           default:
