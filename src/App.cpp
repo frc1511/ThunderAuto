@@ -285,6 +285,10 @@ void App::presentProjectPages() {
 }
 
 void App::presentProjectEventPopups() {
+  if (m_documentManager.history().isLocked()) {
+    m_documentEditManager.discardLongEdit();
+  }
+
   switch (m_projectEvent) {
     using enum ProjectEvent;
     case NONE:
@@ -1283,11 +1287,19 @@ void App::csvExportCurrentTrajectory() {
 }
 
 void App::undo() {
+  if (m_eventState != EventState::PROJECT || m_projectEvent != ProjectEvent::NONE) {
+    return;
+  }
+
   m_documentManager.undo();
   m_editorPage.invalidateCachedTrajectory();
 }
 
 void App::redo() {
+  if (m_eventState != EventState::PROJECT || m_projectEvent != ProjectEvent::NONE) {
+    return;
+  }
+
   m_documentManager.redo();
   m_editorPage.invalidateCachedTrajectory();
 }

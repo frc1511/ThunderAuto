@@ -37,5 +37,6 @@ class HistoryManager final {
   void lock() noexcept { m_locked = true; }
   void unlock() noexcept { m_locked = false; }
 
+ public:
   bool isLocked() const noexcept { return m_locked; }
 };
