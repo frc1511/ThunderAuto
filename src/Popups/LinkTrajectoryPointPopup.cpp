@@ -7,7 +7,7 @@
 void LinkTrajectoryPointPopup::prepareForOpen() {
   reset();
   ThunderAutoProjectState state = m_history.currentState();
-  m_initialLinkName = state.currentTrajectorySelectedWaypoint().linkName();
+  m_initialLinkName = m_selectedLinkName = state.currentTrajectorySelectedWaypoint().linkName();
 }
 
 void LinkTrajectoryPointPopup::present(bool* running) {
@@ -28,7 +28,7 @@ void LinkTrajectoryPointPopup::present(bool* running) {
     const char* comboTitle = m_selectedLinkName.c_str();
 
     if (m_createNewLink) {
-      comboTitle = "+New Link";
+      comboTitle = "+ New Link";
     } else if (m_selectedLinkName.empty()) {
       comboTitle = "None";
     }
@@ -105,16 +105,20 @@ void LinkTrajectoryPointPopup::present(bool* running) {
       ThunderAutoLogger::Info("Create new waypoint link '{}'", newLinkName);
       state.waypointLinks.insert(newLinkName);
       point.setLinkName(newLinkName);
-    } else {
+
+      m_history.addState(state);
+      m_editorPage.invalidateCachedTrajectory();
+      m_editorPage.resetPlayback();
+
+    } else if (m_selectedLinkName != m_initialLinkName) {
       ThunderAutoLogger::Info("Set waypoint link to '{}'", m_selectedLinkName);
       point.setLinkName(m_selectedLinkName);
       state.trajectoryUpdateSelectedWaypointFromLink();
+
+      m_history.addState(state);
+      m_editorPage.invalidateCachedTrajectory();
+      m_editorPage.resetPlayback();
     }
-
-    m_history.addState(state);
-
-    m_editorPage.invalidateCachedTrajectory();
-    m_editorPage.resetPlayback();
 
     reset();
     *running = false;
