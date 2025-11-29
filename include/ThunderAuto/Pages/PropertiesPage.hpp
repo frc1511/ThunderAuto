@@ -61,13 +61,6 @@ class PropertiesPage : public Page {
   bool presentTrajectoryStartRotationProperty(ThunderAutoTrajectorySkeleton& skeleton);
   bool presentTrajectoryEndRotationProperty(ThunderAutoTrajectorySkeleton& skeleton);
 
-  // Present some action list property with the given name and add/remove action functions.
-  bool presentActionProperty(const char* name,
-                             const char* tooltip,
-                             std::function<const std::string&()> getActionName,
-                             std::function<void(const std::string&)> setActionName,
-                             std::span<const std::string> availableActionNames);
-
   bool presentPointStopActionProperty(ThunderAutoTrajectorySkeletonWaypoint& point,
                                       const ThunderAutoProjectState& state);
   bool presentTrajectoryStartActionProperty(ThunderAutoTrajectorySkeleton& skeleton,
@@ -106,7 +99,37 @@ class PropertiesPage : public Page {
                                   ThunderAutoProjectState& state);
 
   void presentAutoModeSelectedStepProperties(ThunderAutoProjectState& state);
+  void presentAutoModeSelectedActionStepProperties(ThunderAutoModeActionStep& step,
+                                                   ThunderAutoProjectState& state);
+  void presentAutoModeSelectedTrajectoryStepProperties(ThunderAutoModeTrajectoryStep& step,
+                                                       ThunderAutoProjectState& state);
+  void presentAutoModeSelectedBoolBranchStepProperties(ThunderAutoModeBoolBranchStep& step,
+                                                       ThunderAutoProjectState& state);
+  void presentAutoModeSelectedSwitchBranchStepProperties(ThunderAutoModeSwitchBranchStep& step,
+                                                         ThunderAutoProjectState& state);
+
   void presentAutoModeSpeedConstraintProperties(ThunderAutoProjectState& state);
+
+  static bool presentActionProperty(const char* name,
+                                    const char* tooltip,
+                                    std::function<const std::string&()> getName,
+                                    std::function<void(const std::string&)> setName,
+                                    bool includeNoneOption,
+                                    const ThunderAutoProjectState& state);
+
+  static bool presentTrajectoryProperty(const char* name,
+                                        const char* tooltip,
+                                        std::function<const std::string&()> getName,
+                                        std::function<void(const std::string&)> setName,
+                                        bool includeNoneOption,
+                                        const ThunderAutoProjectState& state);
+
+  static bool presentInputText(const char* id,
+                               std::function<const std::string&()> getText,
+                               std::function<void(const std::string&)> setText,
+                               char* workingInputBuffer,
+                               size_t workingInputBufferSize,
+                               bool& isShowingInput);
 
   bool presentSlider(const char* id,
                      double& value,

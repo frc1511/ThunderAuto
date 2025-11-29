@@ -7,6 +7,7 @@
 #include <ThunderAuto/App.hpp>
 #include <IconsFontAwesome5.h>
 #include <imgui_raii.h>
+#include <imgui_internal.h>
 #include <fmt/format.h>
 #include <limits>
 
@@ -411,18 +412,6 @@ void PropertiesPage::presentTrajectorySelectedPointProperties(ThunderAutoProject
   // Heading weights.
   changed |= presentPointWeightProperties(point, showIncomingWeights, showOutgoingWeights);
 
-  // Start/End rotations & actions
-  if (isFirstPoint) {
-    ImGui::Separator();
-    changed |= presentTrajectoryStartRotationProperty(skeleton);
-    changed |= presentTrajectoryStartActionProperty(skeleton, state);
-
-  } else if (isLastPoint) {
-    ImGui::Separator();
-    changed |= presentTrajectoryEndRotationProperty(skeleton);
-    changed |= presentTrajectoryEndActionProperty(skeleton, state);
-  }
-
   ImGui::Separator();
 
   // Max velocity override.
@@ -709,39 +698,6 @@ bool PropertiesPage::presentTrajectoryEndRotationProperty(ThunderAutoTrajectoryS
   return presentRotationProperty("End Rotation", getRotation, setRotation);
 }
 
-bool PropertiesPage::presentActionProperty(const char* name,
-                                           const char* tooltip,
-                                           std::function<const std::string&()> getActionName,
-                                           std::function<void(const std::string&)> setActionName,
-                                           std::span<const std::string> availableActionNames) {
-  auto scopedField = ImGui::ScopedField::Builder(name).tooltip(tooltip).build();
-
-  std::string currentActionName = getActionName();
-  bool changed = false;
-
-  if (auto scopedCombo = ImGui::Scoped::Combo("##Action Name", currentActionName.c_str())) {
-    if (ImGui::Selectable("<none>", currentActionName.empty()) && !currentActionName.empty()) {
-      setActionName("");
-      changed = true;
-    }
-
-    if (!availableActionNames.empty()) {
-      ImGui::Separator();
-    }
-
-    for (const std::string& action : availableActionNames) {
-      bool isActionSelected = action == currentActionName;
-      if (ImGui::Selectable(action.c_str(), isActionSelected) && !isActionSelected) {
-        setActionName(action);
-        changed = true;
-        break;
-      }
-    }
-  }
-
-  return changed;
-}
-
 bool PropertiesPage::presentPointStopActionProperty(ThunderAutoTrajectorySkeletonWaypoint& point,
                                                     const ThunderAutoProjectState& state) {
   ThunderAutoAssert(point.isStopped());
@@ -750,7 +706,7 @@ bool PropertiesPage::presentPointStopActionProperty(ThunderAutoTrajectorySkeleto
   auto setActionName = [&](const std::string& actionName) { point.setStopAction(actionName); };
 
   return presentActionProperty("Stop Action", "Action to perform before the robot resumes driving",
-                               getActionName, setActionName, state.actionsOrder);
+                               getActionName, setActionName, true, state);
 }
 
 bool PropertiesPage::presentTrajectoryStartActionProperty(ThunderAutoTrajectorySkeleton& skeleton,
@@ -759,7 +715,7 @@ bool PropertiesPage::presentTrajectoryStartActionProperty(ThunderAutoTrajectoryS
   auto setActionName = [&](const std::string& actionName) { skeleton.setStartAction(actionName); };
 
   return presentActionProperty("Start Action", "Action to perform before the robot starts driving",
-                               getActionName, setActionName, state.actionsOrder);
+                               getActionName, setActionName, true, state);
 }
 
 bool PropertiesPage::presentTrajectoryEndActionProperty(ThunderAutoTrajectorySkeleton& skeleton,
@@ -768,7 +724,7 @@ bool PropertiesPage::presentTrajectoryEndActionProperty(ThunderAutoTrajectorySke
   auto setActionName = [&](const std::string& actionName) { skeleton.setEndAction(actionName); };
 
   return presentActionProperty("End Action", "Action to perform after the robot has finished driving",
-                               getActionName, setActionName, state.actionsOrder);
+                               getActionName, setActionName, true, state);
 }
 
 void PropertiesPage::presentTrajectorySelectedRotationProperties(ThunderAutoProjectState& state) {
@@ -1366,14 +1322,115 @@ void PropertiesPage::autoModeStepDragDropTarget(const ThunderAutoModeStepPath& s
 
 void PropertiesPage::presentAutoModeSelectedStepProperties(ThunderAutoProjectState& state) {
   ThunderAutoModeEditorState& editorState = state.editorState.autoModeEditorState;
+  ThunderAutoMode& mode = state.currentAutoMode();
 
   presentSeparatorText("Selected Auto Mode Step");
 
   auto scopedID = ImGui::Scoped::ID("Selected Step Properties");
 
-  // TODO: Implement
+  if (!editorState.selectedStepPath.has_value()) {
+    ImGui::Text("No step selected");
+    return;
+  }
 
-  ImGui::Text("No step selected");
+  ThunderAutoModeStep& step = mode.getStepAtPath(editorState.selectedStepPath.value());
+  switch (step.type()) {
+    using enum ThunderAutoModeStepType;
+    case ACTION:
+      presentAutoModeSelectedActionStepProperties(reinterpret_cast<ThunderAutoModeActionStep&>(step), state);
+      break;
+    case TRAJECTORY:
+      presentAutoModeSelectedTrajectoryStepProperties(reinterpret_cast<ThunderAutoModeTrajectoryStep&>(step),
+                                                      state);
+      break;
+    case BRANCH_BOOL:
+      presentAutoModeSelectedBoolBranchStepProperties(reinterpret_cast<ThunderAutoModeBoolBranchStep&>(step),
+                                                      state);
+      break;
+    case BRANCH_SWITCH:
+      presentAutoModeSelectedSwitchBranchStepProperties(
+          reinterpret_cast<ThunderAutoModeSwitchBranchStep&>(step), state);
+      break;
+    default:
+      ThunderAutoUnreachable("Invalid auto mode step type");
+  }
+}
+
+void PropertiesPage::presentAutoModeSelectedActionStepProperties(ThunderAutoModeActionStep& step,
+                                                                 ThunderAutoProjectState& state) {
+  bool changed = false;
+
+  auto getActionName = [&]() -> const std::string& { return step.actionName; };
+  auto setActionName = [&](const std::string& actionName) { step.actionName = actionName; };
+
+  changed |= presentActionProperty("Action", nullptr, getActionName, setActionName, false, state);
+
+  if (changed) {
+    m_history.addState(state);
+  }
+}
+
+void PropertiesPage::presentAutoModeSelectedTrajectoryStepProperties(ThunderAutoModeTrajectoryStep& step,
+                                                                     ThunderAutoProjectState& state) {
+  bool changed = false;
+
+  auto getTrajectoryName = [&]() -> const std::string& { return step.trajectoryName; };
+  auto setTrajectoryName = [&](const std::string& trajectoryName) { step.trajectoryName = trajectoryName; };
+
+  changed |=
+      presentTrajectoryProperty("Trajectory", nullptr, getTrajectoryName, setTrajectoryName, false, state);
+
+  if (changed) {
+    m_history.addState(state);
+  }
+}
+
+void PropertiesPage::presentAutoModeSelectedBoolBranchStepProperties(ThunderAutoModeBoolBranchStep& step,
+                                                                     ThunderAutoProjectState& state) {
+  bool changed = false;
+
+  {
+    auto scopedField = ImGui::ScopedField::Builder("Condition")
+                           .tooltip("Name of the registered boolean\ncondition to evaluate at this step")
+                           .build();
+
+    auto getConditionName = [&]() -> const std::string& { return step.conditionName; };
+    auto setConditionName = [&](const std::string& conditionName) { step.conditionName = conditionName; };
+
+    static bool isShowingInput = false;
+    static char conditionNameInputBuffer[256] = "";
+
+    changed |= presentInputText("##Bool Condition Name", getConditionName, setConditionName,
+                                conditionNameInputBuffer, sizeof(conditionNameInputBuffer), isShowingInput);
+  }
+
+  if (changed) {
+    m_history.addState(state);
+  }
+}
+
+void PropertiesPage::presentAutoModeSelectedSwitchBranchStepProperties(ThunderAutoModeSwitchBranchStep& step,
+                                                                       ThunderAutoProjectState& state) {
+  bool changed = false;
+
+  {
+    auto scopedField = ImGui::ScopedField::Builder("Condition")
+                           .tooltip("Name of the registered switch\ncondition to evaluate at this step")
+                           .build();
+
+    auto getConditionName = [&]() -> const std::string& { return step.conditionName; };
+    auto setConditionName = [&](const std::string& conditionName) { step.conditionName = conditionName; };
+
+    static bool isShowingInput = false;
+    static char conditionNameInputBuffer[256] = "";
+
+    changed |= presentInputText("##Switch Condition Name", getConditionName, setConditionName,
+                                conditionNameInputBuffer, sizeof(conditionNameInputBuffer), isShowingInput);
+  }
+
+  if (changed) {
+    m_history.addState(state);
+  }
 }
 
 void PropertiesPage::presentAutoModeSpeedConstraintProperties(ThunderAutoProjectState& state) {
@@ -1510,6 +1567,180 @@ PropertiesPage::GetAllActionSelections(const ThunderAutoTrajectorySkeleton& skel
   }
 
   return actionSelections;
+}
+
+bool PropertiesPage::presentActionProperty(const char* name,
+                                           const char* tooltip,
+                                           std::function<const std::string&()> getName,
+                                           std::function<void(const std::string&)> setName,
+                                           bool includeNoneOption,
+                                           const ThunderAutoProjectState& state) {
+  auto scopedField = ImGui::ScopedField::Builder(name).tooltip(tooltip).build();
+
+  std::string currentName = getName();
+  if (currentName.empty()) {
+    currentName = "<none>";
+  }
+  bool changed = false;
+
+  std::string comboID = fmt::format("##{} Name", name);
+  if (auto scopedCombo = ImGui::Scoped::Combo(comboID.c_str(), currentName.c_str())) {
+    if (includeNoneOption) {
+      if (ImGui::Selectable("<none>", currentName.empty()) && !currentName.empty()) {
+        setName("");
+        changed = true;
+      }
+
+      if (!state.actionsOrder.empty()) {
+        ImGui::Separator();
+      }
+    }
+
+    for (const std::string& name : state.actionsOrder) {
+      bool isNameSelected = (name == currentName);
+      if (ImGui::Selectable(name.c_str(), isNameSelected) && !isNameSelected) {
+        setName(name);
+        changed = true;
+        break;
+      }
+    }
+  }
+
+  return changed;
+}
+
+bool PropertiesPage::presentTrajectoryProperty(const char* name,
+                                               const char* tooltip,
+                                               std::function<const std::string&()> getName,
+                                               std::function<void(const std::string&)> setName,
+                                               bool includeNoneOption,
+                                               const ThunderAutoProjectState& state) {
+  auto scopedField = ImGui::ScopedField::Builder(name).tooltip(tooltip).build();
+
+  std::string currentName = getName();
+  if (currentName.empty()) {
+    currentName = "<none>";
+  }
+  bool changed = false;
+
+  std::string comboID = fmt::format("##{} Name", name);
+  if (auto scopedCombo = ImGui::Scoped::Combo(comboID.c_str(), currentName.c_str())) {
+    if (includeNoneOption) {
+      if (ImGui::Selectable("<none>", currentName.empty()) && !currentName.empty()) {
+        setName("");
+        changed = true;
+      }
+
+      if (!state.trajectories.empty()) {
+        ImGui::Separator();
+      }
+    }
+
+    for (const auto& [name, trajectory] : state.trajectories) {
+      bool isNameSelected = (name == currentName);
+      if (ImGui::Selectable(name.c_str(), isNameSelected) && !isNameSelected) {
+        setName(name);
+        changed = true;
+        break;
+      }
+    }
+  }
+
+  return changed;
+}
+
+bool PropertiesPage::presentInputText(const char* id,
+                                      std::function<const std::string&()> getText,
+                                      std::function<void(const std::string&)> setText,
+                                      char* workingInputBuffer,
+                                      size_t workingInputBufferSize,
+                                      bool& isShowingInput) {
+  auto scopedID = ImGui::Scoped::ID(id);
+
+  bool changed = false;
+  const std::string text = getText();
+
+  const ImGuiStyle& style = ImGui::GetStyle();
+
+  const float regionAvailWidth = ImGui::GetContentRegionAvail().x;
+  ImGuiWindow* window = ImGui::GetCurrentWindow();
+  const ImGuiID inputID = window->GetID("##Input Text");
+
+  const ImVec2 posBefore = window->DC.CursorPos;
+
+  bool wasShowingInput = isShowingInput;
+  {
+    const float buttonDimension = ImGui::GetStyle().FontSizeBase + style.FramePadding.y * 2.0f;
+    const float nameAreaWidth = regionAvailWidth - buttonDimension - style.ItemSpacing.x;
+    const ImVec2 buttonSize = ImVec2(buttonDimension, buttonDimension);
+
+    ImVec4 buttonColor = style.Colors[ImGuiCol_Button];
+    buttonColor.w = 0.f;
+    auto scopedButtonColor = ImGui::Scoped::StyleColor(ImGuiCol_Button, buttonColor);
+    auto scopedButtonHoverColor = ImGui::Scoped::StyleColor(ImGuiCol_ButtonHovered, buttonColor);
+    auto scopedButtonActiveColor = ImGui::Scoped::StyleColor(ImGuiCol_ButtonActive, buttonColor);
+    auto scopedButtonTextAlign = ImGui::Scoped::StyleVarX(ImGuiStyleVar_ButtonTextAlign, 0.0f);
+
+    const std::string displayText = text.empty() ? "<none>" : text;
+    {
+      auto scopedButtonID = ImGui::Scoped::ID("##Display Button");
+      (void)ImGui::Button(displayText.c_str(), ImVec2(nameAreaWidth, buttonSize.y));
+    }
+
+    bool doubleClicked = (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left));
+
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_FA_EDIT, buttonSize) || doubleClicked) {
+      isShowingInput = true;
+      size_t textSize = std::min(workingInputBufferSize - 1, getText().size());
+      std::strncpy(workingInputBuffer, text.c_str(), textSize);
+      workingInputBuffer[textSize] = '\0';
+
+      ImGui::SetActiveID(inputID, window);
+      ImGui::SetKeyboardFocusHere();
+
+      // Reload the ImGui user buffer for the InputText
+      if (ImGuiInputTextState* state = ImGui::GetInputTextState(inputID)) {
+        state->ReloadUserBufAndMoveToEnd();
+      }
+    }
+  }
+
+  if (isShowingInput) {
+    window->DC.CursorPos = posBefore;
+
+    ImGuiInputTextCallback callback = [](ImGuiInputTextCallbackData* data) -> int {
+      // [a-zA-Z0-9_ ]
+      if (data->EventFlag == ImGuiInputTextFlags_CallbackCharFilter) {
+        return std::isalnum(data->EventChar) || data->EventChar == '_' || data->EventChar == ' ' ? 0 : 1;
+      }
+      return 0;
+    };
+
+    ImGui::SetNextItemWidth(regionAvailWidth);
+    ImGui::InputText("##Input Text", workingInputBuffer, workingInputBufferSize,
+                     ImGuiInputTextFlags_CallbackCharFilter | ImGuiInputTextFlags_NoUndoRedo, callback);
+
+    if (wasShowingInput) {  // Ignore the first frame to avoid immediate close.
+      if (!ImGui::IsItemActive()) {
+        isShowingInput = false;
+      }
+
+      if (ImGui::IsItemDeactivated()) {
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+          // Save input.
+          std::string newText(workingInputBuffer);
+          if (newText != text) {
+            setText(newText);
+            changed = true;
+          }
+        }
+        isShowingInput = false;
+      }
+    }
+  }
+
+  return changed;
 }
 
 bool PropertiesPage::presentSlider(const char* id,
