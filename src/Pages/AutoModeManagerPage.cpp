@@ -1,6 +1,6 @@
 #include <ThunderAuto/Pages/AutoModeManagerPage.hpp>
 
-#include <IconsFontAwesome5.h>
+#include <IconsLucide.h>
 #include <imgui_raii.h>
 
 void AutoModeManagerPage::present(bool* running) {
@@ -43,17 +43,17 @@ void AutoModeManagerPage::present(bool* running) {
     }
 
     if (auto popup = ImGui::Scoped::PopupContextItem()) {
-      if (ImGui::MenuItem(ICON_FA_PENCIL_ALT "  Rename")) {
+      if (ImGui::MenuItem(ICON_LC_PENCIL "  Rename")) {
         m_eventAutoMode = autoModeName;
         m_event = Event::RENAME_AUTO_MODE;
       }
 
-      if (ImGui::MenuItem(ICON_FA_COPY "  Duplicate")) {
+      if (ImGui::MenuItem(ICON_LC_COPY "  Duplicate")) {
         m_eventAutoMode = autoModeName;
         m_event = Event::DUPLICATE_AUTO_MODE;
       }
 
-      if (ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete")) {
+      if (ImGui::MenuItem(ICON_LC_TRASH "  Delete")) {
         autoModeToDeleteName = autoModeName;
       }
     }

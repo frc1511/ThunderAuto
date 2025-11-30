@@ -283,8 +283,14 @@ target_link_libraries(${PROJECT_NAME} stb_image)
 
 # IconFontCppHeaders
 
-add_subdirectory("${THUNDERAUTO_THIRDPARTY_DIR}/IconFontCppHeaders")
-target_link_libraries(${PROJECT_NAME} icons_font_awesome)
+FetchContent_Declare(
+  IconFontCppHeaders
+  GIT_REPOSITORY https://github.com/juliettef/IconFontCppHeaders.git
+  GIT_TAG 4577f2f
+  GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(IconFontCppHeaders)
+target_include_directories(${PROJECT_NAME} PRIVATE ${iconfontcppheaders_SOURCE_DIR})
 
 ###
 ### Link system libraries
@@ -314,7 +320,6 @@ if(MSVC)
   message(STATUS "MSVC Compiler Detected")
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
   target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Wall -Wextra -Werror
-
     -Wno-unused-parameter -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-unused-private-field
   )
 endif()
@@ -351,6 +356,5 @@ build_resource("${THUNDERAUTO_RES_DIR}/fonts/Roboto/Roboto-Regular.ttf"       "R
 build_resource("${THUNDERAUTO_RES_DIR}/fonts/Roboto/Roboto-Bold.ttf"          "Roboto_Bold_ttf")
 build_resource("${THUNDERAUTO_RES_DIR}/fonts/Ubuntu/Ubuntu-Regular.ttf"       "Ubuntu_Regular_ttf")
 build_resource("${THUNDERAUTO_RES_DIR}/fonts/Ubuntu/Ubuntu-Bold.ttf"          "Ubuntu_Bold_ttf")
-build_resource("${THUNDERAUTO_RES_DIR}/fonts/Font-Awesome/fa-regular-400.ttf" "FontAwesome_Regular_ttf")
-build_resource("${THUNDERAUTO_RES_DIR}/fonts/Font-Awesome/fa-solid-900.ttf"   "FontAwesome_Solid_ttf")
+build_resource("${THUNDERAUTO_RES_DIR}/fonts/LucideIcons/lucide.ttf"          "Lucide_ttf")
 

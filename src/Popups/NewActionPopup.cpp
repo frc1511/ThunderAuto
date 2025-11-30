@@ -2,7 +2,7 @@
 
 #include <ThunderAuto/ImGuiScopedField.hpp>
 #include <ThunderAuto/Error.hpp>
-#include <IconsFontAwesome5.h>
+#include <IconsLucide.h>
 #include <imgui.h>
 #include <imgui_raii.h>
 
@@ -144,7 +144,7 @@ void NewActionPopup::presentSequentialActionGroup(const ThunderAutoProjectState&
       ImGui::SameLine();
 
       const ImGuiStyle& style = ImGui::GetStyle();
-      const float removeButtonWidthNeeded = ImGui::CalcTextSize(ICON_FA_TRASH).x + style.ItemSpacing.x;
+      const float removeButtonWidthNeeded = ImGui::CalcTextSize(ICON_LC_TRASH).x + style.ItemSpacing.x;
       const float removeButtonCursorOffset = ImGui::GetContentRegionAvail().x - removeButtonWidthNeeded;
       if (removeButtonCursorOffset > 0) {
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + removeButtonCursorOffset);
@@ -154,7 +154,7 @@ void NewActionPopup::presentSequentialActionGroup(const ThunderAutoProjectState&
       auto scopedButtonHoveredColor = ImGui::Scoped::StyleColor(ImGuiCol_ButtonHovered, 0);
       auto scopedButtonActiveColor = ImGui::Scoped::StyleColor(ImGuiCol_ButtonActive, 0);
 
-      if (ImGui::SmallButton(ICON_FA_TRASH)) {
+      if (ImGui::SmallButton(ICON_LC_TRASH)) {
         (void)m_actionInfo.removeGroupAction(*actionIt);
         break;
       }

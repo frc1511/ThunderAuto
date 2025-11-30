@@ -3,7 +3,7 @@
 #include <ThunderAuto/FontLibrary.hpp>
 #include <ThunderAuto/ImGuiScopedField.hpp>
 #include <ThunderAuto/Error.hpp>
-#include <IconsFontAwesome5.h>
+#include <IconsLucide.h>
 #include <imgui_raii.h>
 
 void ProjectSettingsPage::present(bool* running) {
@@ -77,7 +77,7 @@ void ProjectSettingsPage::presentRobotSettings() {
 
   // Robot Length.
   {
-    auto scopedField = ImGui::ScopedField::Builder(ICON_FA_RULER_VERTICAL "      Robot Length").build();
+    auto scopedField = ImGui::ScopedField::Builder("Robot Length").build();
 
     bool active = ImGui::DragFloat("##Robot Length", &robotLength, 0.1f, 0.0f, 5.0f, "%.2f m",
                                    ImGuiSliderFlags_AlwaysClamp);
@@ -89,7 +89,7 @@ void ProjectSettingsPage::presentRobotSettings() {
 
   // Robot Width.
   {
-    auto scopedField = ImGui::ScopedField::Builder(ICON_FA_RULER_HORIZONTAL "  Robot Width").build();
+    auto scopedField = ImGui::ScopedField::Builder("Robot Width").build();
 
     bool active = ImGui::DragFloat("##Robot Width", &robotWidth, 0.1f, 0.0f, 5.0f, "%.2f m",
                                    ImGuiSliderFlags_AlwaysClamp);

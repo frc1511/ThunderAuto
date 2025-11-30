@@ -4,7 +4,7 @@
 #include <ThunderAuto/Types.hpp>
 #include <ThunderAuto/ColorPalette.hpp>
 #include <ThunderLibCore/Math.hpp>
-#include <IconsFontAwesome5.h>
+#include <IconsLucide.h>
 #include <stb_image.h>
 #include <imgui_raii.h>
 #include <algorithm>
@@ -439,13 +439,13 @@ void EditorPage::presentPlaybackSlider() {
   ImGui::SetCursorPosY(ImGui::GetWindowHeight() - sliderYOffset);
 
   // Play button.
-  if (ImGui::Button(m_isPlaying ? ICON_FA_PAUSE : ICON_FA_PLAY)) {
+  if (ImGui::Button(m_isPlaying ? ICON_LC_PAUSE : ICON_LC_PLAY)) {
     m_isPlaying = !m_isPlaying;
   }
   ImGui::SameLine();
 
   // Reset button.
-  if (ImGui::Button(ICON_FA_REDO)) {
+  if (ImGui::Button(ICON_LC_ROTATE_CCW)) {
     m_playbackTime = 0.0_s;
   }
   ImGui::SameLine();
@@ -863,7 +863,7 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
   // Context menus
 
   if (auto scopedPopup = ImGui::Scoped::PopupContextItem("TrajectoryEditorContextMenu_Field")) {
-    if (auto scopedMenu = ImGui::Scoped::Menu(ICON_FA_PLUS "  Insert Point Here")) {
+    if (auto scopedMenu = ImGui::Scoped::Menu(ICON_LC_PLUS "  Insert Point Here")) {
       if (ImGui::MenuItem("At Beginning")) {
         Point2d newWaypointPosition = m_contextMenuOpenData.mousePosition;
         CanonicalAngle newWaypointHeading = newWaypointPosition.angleTo(skeleton.front().position());
@@ -908,14 +908,14 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
       }
     }
     ImGui::Separator();
-    if (ImGui::MenuItem(ICON_FA_REDO "  Reset View")) {
+    if (ImGui::MenuItem(ICON_LC_ROTATE_CCW "  Reset View")) {
       resetView();
     }
   } else if (auto scopedPopup = ImGui::Scoped::PopupContextItem("TrajectoryEditorContextMenu_Waypoint")) {
     {
       auto scopedDisabled = ImGui::Scoped::Disabled(skeleton.numPoints() <= 2);
 
-      if (ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete Waypoint")) {
+      if (ImGui::MenuItem(ICON_LC_TRASH "  Delete Waypoint")) {
         ThunderAutoAssert(editorState.trajectorySelection ==
                           ThunderAutoTrajectoryEditorState::TrajectorySelection::WAYPOINT);
         state.currentTrajectoryDeleteSelectedItem();
@@ -924,7 +924,7 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
       }
     }
   } else if (auto scopedPopup = ImGui::Scoped::PopupContextItem("TrajectoryEditorContextMenu_Rotation")) {
-    if (ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete Rotation")) {
+    if (ImGui::MenuItem(ICON_LC_TRASH "  Delete Rotation")) {
       ThunderAutoAssert(editorState.trajectorySelection ==
                         ThunderAutoTrajectoryEditorState::TrajectorySelection::ROTATION);
       state.currentTrajectoryDeleteSelectedItem();
@@ -932,14 +932,14 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
       invalidateCachedTrajectory();
     }
   } else if (auto scopedPopup = ImGui::Scoped::PopupContextItem("TrajectoryEditorContextMenu_Action")) {
-    if (ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete Action")) {
+    if (ImGui::MenuItem(ICON_LC_TRASH "  Delete Action")) {
       ThunderAutoAssert(editorState.trajectorySelection ==
                         ThunderAutoTrajectoryEditorState::TrajectorySelection::ACTION);
       state.currentTrajectoryDeleteSelectedItem();
       m_history.addState(state);
     }
   } else if (auto scopedPopup = ImGui::Scoped::PopupContextItem("TrajectoryEditorContextMenu_Trajectory")) {
-    if (ImGui::MenuItem(ICON_FA_PLUS "  Insert Waypoint Here")) {
+    if (ImGui::MenuItem(ICON_LC_PLUS "  Insert Waypoint Here")) {
       const ThunderAutoOutputTrajectoryPoint& point = m_contextMenuOpenData.trajectoryPointClosestToMouse;
       const size_t newWaypointIndex =
           static_cast<size_t>(std::floor(m_contextMenuOpenData.trajectoryPositionClosestToMouse)) + 1;
@@ -947,7 +947,7 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
       m_history.addState(state);
       invalidateCachedTrajectory();
 
-    } else if (ImGui::MenuItem(ICON_FA_PLUS "  Insert Rotation Target Here")) {
+    } else if (ImGui::MenuItem(ICON_LC_PLUS "  Insert Rotation Target Here")) {
       const ThunderAutoTrajectoryPosition newRotationPosition =
           m_contextMenuOpenData.trajectoryPositionClosestToMouse;
       const CanonicalAngle newRotationAngle = 0_deg;
@@ -955,7 +955,7 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
       m_history.addState(state);
       invalidateCachedTrajectory();
 
-    } else if (auto scopedMenu = ImGui::Scoped::Menu(ICON_FA_PLUS "  Insert Action Here")) {
+    } else if (auto scopedMenu = ImGui::Scoped::Menu(ICON_LC_PLUS "  Insert Action Here")) {
       std::span<const std::string> availableActions = state.actionsOrder;
 
       int selectedActionIndex = -1;

@@ -1,6 +1,6 @@
 #include <ThunderAuto/Pages/TrajectoryManagerPage.hpp>
 
-#include <IconsFontAwesome5.h>
+#include <IconsLucide.h>
 #include <imgui_raii.h>
 
 void TrajectoryManagerPage::present(bool* running) {
@@ -44,7 +44,7 @@ void TrajectoryManagerPage::present(bool* running) {
     }
 
     if (auto popup = ImGui::Scoped::PopupContextItem()) {
-      if (ImGui::MenuItem(ICON_FA_PENCIL_ALT "  Rename")) {
+      if (ImGui::MenuItem(ICON_LC_PENCIL "  Rename")) {
         m_eventTrajectory = trajectoryName;
         m_event = Event::RENAME_TRAJECTORY;
       }
@@ -56,12 +56,12 @@ void TrajectoryManagerPage::present(bool* running) {
         m_editorPage.resetPlayback();
       }
 
-      if (ImGui::MenuItem(ICON_FA_COPY "  Duplicate")) {
+      if (ImGui::MenuItem(ICON_LC_COPY "  Duplicate")) {
         m_eventTrajectory = trajectoryName;
         m_event = Event::DUPLICATE_TRAJECTORY;
       }
 
-      if (ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete")) {
+      if (ImGui::MenuItem(ICON_LC_TRASH "  Delete")) {
         trajectoryToDeleteName = trajectoryName;
       }
     }

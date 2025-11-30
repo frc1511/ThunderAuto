@@ -3,7 +3,7 @@
 #include <ThunderAuto/ImGuiScopedField.hpp>
 #include <ThunderAuto/ColorPalette.hpp>
 #include <ThunderAuto/Logger.hpp>
-#include <IconsFontAwesome5.h>
+#include <IconsLucide.h>
 #include <imgui.h>
 #include <imgui_raii.h>
 
@@ -110,7 +110,7 @@ void WelcomePopup::present(bool* running) {
                              .customLeftColumn([]() {
                                {
                                  auto scopedFont = ImGui::Scoped::Font(FontLibrary::get().boldFont, 0.f);
-                                 ImGui::Text(ICON_FA_FILE "  New Project");
+                                 ImGui::Text(ICON_LC_FILE "  New Project");
                                }
 
                                {
@@ -135,7 +135,7 @@ void WelcomePopup::present(bool* running) {
                              .customLeftColumn([]() {
                                {
                                  auto scopedFont = ImGui::Scoped::Font(FontLibrary::get().boldFont, 0.f);
-                                 ImGui::Text(ICON_FA_FOLDER_OPEN "  Open Project");
+                                 ImGui::Text(ICON_LC_FOLDER_OPEN "  Open Project");
                                }
                                {
                                  const ImGuiStyle& style = ImGui::GetStyle();
@@ -159,7 +159,7 @@ void WelcomePopup::present(bool* running) {
                              .customLeftColumn([]() {
                                {
                                  auto scopedFont = ImGui::Scoped::Font(FontLibrary::get().boldFont, 0.f);
-                                 ImGui::Text(ICON_FA_BOOK "  Documentation");
+                                 ImGui::Text(ICON_LC_BOOK "  Documentation");
                                }
                                {
                                  const ImGuiStyle& style = ImGui::GetStyle();

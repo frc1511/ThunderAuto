@@ -5,7 +5,7 @@
 #include <ThunderAuto/ColorPalette.hpp>
 #include <ThunderAuto/Platform/Platform.hpp>
 #include <ThunderAuto/App.hpp>
-#include <IconsFontAwesome5.h>
+#include <IconsLucide.h>
 #include <imgui_raii.h>
 #include <imgui_internal.h>
 #include <fmt/format.h>
@@ -89,7 +89,7 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
         const bool isPointLinked = pointIt->isLinked();
 
         if (isPointLinked) {
-          selectableTitle += fmt::format("  {}  {}", ICON_FA_ARROW_RIGHT, pointIt->linkName());
+          selectableTitle += fmt::format("  {}  {}", ICON_LC_ARROW_RIGHT, pointIt->linkName());
         }
 
         const bool isPointSelected = (editorState.trajectorySelection ==
@@ -112,7 +112,7 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
             m_history.addState(state, false);
           }
 
-          if (ImGui::MenuItem(ICON_FA_TRASH "  Delete Point")) {
+          if (ImGui::MenuItem(ICON_LC_TRASH "  Delete Point")) {
             state.currentTrajectoryDeleteSelectedItem();
             m_history.addState(state);
             m_editorPage.invalidateCachedTrajectory();
@@ -121,21 +121,21 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
           }
 
           if (isPointLinked) {
-            if (ImGui::MenuItem(ICON_FA_LINK "  Edit Link")) {
+            if (ImGui::MenuItem(ICON_LC_LINK "  Edit Link")) {
               m_event = Event::TRAJECTORY_POINT_LINK;
             }
-            if (ImGui::MenuItem(ICON_FA_UNLINK "  Remove Link")) {
+            if (ImGui::MenuItem(ICON_LC_UNLINK "  Remove Link")) {
               pointIt->removeLink();
               m_history.addState(state);
             }
           } else {
-            if (ImGui::MenuItem(ICON_FA_LINK "  Link")) {
+            if (ImGui::MenuItem(ICON_LC_LINK "  Link")) {
               m_event = Event::TRAJECTORY_POINT_LINK;
             }
           }
 
           const char* lockedMenuItemText =
-              isPointLocked ? ICON_FA_UNLOCK "  Unlock in Editor" : ICON_FA_LOCK "  Lock in Editor";
+              isPointLocked ? ICON_LC_LOCK_OPEN "  Unlock in Editor" : ICON_LC_LOCK "  Lock in Editor";
           if (ImGui::MenuItem(lockedMenuItemText)) {
             state.currentTrajectoryToggleEditorLockedForSelectedItem();
             m_history.addState(state);
@@ -146,7 +146,7 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
           ImGui::SameLine();
 
           const ImGuiStyle& style = ImGui::GetStyle();
-          const float lockedButtonWidthNeeded = ImGui::CalcTextSize(ICON_FA_LOCK).x + style.ItemSpacing.x;
+          const float lockedButtonWidthNeeded = ImGui::CalcTextSize(ICON_LC_LOCK).x + style.ItemSpacing.x;
           const float lockedButtonCursorOffset = ImGui::GetContentRegionAvail().x - lockedButtonWidthNeeded;
           if (lockedButtonCursorOffset > 0) {
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + lockedButtonCursorOffset);
@@ -156,7 +156,7 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
           auto scopedButtonHoveredColor = ImGui::Scoped::StyleColor(ImGuiCol_ButtonHovered, 0);
           auto scopedButtonActiveColor = ImGui::Scoped::StyleColor(ImGuiCol_ButtonActive, 0);
 
-          if (ImGui::SmallButton(ICON_FA_LOCK)) {
+          if (ImGui::SmallButton(ICON_LC_LOCK)) {
             if (!isPointSelected) {
               editorState.trajectorySelection =
                   ThunderAutoTrajectoryEditorState::TrajectorySelection::WAYPOINT;
@@ -211,7 +211,7 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
           }
 
           const std::string deleteMenuItemText = fmt::format(
-              "{}  Delete {}", ICON_FA_TRASH, TrajectorySelectionToString(selection.trajectorySelection));
+              "{}  Delete {}", ICON_LC_TRASH, TrajectorySelectionToString(selection.trajectorySelection));
 
           if (ImGui::MenuItem(deleteMenuItemText.c_str())) {
             state.currentTrajectoryDeleteSelectedItem();
@@ -223,7 +223,7 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
 
           const bool locked = selection.editorLocked;
           const char* lockedMenuItemText =
-              locked ? ICON_FA_UNLOCK "  Unlock in Editor" : ICON_FA_LOCK "  Lock in Editor";
+              locked ? ICON_LC_LOCK_OPEN "  Unlock in Editor" : ICON_LC_LOCK "  Lock in Editor";
           if (ImGui::MenuItem(lockedMenuItemText)) {
             state.currentTrajectoryToggleEditorLockedForSelectedItem();
             m_history.addState(state);
@@ -234,7 +234,7 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
           ImGui::SameLine();
 
           const ImGuiStyle& style = ImGui::GetStyle();
-          const float lockedButtonWidthNeeded = ImGui::CalcTextSize(ICON_FA_LOCK).x + style.ItemSpacing.x;
+          const float lockedButtonWidthNeeded = ImGui::CalcTextSize(ICON_LC_LOCK).x + style.ItemSpacing.x;
           const float lockedButtonCursorOffset = ImGui::GetContentRegionAvail().x - lockedButtonWidthNeeded;
           if (lockedButtonCursorOffset > 0) {
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + lockedButtonCursorOffset);
@@ -244,7 +244,7 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
           auto scopedButtonHoveredColor = ImGui::Scoped::StyleColor(ImGuiCol_ButtonHovered, 0);
           auto scopedButtonActiveColor = ImGui::Scoped::StyleColor(ImGuiCol_ButtonActive, 0);
 
-          if (ImGui::SmallButton(ICON_FA_LOCK)) {
+          if (ImGui::SmallButton(ICON_LC_LOCK)) {
             if (!isRotationSelected) {
               editorState.trajectorySelection = selection.trajectorySelection;
               editorState.selectionIndex = selection.selectionIndex;
@@ -301,7 +301,7 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
             }
 
             const std::string deleteMenuItemText = fmt::format(
-                "{}  Delete {}", ICON_FA_TRASH, TrajectorySelectionToString(selection.trajectorySelection));
+                "{}  Delete {}", ICON_LC_TRASH, TrajectorySelectionToString(selection.trajectorySelection));
 
             if (ImGui::MenuItem(deleteMenuItemText.c_str())) {
               state.currentTrajectoryDeleteSelectedItem();
@@ -313,7 +313,7 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
 
             const bool locked = selection.editorLocked;
             const char* lockedMenuItemText =
-                locked ? ICON_FA_UNLOCK "  Unlock in Editor" : ICON_FA_LOCK "  Lock in Editor";
+                locked ? ICON_LC_LOCK_OPEN "  Unlock in Editor" : ICON_LC_LOCK "  Lock in Editor";
             if (ImGui::MenuItem(lockedMenuItemText)) {
               state.currentTrajectoryToggleEditorLockedForSelectedItem();
               m_history.addState(state);
@@ -324,7 +324,7 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
             ImGui::SameLine();
 
             const ImGuiStyle& style = ImGui::GetStyle();
-            const float lockedButtonWidthNeeded = ImGui::CalcTextSize(ICON_FA_LOCK).x + style.ItemSpacing.x;
+            const float lockedButtonWidthNeeded = ImGui::CalcTextSize(ICON_LC_LOCK).x + style.ItemSpacing.x;
             const float lockedButtonCursorOffset = ImGui::GetContentRegionAvail().x - lockedButtonWidthNeeded;
             if (lockedButtonCursorOffset > 0) {
               ImGui::SetCursorPosX(ImGui::GetCursorPosX() + lockedButtonCursorOffset);
@@ -334,7 +334,7 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
             auto scopedButtonHoveredColor = ImGui::Scoped::StyleColor(ImGuiCol_ButtonHovered, 0);
             auto scopedButtonActiveColor = ImGui::Scoped::StyleColor(ImGuiCol_ButtonActive, 0);
 
-            if (ImGui::SmallButton(ICON_FA_LOCK)) {
+            if (ImGui::SmallButton(ICON_LC_LOCK)) {
               if (!isActionSelected) {
                 editorState.trajectorySelection = selection.trajectorySelection;
                 editorState.selectionIndex = selection.selectionIndex;
@@ -494,7 +494,7 @@ bool PropertiesPage::presentPointHeadingProperties(ThunderAutoTrajectorySkeleton
 
     const ImVec2 buttonSize = {lineHeight + 3.f, lineHeight};
 
-    presentColoredUnclickableButton(ICON_FA_ARROW_LEFT, buttonSize, ThunderAutoColorPalette::kBlue);
+    presentColoredUnclickableButton(ICON_LC_ARROW_LEFT, buttonSize, ThunderAutoColorPalette::kBlue);
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
       ImGui::SetTooltip("Incoming Heading");
     }
@@ -506,7 +506,7 @@ bool PropertiesPage::presentPointHeadingProperties(ThunderAutoTrajectorySkeleton
 
     ImGui::SameLine();
 
-    presentColoredUnclickableButton(ICON_FA_ARROW_RIGHT, buttonSize, ThunderAutoColorPalette::kOrange);
+    presentColoredUnclickableButton(ICON_LC_ARROW_RIGHT, buttonSize, ThunderAutoColorPalette::kOrange);
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
       ImGui::SetTooltip("Outgoing Heading");
     }
@@ -557,7 +557,7 @@ bool PropertiesPage::presentPointWeightProperties(ThunderAutoTrajectorySkeletonW
 
     const ImVec2 buttonSize = {lineHeight + 3.f, lineHeight};
 
-    presentColoredUnclickableButton(ICON_FA_ARROW_LEFT, buttonSize, ThunderAutoColorPalette::kBlue);
+    presentColoredUnclickableButton(ICON_LC_ARROW_LEFT, buttonSize, ThunderAutoColorPalette::kBlue);
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
       ImGui::SetTooltip("Incoming Weight");
     }
@@ -569,7 +569,7 @@ bool PropertiesPage::presentPointWeightProperties(ThunderAutoTrajectorySkeletonW
 
     ImGui::SameLine();
 
-    presentColoredUnclickableButton(ICON_FA_ARROW_RIGHT, buttonSize, ThunderAutoColorPalette::kOrange);
+    presentColoredUnclickableButton(ICON_LC_ARROW_RIGHT, buttonSize, ThunderAutoColorPalette::kOrange);
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
       ImGui::SetTooltip("Outgoing Weight");
     }
@@ -1006,7 +1006,7 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
     case ACTION: {
       const ThunderAutoModeActionStep& actionStep = reinterpret_cast<const ThunderAutoModeActionStep&>(*step);
 
-      treeNodeLabel = fmt::format(ICON_FA_PAPERCLIP "  {}",
+      treeNodeLabel = fmt::format(ICON_LC_PAPERCLIP "  {}",
                                   actionStep.actionName.empty() ? "<none>" : actionStep.actionName);
       treeNodeFlags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Bullet;
       break;
@@ -1016,7 +1016,7 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
           reinterpret_cast<const ThunderAutoModeTrajectoryStep&>(*step);
 
       treeNodeLabel =
-          fmt::format(ICON_FA_ROUTE "  {}",
+          fmt::format(ICON_LC_ROUTE "  {}",
                       trajectoryStep.trajectoryName.empty() ? "<none>" : trajectoryStep.trajectoryName);
       treeNodeFlags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Bullet;
       break;
@@ -1025,7 +1025,7 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
       const ThunderAutoModeBoolBranchStep& branchStep =
           reinterpret_cast<const ThunderAutoModeBoolBranchStep&>(*step);
 
-      treeNodeLabel = fmt::format(ICON_FA_TOGGLE_ON "  {}",
+      treeNodeLabel = fmt::format(ICON_LC_TOGGLE_RIGHT "  {}",
                                   branchStep.conditionName.empty() ? "<none>" : branchStep.conditionName);
       break;
     }
@@ -1033,7 +1033,7 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
       const ThunderAutoModeSwitchBranchStep& branchStep =
           reinterpret_cast<const ThunderAutoModeSwitchBranchStep&>(*step);
 
-      treeNodeLabel = fmt::format(ICON_FA_LIST_OL "  {}",
+      treeNodeLabel = fmt::format(ICON_LC_LIST_ORDERED "  {}",
                                   branchStep.conditionName.empty() ? "<none>" : branchStep.conditionName);
       break;
     }
@@ -1056,7 +1056,7 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
 
   // Right-click the step.
   if (auto popup = ImGui::Scoped::PopupContextItem()) {
-    if (ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete")) {
+    if (ImGui::MenuItem(ICON_LC_TRASH "  Delete")) {
       ThunderAutoLogger::Info("Deleting auto mode step at \"{}\"", ThunderAutoModeStepPathToString(stepPath));
       state.currentAutoModeDeleteStep(stepPath);
       m_history.addState(state);
@@ -1067,7 +1067,7 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
     if (step->type() == ThunderAutoModeStepType::BRANCH_SWITCH) {
       ThunderAutoModeSwitchBranchStep& branchStep = reinterpret_cast<ThunderAutoModeSwitchBranchStep&>(*step);
 
-      if (auto scopedMenu = ImGui::Scoped::Menu(ICON_FA_PLUS "  Add Case")) {
+      if (auto scopedMenu = ImGui::Scoped::Menu(ICON_LC_PLUS "  Add Case")) {
         static int newCaseValue = 0;
         ImGui::InputInt("##Case Value", &newCaseValue);
         ImGui::SameLine();
@@ -1157,7 +1157,7 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
 
           // Right-click the case branch.
           if (auto popup = ImGui::Scoped::PopupContextItem()) {
-            if (ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete Case")) {
+            if (ImGui::MenuItem(ICON_LC_TRASH "  Delete Case")) {
               ThunderAutoLogger::Info("Deleting case {} from switch branch at \"{}\"", caseValue,
                                       ThunderAutoModeStepPathToString(stepPath));
               branchStep.caseBranches.erase(caseValue);
@@ -1668,12 +1668,12 @@ bool PropertiesPage::presentInputText(const char* id,
 
   const ImVec2 posBefore = window->DC.CursorPos;
 
+  const float buttonDimension = ImGui::GetStyle().FontSizeBase + style.FramePadding.y * 2.0f;
+  const float nameAreaWidth = regionAvailWidth - buttonDimension - style.ItemSpacing.x;
+  const ImVec2 buttonSize = ImVec2(buttonDimension, buttonDimension);
+
   bool wasShowingInput = isShowingInput;
   {
-    const float buttonDimension = ImGui::GetStyle().FontSizeBase + style.FramePadding.y * 2.0f;
-    const float nameAreaWidth = regionAvailWidth - buttonDimension - style.ItemSpacing.x;
-    const ImVec2 buttonSize = ImVec2(buttonDimension, buttonDimension);
-
     ImVec4 buttonColor = style.Colors[ImGuiCol_Button];
     buttonColor.w = 0.f;
     auto scopedButtonColor = ImGui::Scoped::StyleColor(ImGuiCol_Button, buttonColor);
@@ -1686,23 +1686,23 @@ bool PropertiesPage::presentInputText(const char* id,
       auto scopedButtonID = ImGui::Scoped::ID("##Display Button");
       (void)ImGui::Button(displayText.c_str(), ImVec2(nameAreaWidth, buttonSize.y));
     }
+  }
 
-    bool doubleClicked = (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left));
+  bool doubleClicked = (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left));
 
-    ImGui::SameLine();
-    if (ImGui::Button(ICON_FA_EDIT, buttonSize) || doubleClicked) {
-      isShowingInput = true;
-      size_t textSize = std::min(workingInputBufferSize - 1, getText().size());
-      std::strncpy(workingInputBuffer, text.c_str(), textSize);
-      workingInputBuffer[textSize] = '\0';
+  ImGui::SameLine();
+  if (ImGui::Button(ICON_LC_PENCIL, buttonSize) || doubleClicked) {
+    isShowingInput = true;
+    size_t textSize = std::min(workingInputBufferSize - 1, getText().size());
+    std::strncpy(workingInputBuffer, text.c_str(), textSize);
+    workingInputBuffer[textSize] = '\0';
 
-      ImGui::SetActiveID(inputID, window);
-      ImGui::SetKeyboardFocusHere();
+    ImGui::SetActiveID(inputID, window);
+    ImGui::SetKeyboardFocusHere();
 
-      // Reload the ImGui user buffer for the InputText
-      if (ImGuiInputTextState* state = ImGui::GetInputTextState(inputID)) {
-        state->ReloadUserBufAndMoveToEnd();
-      }
+    // Reload the ImGui user buffer for the InputText
+    if (ImGuiInputTextState* state = ImGui::GetInputTextState(inputID)) {
+      state->ReloadUserBufAndMoveToEnd();
     }
   }
 

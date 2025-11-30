@@ -3,7 +3,7 @@
 #include <ThunderAuto/Platform/Platform.hpp>
 #include <ThunderAuto/Error.hpp>
 #include <ThunderAuto/ImGuiScopedField.hpp>
-#include <IconsFontAwesome5.h>
+#include <IconsLucide.h>
 #include <imgui.h>
 #include <imgui_raii.h>
 #include <fmt/format.h>
@@ -23,7 +23,7 @@ void NewProjectPopup::present(bool* running) {
 
   // Save location
   {
-    auto scopedField = ImGui::ScopedField::Builder(ICON_FA_FILE "  Path").build();
+    auto scopedField = ImGui::ScopedField::Builder(ICON_LC_FILE "  Path").build();
 
     // Shrink the input text to make space for the browse button.
     {
@@ -51,7 +51,7 @@ void NewProjectPopup::present(bool* running) {
 
   // Field
   {
-    auto scopedField = ImGui::ScopedField::Builder(ICON_FA_SWIMMING_POOL "  Field").build();
+    auto scopedField = ImGui::ScopedField::Builder(ICON_LC_WAVES_LADDER "  Field").build();
 
     const char* fieldOptions[] = {"2025 - Reefscape", "2024 - Crescendo", "2023 - Charged Up",
                                   "2022 - Rapid React", "Custom"};
@@ -107,7 +107,7 @@ void NewProjectPopup::present(bool* running) {
 
   // Drive Controller Selection
   {
-    auto scopedField = ImGui::ScopedField::Builder(ICON_FA_CAR "  Controller Type").build();
+    auto scopedField = ImGui::ScopedField::Builder(ICON_LC_CAR "  Controller Type").build();
 
     const char* controllerOptions[] = {"Holonomic (Swerve)", "Ramsete (Tank)"};
 
@@ -126,7 +126,7 @@ void NewProjectPopup::present(bool* running) {
 
   // Robot Length
   {
-    auto scopedField = ImGui::ScopedField::Builder(ICON_FA_RULER_VERTICAL "  Robot Length").build();
+    auto scopedField = ImGui::ScopedField::Builder(ICON_LC_ARROW_LEFT_RIGHT "  Robot Length").build();
 
     ImGui::DragFloat("##Robot Length", &m_robotLength, 0.1f, 0.0f, 0.0f, "%.2f m");
     m_robotLength = std::max(m_robotLength, 0.0f);
@@ -134,7 +134,7 @@ void NewProjectPopup::present(bool* running) {
 
   // Robot Width
   {
-    auto scopedField = ImGui::ScopedField::Builder(ICON_FA_RULER_HORIZONTAL "  Robot Width").build();
+    auto scopedField = ImGui::ScopedField::Builder(ICON_LC_ARROW_DOWN_UP "  Robot Width").build();
 
     ImGui::DragFloat("##Robot Width", &m_robotWidth, 0.1f, 0.0f, 0.0f, "%.2f m");
     m_robotWidth = std::max(m_robotWidth, 0.0f);

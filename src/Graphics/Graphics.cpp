@@ -151,7 +151,7 @@ void Graphics::updateUIScale(double scale) {
   style.UserSizes[UISIZE_PROJECT_SAVE_ERROR_POPUP_START_WIDTH] = 800.f;
   style.UserSizes[UISIZE_PROJECT_SAVE_ERROR_POPUP_START_HEIGHT] = 96.f;
   style.UserSizes[UISIZE_CSV_EXPORT_POPUP_START_WIDTH] = 550.f;
-  style.UserSizes[UISIZE_CSV_EXPORT_POPUP_START_HEIGHT] = 300.f;
+  style.UserSizes[UISIZE_CSV_EXPORT_POPUP_START_HEIGHT] = 100.f;
   style.UserSizes[UISIZE_NEW_TRAJECTORY_POPUP_START_WIDTH] = 500.f;
   style.UserSizes[UISIZE_NEW_TRAJECTORY_POPUP_START_HEIGHT] = 250.f;
   style.UserSizes[UISIZE_RENAME_TRAJECTORY_POPUP_START_WIDTH] = 500.f;
@@ -206,25 +206,24 @@ void Graphics::updateUIScale(double scale) {
 #include <Ubuntu_Regular_ttf.h>
 // #include <Roboto_Regular_ttf.h>
 // #include <Roboto_Bold_ttf.h>
-#include <FontAwesome_Regular_ttf.h>
-#include <FontAwesome_Solid_ttf.h>
+// #include <FontAwesome_Regular_ttf.h>
+// #include <FontAwesome_Solid_ttf.h>
+#include <Lucide_ttf.h>
 
-#include <IconsFontAwesome5.h>
+#include <IconsLucide.h>
 
-static void mergeFontAwesomeIconsWithFont(double size) {
+static void mergeLucideIconsWithFont(double size, double scale) {
   ImGuiIO* io = &ImGui::GetIO();
   ImFontConfig fontCfg;
   fontCfg.FontDataOwnedByAtlas = false;
   fontCfg.MergeMode = true;
   fontCfg.PixelSnapH = true;
+  fontCfg.GlyphOffset.y = size * 0.15 * scale; // Move icons down a bit
 
   ImFont* font;
 
-  static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_16_FA, 0};
-  // font = io->Fonts->AddFontFromMemoryTTF(FontAwesome_Regular_ttf, FontAwesome_Regular_ttf_size, size,
-  //                                        &fontCfg, icon_ranges);
-  // ThunderAutoAssert(font != nullptr);
-  font = io->Fonts->AddFontFromMemoryTTF(FontAwesome_Solid_ttf, FontAwesome_Solid_ttf_size, size, &fontCfg,
+  static const ImWchar icon_ranges[] = {ICON_MIN_LC, ICON_MAX_16_LC, 0};
+  font = io->Fonts->AddFontFromMemoryTTF(Lucide_ttf, Lucide_ttf_size, size * scale, &fontCfg,
                                          icon_ranges);
   ThunderAutoAssert(font != nullptr);
 }
@@ -248,7 +247,7 @@ void Graphics::loadFonts(double scale) {
                                       15.0f * scale, &fontCfg, glyphRanges);
   ThunderAutoAssert(fontLib.regularFont != nullptr);
 
-  mergeFontAwesomeIconsWithFont(15.0 * scale);
+  mergeLucideIconsWithFont(15.0, scale);
 
   fontLib.bigFont = io->Fonts->AddFontFromMemoryTTF(
       reinterpret_cast<void*>(Ubuntu_Bold_ttf), Ubuntu_Bold_ttf_size, 30.0f * scale, &fontCfg, glyphRanges);
@@ -258,7 +257,7 @@ void Graphics::loadFonts(double scale) {
       reinterpret_cast<void*>(Ubuntu_Bold_ttf), Ubuntu_Bold_ttf_size, 15.0f * scale, &fontCfg, glyphRanges);
   ThunderAutoAssert(fontLib.boldFont != nullptr);
 
-  mergeFontAwesomeIconsWithFont(15.0 * scale);
+  mergeLucideIconsWithFont(15.0, scale);
 }
 
 Graphics& getPlatformGraphics() {

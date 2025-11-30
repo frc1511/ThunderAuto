@@ -3,7 +3,7 @@
 #include <ThunderAuto/ImGuiScopedField.hpp>
 #include <ThunderAuto/FontLibrary.hpp>
 #include <ThunderAuto/Error.hpp>
-#include <IconsFontAwesome5.h>
+#include <IconsLucide.h>
 #include <imgui_raii.h>
 
 void ActionsPage::present(bool* running) {
@@ -51,11 +51,11 @@ void ActionsPage::present(bool* running) {
       ImGui::PopStyleVar();
 
       if (auto popup = ImGui::Scoped::PopupContextItem()) {
-        if (ImGui::MenuItem(ICON_FA_PENCIL_ALT "  Rename")) {
+        if (ImGui::MenuItem(ICON_LC_PENCIL "  Rename")) {
           m_event = Event::RENAME_ACTION;
           m_eventActionName = actionName;
         }
-        if (ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete")) {
+        if (ImGui::MenuItem(ICON_LC_TRASH "  Delete")) {
           state.removeAction(actionName);
           m_history.addState(state);
         }
@@ -131,7 +131,7 @@ void ActionsPage::present(bool* running) {
 
               const ImGuiStyle& style = ImGui::GetStyle();
               const float removeButtonWidthNeeded =
-                  ImGui::CalcTextSize(ICON_FA_TRASH).x + style.ItemSpacing.x;
+                  ImGui::CalcTextSize(ICON_LC_TRASH).x + style.ItemSpacing.x;
               const float removeButtonCursorOffset =
                   ImGui::GetContentRegionAvail().x - removeButtonWidthNeeded;
               if (removeButtonCursorOffset > 0) {
@@ -142,7 +142,7 @@ void ActionsPage::present(bool* running) {
               auto scopedButtonHoveredColor = ImGui::Scoped::StyleColor(ImGuiCol_ButtonHovered, 0);
               auto scopedButtonActiveColor = ImGui::Scoped::StyleColor(ImGuiCol_ButtonActive, 0);
 
-              if (ImGui::SmallButton(ICON_FA_TRASH)) {
+              if (ImGui::SmallButton(ICON_LC_TRASH)) {
                 const bool wasRemoved = actionInfo.removeGroupAction(*actionIt);
                 if (wasRemoved) {
                   m_history.addState(state);

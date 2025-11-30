@@ -5,7 +5,7 @@
 #include <ThunderAuto/Logger.hpp>
 #include <ThunderAuto/Error.hpp>
 #include <ThunderAuto/Input.hpp>
-#include <IconsFontAwesome5.h>
+#include <IconsLucide.h>
 #include <imgui.h>
 #include <imgui_raii.h>
 #include <imgui_internal.h>
@@ -516,24 +516,24 @@ void App::presentFileMenu() {
   }
 
   if (showMenu) {
-    ImGui::MenuItem(ICON_FA_FILE "  New", CTRL_STR "N", &itemNew);
-    ImGui::MenuItem(ICON_FA_FOLDER_OPEN "  Open", CTRL_STR "O", &itemOpen);
+    ImGui::MenuItem(ICON_LC_FILE "  New", CTRL_STR "N", &itemNew);
+    ImGui::MenuItem(ICON_LC_FOLDER_OPEN "  Open", CTRL_STR "O", &itemOpen);
 
     {
       auto scopedDisabled = ImGui::Scoped::Disabled(!m_documentManager.isOpen());
 
-      ImGui::MenuItem(ICON_FA_SAVE "  Save", CTRL_STR "S", &itemSave);
-      ImGui::MenuItem(ICON_FA_SAVE "  Save As", CTRL_SHIFT_STR "S", &itemSaveAs);
+      ImGui::MenuItem(ICON_LC_SAVE "  Save", CTRL_STR "S", &itemSave);
+      ImGui::MenuItem(ICON_LC_SAVE "  Save As", CTRL_SHIFT_STR "S", &itemSaveAs);
 
       ImGui::Separator();
 
-      if (ImGui::MenuItem(ICON_FA_FILE_CSV "  Export All Trajectories to CSV")) {
+      if (ImGui::MenuItem(ICON_LC_FILE_SPREADSHEET "  Export All Trajectories to CSV")) {
         csvExportAllTrajectories();
       }
 
       ImGui::Separator();
 
-      if (ImGui::MenuItem(ICON_FA_SAVE "  Auto Save", nullptr, &settings.autoSave)) {
+      if (ImGui::MenuItem(ICON_LC_SAVE "  Auto Save", nullptr, &settings.autoSave)) {
         if (settings.autoSave) {
           save();
         }
@@ -542,7 +542,7 @@ void App::presentFileMenu() {
         ImGui::SetTooltip("Automatically save project\nwhen changes are made");
       }
 
-      if (ImGui::MenuItem(ICON_FA_FILE_CSV "  Auto CSV Export", nullptr, &settings.autoCSVExport)) {
+      if (ImGui::MenuItem(ICON_LC_FILE_SPREADSHEET "  Auto CSV Export", nullptr, &settings.autoCSVExport)) {
         if (settings.autoCSVExport) {
           m_documentManager.history().markUnsaved();
           csvExportAllTrajectories();
@@ -554,7 +554,7 @@ void App::presentFileMenu() {
 
       ImGui::Separator();
 
-      ImGui::MenuItem(ICON_FA_WINDOW_CLOSE "  Close", CTRL_STR "W", &itemClose);
+      ImGui::MenuItem(ICON_LC_X "  Close", CTRL_STR "W", &itemClose);
     }
 
     ImGui::EndMenu();
@@ -582,17 +582,18 @@ void App::presentEditMenu() {
   }
 
   if (showMenu) {
-    if (ImGui::MenuItem(ICON_FA_UNDO "  Undo", CTRL_STR "Z")) {
+    if (ImGui::MenuItem(ICON_LC_UNDO "  Undo", CTRL_STR "Z")) {
       undo();
     }
-    if (ImGui::MenuItem(ICON_FA_REDO "  Redo", CTRL_SHIFT_STR "Z")) {
+    if (ImGui::MenuItem(ICON_LC_REDO "  Redo", CTRL_SHIFT_STR "Z")) {
       redo();
     }
 
     ImGui::Separator();
 
-    if (ImGui::MenuItem(ICON_FA_TRASH "  Delete", "Delete")) {
-    }
+    // if (ImGui::MenuItem(ICON_LC_DELETE "  Delete", "Delete")) {
+      // TODO
+    // }
 
     ImGui::EndMenu();
   }
@@ -608,7 +609,7 @@ void App::presentViewMenu() {
   }
 
   if (show_menu) {
-    if (ImGui::MenuItem(ICON_FA_REDO "  Reset View", CTRL_STR "0")) {
+    if (ImGui::MenuItem(ICON_LC_ROTATE_CCW "  Reset View", CTRL_STR "0")) {
       m_editorPage.resetView();
     }
     ImGui::EndMenu();
@@ -629,11 +630,11 @@ void App::presentTrajectoryMenu() {
   }
 
   if (showMenu) {
-    ImGui::MenuItem(ICON_FA_FILE_CSV "  Export to CSV", nullptr, &itemExport);
-    ImGui::MenuItem(ICON_FA_PENCIL_ALT "  Rename", nullptr, &itemRename);
-    ImGui::MenuItem("\xef\x8d\xa3  Reverse Direction", nullptr, &itemReverse);
-    ImGui::MenuItem(ICON_FA_COPY "  Duplicate", nullptr, &itemDuplicate);
-    ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete", nullptr, &itemDelete);
+    ImGui::MenuItem(ICON_LC_FILE_SPREADSHEET "  Export to CSV", nullptr, &itemExport);
+    ImGui::MenuItem(ICON_LC_PENCIL "  Rename", nullptr, &itemRename);
+    ImGui::MenuItem(ICON_LC_ARROW_RIGHT_LEFT "  Reverse Direction", nullptr, &itemReverse);
+    ImGui::MenuItem(ICON_LC_COPY "  Duplicate", nullptr, &itemDuplicate);
+    ImGui::MenuItem(ICON_LC_TRASH "  Delete", nullptr, &itemDelete);
     ImGui::EndMenu();
   }
 
@@ -682,9 +683,9 @@ void App::presentAutoModeMenu() {
   }
 
   if (showMenu) {
-    ImGui::MenuItem(ICON_FA_PENCIL_ALT "  Rename", nullptr, &itemRename);
-    ImGui::MenuItem(ICON_FA_COPY "  Duplicate", nullptr, &itemDuplicate);
-    ImGui::MenuItem(ICON_FA_TRASH_ALT "  Delete", nullptr, &itemDelete);
+    ImGui::MenuItem(ICON_LC_PENCIL "  Rename", nullptr, &itemRename);
+    ImGui::MenuItem(ICON_LC_COPY "  Duplicate", nullptr, &itemDuplicate);
+    ImGui::MenuItem(ICON_LC_TRASH "  Delete", nullptr, &itemDelete);
     ImGui::EndMenu();
   }
 
@@ -718,12 +719,12 @@ void App::presentToolsMenu() {
   }
 
   if (showMenu) {
-    ImGui::MenuItem(ICON_FA_LIST "  Trajectories", nullptr, &m_showTrajectoryManager);
-    ImGui::MenuItem(ICON_FA_LIST "  Auto Modes", nullptr, &m_showAutoModeManager);
-    ImGui::MenuItem(ICON_FA_BEZIER_CURVE "  Editor", nullptr, &m_showEditor);
-    ImGui::MenuItem(ICON_FA_SLIDERS_H "  Properties", nullptr, &m_showProperties);
-    ImGui::MenuItem(ICON_FA_PAPERCLIP "  Actions", nullptr, &m_showActions);
-    ImGui::MenuItem(ICON_FA_COG "  Project Settings", nullptr, &m_showProjectSettings);
+    ImGui::MenuItem(ICON_LC_LIST "  Trajectories", nullptr, &m_showTrajectoryManager);
+    ImGui::MenuItem(ICON_LC_LIST "  Auto Modes", nullptr, &m_showAutoModeManager);
+    ImGui::MenuItem(ICON_LC_SPLINE_POINTER "  Editor", nullptr, &m_showEditor);
+    ImGui::MenuItem(ICON_LC_SETTINGS_2 "  Properties", nullptr, &m_showProperties);
+    ImGui::MenuItem(ICON_LC_PAPERCLIP "  Actions", nullptr, &m_showActions);
+    ImGui::MenuItem(ICON_LC_SETTINGS "  Project Settings", nullptr, &m_showProjectSettings);
 
     ImGui::EndMenu();
   }
