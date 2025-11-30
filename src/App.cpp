@@ -1194,10 +1194,6 @@ void App::csvExportAllTrajectories() {
   const ThunderAutoProjectState& projectState = m_documentEditManager.currentState();
   const ThunderAutoProjectSettings& projectSettings = m_documentManager.settings();
 
-  const ThunderAutoEditorState& editorState = projectState.editorState;
-  ThunderAutoAssert(editorState.view == ThunderAutoEditorState::View::TRAJECTORY,
-                    "Cannot export current trajectory when not in trajectory view");
-
   std::filesystem::path exportDir = m_documentManager.settings().directory;
 
   std::string csvExportStatus;
