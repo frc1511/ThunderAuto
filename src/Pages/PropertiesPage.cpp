@@ -1196,7 +1196,7 @@ bool PropertiesPage::drawAutoModeStepsTree(std::list<std::unique_ptr<ThunderAuto
   for (auto& step : steps) {
     path.endNode().stepIndex = stepIndex++;
 
-    auto scopedID = ImGui::Scoped::ID(static_cast<void*>(step.get()));
+    auto scopedID = ImGui::Scoped::ID(step->getID());
 
     bool shouldStop = drawAutoModeStepTreeNode(step, path, state);
     if (shouldStop) {
