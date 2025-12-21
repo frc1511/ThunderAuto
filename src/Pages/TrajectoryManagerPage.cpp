@@ -49,7 +49,7 @@ void TrajectoryManagerPage::present(bool* running) {
         m_event = Event::RENAME_TRAJECTORY;
       }
 
-      if (ImGui::MenuItem("\xef\x8d\xa3  Reverse Direction")) {
+      if (ImGui::MenuItem(ICON_LC_ARROW_RIGHT_LEFT "  Reverse Direction")) {
         trajectorySkeleton.reverseDirection();
         m_history.addState(state);
         m_editorPage.invalidateCachedTrajectory();
