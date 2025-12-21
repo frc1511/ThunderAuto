@@ -25,7 +25,7 @@ void NewAutoModePopup::present(bool* running) {
     ImGuiInputTextCallback callback = [](ImGuiInputTextCallbackData* data) -> int {
       // [a-zA-Z0-9_ ]
       if (data->EventFlag == ImGuiInputTextFlags_CallbackCharFilter) {
-        return std::isalnum(data->EventChar) || data->EventChar == '_' || data->EventChar == ' ';
+        return std::isalnum(data->EventChar) || data->EventChar == '_' || data->EventChar == ' ' ? 0 : 1;
       }
       return 0;
     };
