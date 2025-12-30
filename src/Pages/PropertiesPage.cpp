@@ -959,8 +959,7 @@ void PropertiesPage::presentAutoModeStepList(ThunderAutoProjectState& state) {
 
   auto scopedID = ImGui::Scoped::ID("Auto Mode Steps List");
 
-  ThunderAutoModeStepPath rootPath;
-  rootPath /= ThunderAutoModeStepPath::Node{};
+  ThunderAutoModeStepDirectoryPath rootPath;
 
   {
     auto scopedChildWindow = ImGui::Scoped::ChildWindow(
@@ -974,7 +973,7 @@ void PropertiesPage::presentAutoModeStepList(ThunderAutoProjectState& state) {
   }
 
   // Dropping trajectories and actions into the child window adds them as steps to the end of the auto mode.
-  autoModeStepDragDropTarget(rootPath, AutoModeStepDragDropInsertMethod::INTO, false, state);
+  (void)autoModeStepDragDropTarget(rootPath, AutoModeStepDragDropInsertMethod::INTO, false, state);
 
   if (ImGui::Button("+ Add Step", ImVec2(ImGui::GetContentRegionAvail().x, 0.f))) {
     m_event = Event::AUTO_MODE_ADD_STEP;
@@ -992,7 +991,11 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
     const float spacingY = GET_UISIZE(SELECTABLE_LIST_ITEM_SPACING_Y) / 3.f;
     (void)ImGui::InvisibleButton("Drag Separator", ImVec2(spacingX, spacingY));
 
-    autoModeStepDragDropTarget(stepPath, AutoModeStepDragDropInsertMethod::BEFORE, true, state);
+    bool shouldStop =
+        autoModeStepDragDropTarget(stepPath, AutoModeStepDragDropInsertMethod::BEFORE, true, state);
+    if (shouldStop) {
+      return true;
+    }
   }
 
   // Draw the tree node for the step.
@@ -1000,14 +1003,16 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
   ImGuiTreeNodeFlags treeNodeFlags =
       ImGuiTreeNodeFlags_DrawLinesFull | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth;
   std::string treeNodeLabel;
+  bool warnNoItemSelected = false;
 
   switch (step->type()) {
     using enum ThunderAutoModeStepType;
     case ACTION: {
       const ThunderAutoModeActionStep& actionStep = reinterpret_cast<const ThunderAutoModeActionStep&>(*step);
 
-      treeNodeLabel = fmt::format(ICON_LC_PAPERCLIP "  {}",
-                                  actionStep.actionName.empty() ? "<none>" : actionStep.actionName);
+      bool noActionSelected = warnNoItemSelected = actionStep.actionName.empty();
+      treeNodeLabel =
+          fmt::format(ICON_LC_PAPERCLIP "  {}", noActionSelected ? "<none>" : actionStep.actionName);
       treeNodeFlags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Bullet;
       break;
     }
@@ -1015,9 +1020,9 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
       const ThunderAutoModeTrajectoryStep& trajectoryStep =
           reinterpret_cast<const ThunderAutoModeTrajectoryStep&>(*step);
 
+      bool noTrajectorySelected = warnNoItemSelected = trajectoryStep.trajectoryName.empty();
       treeNodeLabel =
-          fmt::format(ICON_LC_ROUTE "  {}",
-                      trajectoryStep.trajectoryName.empty() ? "<none>" : trajectoryStep.trajectoryName);
+          fmt::format(ICON_LC_ROUTE "  {}", noTrajectorySelected ? "<none>" : trajectoryStep.trajectoryName);
       treeNodeFlags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Bullet;
       break;
     }
@@ -1044,10 +1049,21 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
   ThunderAutoModeEditorState& editorState = state.editorState.autoModeEditorState;
   bool isStepSelected = (editorState.selectedStepPath == stepPath);
 
+  if (warnNoItemSelected) {
+    ImGui::PushStyleColor(ImGuiCol_Text, (ImU32)ThunderAutoColorPalette::kYellow);
+  }
+
   ImGui::PushStyleVarY(ImGuiStyleVar_ItemSpacing, 0.f);
   auto scopedTreeNode = ImGui::Scoped::TreeNodeEx(
       treeNodeLabel.c_str(), treeNodeFlags | (isStepSelected ? ImGuiTreeNodeFlags_Selected : 0));
   ImGui::PopStyleVar();
+
+  if (warnNoItemSelected) {
+    ImGui::PopStyleColor();
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
+      ImGui::SetTooltip("No %s selected", ThunderAutoModeStepTypeToString(step->type()));
+    }
+  }
 
   if (ImGui::IsItemActivated() && !isStepSelected) {
     editorState.selectedStepPath = stepPath;
@@ -1091,9 +1107,10 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
 
   // Steps can be dragged.
   if (auto scopedDragSource = ImGui::Scoped::DragDropSource()) {
-    const void* payloadData = stepPath.path.data();
-    const size_t payloadSize = stepPath.path.size() * sizeof(ThunderAutoModeStepPath::Node);
+    size_t payloadSize;
+    uint8_t* payloadData = SerializeAutoModeStepPathForDragDrop(stepPath, &payloadSize);
     ImGui::SetDragDropPayload("Auto Mode Step", payloadData, payloadSize);
+    delete[] payloadData;
     ImGui::Text("%s", treeNodeLabel.c_str());
   }
 
@@ -1108,28 +1125,57 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
       ThunderAutoModeBoolBranchStep& branchStep = reinterpret_cast<ThunderAutoModeBoolBranchStep&>(*step);
 
       if (scopedTreeNode) {
-        if (auto scopedTrueBranchTreeNode = ImGui::Scoped::TreeNodeEx("TRUE", treeNodeFlags)) {
-          ThunderAutoModeStepPath::Node trueChildNode(
-              ThunderAutoModeStepPath::Node::DirectoryType::BOOL_TRUE);
-          ThunderAutoModeStepPath childStepPath = stepPath / trueChildNode;
+        // True Branch
+        {
+          auto scopedTrueBranchTreeNode =
+              ImGui::Scoped::TreeNodeEx("TRUE", treeNodeFlags | ImGuiTreeNodeFlags_AllowOverlap);
 
-          autoModeStepDragDropTarget(childStepPath, AutoModeStepDragDropInsertMethod::INTO, true, state);
+          const ThunderAutoModeStepDirectoryPath trueChildStepPath = stepPath.boolBranch(true);
 
-          bool shouldStop = drawAutoModeStepsTree(branchStep.trueBranch, childStepPath, state);
-          if (shouldStop) {
+          if (autoModeStepDragDropTarget(trueChildStepPath, AutoModeStepDragDropInsertMethod::INTO, true,
+                                         state))
             return true;
+
+          // Editor display/hide button.
+          ImGui::SameLine();
+          if (presentRightAlignedEyeButton(1, branchStep.editorDisplayTrueBranch)) {
+            branchStep.editorDisplayTrueBranch = !branchStep.editorDisplayTrueBranch;
+            m_history.addState(state, false);
+          }
+
+          // Branch Steps
+          if (scopedTrueBranchTreeNode) {
+            bool shouldStop = drawAutoModeStepsTree(branchStep.trueBranch, trueChildStepPath, state);
+            if (shouldStop) {
+              return true;
+            }
           }
         }
-        if (auto scopedFalseBranchTreeNode = ImGui::Scoped::TreeNodeEx("FALSE", treeNodeFlags)) {
-          ThunderAutoModeStepPath::Node falseChildNode(
-              ThunderAutoModeStepPath::Node::DirectoryType::BOOL_ELSE);
-          ThunderAutoModeStepPath childStepPath = stepPath / falseChildNode;
 
-          autoModeStepDragDropTarget(childStepPath, AutoModeStepDragDropInsertMethod::INTO, true, state);
+        // False Branch
+        {
+          auto scopedFalseBranchTreeNode =
+              ImGui::Scoped::TreeNodeEx("FALSE", treeNodeFlags | ImGuiTreeNodeFlags_AllowOverlap);
 
-          bool shouldStop = drawAutoModeStepsTree(branchStep.elseBranch, childStepPath, state);
-          if (shouldStop) {
+          const ThunderAutoModeStepDirectoryPath falseChildStepPath = stepPath.boolBranch(false);
+
+          if (autoModeStepDragDropTarget(falseChildStepPath, AutoModeStepDragDropInsertMethod::INTO, true,
+                                         state))
             return true;
+
+          // Editor display/hide button.
+          ImGui::SameLine();
+          if (presentRightAlignedEyeButton(0, !branchStep.editorDisplayTrueBranch)) {
+            branchStep.editorDisplayTrueBranch = !branchStep.editorDisplayTrueBranch;
+            m_history.addState(state, false);
+          }
+
+          // Branch Steps
+          if (scopedFalseBranchTreeNode) {
+            bool shouldStop = drawAutoModeStepsTree(branchStep.elseBranch, falseChildStepPath, state);
+            if (shouldStop) {
+              return true;
+            }
           }
         }
       }
@@ -1140,42 +1186,86 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
 
       if (scopedTreeNode) {
         for (auto& [caseValue, caseBranch] : branchStep.caseBranches) {
-          if (auto scopedCaseBranchTreeNode =
-                  ImGui::Scoped::TreeNodeEx(fmt::format("CASE {}", caseValue).c_str(), treeNodeFlags)) {
-            ThunderAutoModeStepPath::Node caseChildNode(
-                ThunderAutoModeStepPath::Node::DirectoryType::SWITCH_CASE);
-            caseChildNode.caseBranchValue = caseValue;
-            ThunderAutoModeStepPath childStepPath = stepPath / caseChildNode;
+          // Case Branch
+          {
+            std::string label = fmt::format("CASE {}", caseValue);
 
-            autoModeStepDragDropTarget(childStepPath, AutoModeStepDragDropInsertMethod::INTO, true, state);
+            auto scopedCaseBranchTreeNode =
+                ImGui::Scoped::TreeNodeEx(label.c_str(), treeNodeFlags | ImGuiTreeNodeFlags_AllowOverlap);
 
-            bool shouldStop = drawAutoModeStepsTree(caseBranch, childStepPath, state);
-            if (shouldStop) {
+            const ThunderAutoModeStepDirectoryPath caseChildStepPath = stepPath.switchBranchCase(caseValue);
+
+            if (autoModeStepDragDropTarget(caseChildStepPath, AutoModeStepDragDropInsertMethod::INTO, true,
+                                           state))
               return true;
-            }
-          }
 
-          // Right-click the case branch.
-          if (auto popup = ImGui::Scoped::PopupContextItem()) {
-            if (ImGui::MenuItem(ICON_LC_TRASH "  Delete Case")) {
-              ThunderAutoLogger::Info("Deleting case {} from switch branch at \"{}\"", caseValue,
-                                      ThunderAutoModeStepPathToString(stepPath));
-              branchStep.caseBranches.erase(caseValue);
-              m_history.addState(state);
-              break;
+            // Right-click
+            if (auto popup = ImGui::Scoped::PopupContextItem()) {
+              if (ImGui::MenuItem(ICON_LC_TRASH "  Delete Case")) {
+                ThunderAutoLogger::Info("Deleting case {} from switch branch at \"{}\"", caseValue,
+                                        ThunderAutoModeStepPathToString(stepPath));
+                branchStep.caseBranches.erase(caseValue);
+                if (!branchStep.editorDisplayDefaultBranch &&
+                    branchStep.editorDisplayCaseBranch == caseValue) {
+                  branchStep.editorDisplayDefaultBranch = true;
+                }
+                m_history.addState(state);
+                break;
+              }
+            }
+
+            // Editor display/hide button.
+            ImGui::SameLine();
+            if (presentRightAlignedEyeButton(caseValue,
+                                             !branchStep.editorDisplayDefaultBranch &&
+                                                 branchStep.editorDisplayCaseBranch == caseValue)) {
+              if (branchStep.editorDisplayDefaultBranch || branchStep.editorDisplayCaseBranch != caseValue) {
+                branchStep.editorDisplayCaseBranch = caseValue;
+                branchStep.editorDisplayDefaultBranch = false;
+                m_history.addState(state, false);
+              }
+            }
+
+            // Branch Steps
+            if (scopedCaseBranchTreeNode) {
+              bool shouldStop = drawAutoModeStepsTree(caseBranch, caseChildStepPath, state);
+              if (shouldStop) {
+                return true;
+              }
             }
           }
         }
-        if (auto scopedFalseBranchTreeNode = ImGui::Scoped::TreeNodeEx("DEFAULT", treeNodeFlags)) {
-          ThunderAutoModeStepPath::Node defaultChildNode(
-              ThunderAutoModeStepPath::Node::DirectoryType::SWITCH_DEFAULT);
-          ThunderAutoModeStepPath childStepPath = stepPath / defaultChildNode;
 
-          autoModeStepDragDropTarget(childStepPath, AutoModeStepDragDropInsertMethod::INTO, true, state);
+        // Default Branch
+        {
+          auto scopedDefaultBranchTreeNode =
+              ImGui::Scoped::TreeNodeEx("DEFAULT", treeNodeFlags | ImGuiTreeNodeFlags_AllowOverlap);
 
-          bool shouldStop = drawAutoModeStepsTree(branchStep.defaultBranch, childStepPath, state);
-          if (shouldStop) {
+          const ThunderAutoModeStepDirectoryPath defaultChildStepPath = stepPath.switchBranchDefault();
+
+          if (autoModeStepDragDropTarget(defaultChildStepPath, AutoModeStepDragDropInsertMethod::INTO, true,
+                                         state)) {
             return true;
+          }
+
+          // Editor display/hide button.
+          ImGui::SameLine();
+          {
+            auto scopedID = ImGui::Scoped::ID("Default Branch Eye Button");
+            if (presentRightAlignedEyeButton(0, branchStep.editorDisplayDefaultBranch)) {
+              if (!branchStep.editorDisplayDefaultBranch) {
+                branchStep.editorDisplayDefaultBranch = true;
+              }
+              m_history.addState(state, false);
+            }
+          }
+
+          // Branch Steps
+          if (scopedDefaultBranchTreeNode) {
+            bool shouldStop = drawAutoModeStepsTree(branchStep.defaultBranch, defaultChildStepPath, state);
+            if (shouldStop) {
+              return true;
+            }
           }
         }
       }
@@ -1189,12 +1279,12 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
 }
 
 bool PropertiesPage::drawAutoModeStepsTree(std::list<std::unique_ptr<ThunderAutoModeStep>>& steps,
-                                           const ThunderAutoModeStepPath& parentPath,
+                                           const ThunderAutoModeStepDirectoryPath& parentPath,
                                            ThunderAutoProjectState& state) {
-  ThunderAutoModeStepPath path = parentPath;
+  ThunderAutoModeStepPath path(parentPath, 0);
   size_t stepIndex = 0;
   for (auto& step : steps) {
-    path.endNode().stepIndex = stepIndex++;
+    path.setStepIndex(stepIndex++);
 
     auto scopedID = ImGui::Scoped::ID(step->getID());
 
@@ -1213,81 +1303,65 @@ bool PropertiesPage::drawAutoModeStepsTree(std::list<std::unique_ptr<ThunderAuto
     const float spacingY = GET_UISIZE(SELECTABLE_LIST_ITEM_SPACING_Y) / 3.f;
     (void)ImGui::InvisibleButton("Drag Separator", ImVec2(spacingX, spacingY));
 
-    AutoModeStepDragDropInsertMethod insertMethod = AutoModeStepDragDropInsertMethod::AFTER;
+    bool shouldStop;
     if (steps.empty()) {
-      insertMethod = AutoModeStepDragDropInsertMethod::INTO;
+      shouldStop =
+          autoModeStepDragDropTarget(parentPath, AutoModeStepDragDropInsertMethod::INTO, true, state);
+    } else {
+      shouldStop = autoModeStepDragDropTarget(path, AutoModeStepDragDropInsertMethod::AFTER, true, state);
     }
 
-    autoModeStepDragDropTarget(path, insertMethod, true, state);
+    if (shouldStop) {
+      return true;
+    }
   }
 
   return false;
 }
 
-void PropertiesPage::autoModeStepDragDropTarget(const ThunderAutoModeStepPath& stepPath,
-                                                AutoModeStepDragDropInsertMethod insertMethod,
-                                                bool acceptAutoModeSteps,
-                                                ThunderAutoProjectState& state) {
-  ThunderAutoAssert(!stepPath.path.empty());
-
+bool PropertiesPage::autoModeStepDragDropTarget(
+    std::variant<ThunderAutoModeStepPath, ThunderAutoModeStepDirectoryPath> closestStepOrDirectoryPath,
+    AutoModeStepDragDropInsertMethod insertMethod,
+    bool acceptAutoModeSteps,
+    ThunderAutoProjectState& state) {
   using enum AutoModeStepDragDropInsertMethod;
 
   if (auto scopedDragTarget = ImGui::Scoped::DragDropTarget()) {
     const ImGuiPayload* payload = nullptr;
     if (acceptAutoModeSteps && (payload = ImGui::AcceptDragDropPayload("Auto Mode Step"))) {
-      ThunderAutoModeStepPath::Node* payloadPathNodes =
-          reinterpret_cast<ThunderAutoModeStepPath::Node*>(payload->Data);
-      size_t payloadPathNumNodes = payload->DataSize / sizeof(ThunderAutoModeStepPath::Node);
-
-      ThunderAutoModeStepPath payloadPath;
-      payloadPath.path.assign(payloadPathNodes, payloadPathNodes + payloadPathNumNodes);
-
-      ThunderAutoLogger::Info(
-          "Drag and drop auto mode step from \"{}\" to {} \"{}\"",
-          ThunderAutoModeStepPathToString(payloadPath),
-          (insertMethod == BEFORE ? "before" : (insertMethod == AFTER ? "after" : "into")),
-          ThunderAutoModeStepPathToString(stepPath));
-
-      if (stepPath.hasParentPath(payloadPath)) {
-        ThunderAutoLogger::Warn("Cannot move a step under one of its own children");
-        return;
-      }
-
-      bool isInSameLocation = (payloadPath == stepPath);
-      if (!isInSameLocation) {
-        switch (insertMethod) {
-          case INTO:
-            if (payloadPath.isInSameDirectoryAs(stepPath)) {
-              isInSameLocation = true;
-            }
-            break;
-          case AFTER:
-            isInSameLocation = (payloadPath == (stepPath.parentPath() / (stepPath.endNode().next())));
-            break;
-          case BEFORE:
-            if (stepPath.endNode().stepIndex > 0) {
-              isInSameLocation = (payloadPath == (stepPath.parentPath() / (stepPath.endNode().prev())));
-            }
-            break;
-          default:
-            ThunderAutoUnreachable("Invalid insert method");
-        }
-      }
-
-      if (isInSameLocation) {
-        ThunderAutoLogger::Warn("Ignoring move to the same location");
-        return;
-      }
+      ThunderAutoModeStepPath payloadPath =
+          DeserializeAutoModeStepPathFromDragDrop(payload->Data, payload->DataSize);
 
       // Move the step.
+
+      bool moveWasSuccessful = false;
+
       if (insertMethod == INTO) {
-        state.currentAutoModeMoveStepIntoDirectory(payloadPath, stepPath);
-      } else if (insertMethod == BEFORE) {
-        state.currentAutoModeMoveStepBeforeOther(payloadPath, stepPath);
-      } else if (insertMethod == AFTER) {
-        state.currentAutoModeMoveStepAfterOther(payloadPath, stepPath);
+        auto directoryPath = std::get<ThunderAutoModeStepDirectoryPath>(closestStepOrDirectoryPath);
+        ThunderAutoLogger::Info("Drag and drop auto mode step from \"{}\" into \"{}\"",
+                                ThunderAutoModeStepPathToString(payloadPath),
+                                ThunderAutoModeStepDirectoryPathToString(directoryPath));
+
+        moveWasSuccessful = state.currentAutoModeMoveStepIntoDirectory(payloadPath, directoryPath);
+      } else {
+        auto stepPath = std::get<ThunderAutoModeStepPath>(closestStepOrDirectoryPath);
+        ThunderAutoLogger::Info("Drag and drop auto mode step from \"{}\" to {} \"{}\"",
+                                ThunderAutoModeStepPathToString(payloadPath),
+                                (insertMethod == BEFORE ? "before" : "after"),
+                                ThunderAutoModeStepPathToString(stepPath));
+
+        if (insertMethod == BEFORE) {
+          moveWasSuccessful = state.currentAutoModeMoveStepBeforeOther(payloadPath, stepPath);
+        } else if (insertMethod == AFTER) {
+          moveWasSuccessful = state.currentAutoModeMoveStepAfterOther(payloadPath, stepPath);
+        }
       }
-      m_history.addState(state);
+      if (moveWasSuccessful) {
+        m_history.addState(state);
+      } else {
+        ThunderAutoLogger::Warn("Failed to move auto mode step");
+      }
+      return moveWasSuccessful;
 
     } else {
       std::unique_ptr<ThunderAutoModeStep> newStep;
@@ -1308,16 +1382,68 @@ void PropertiesPage::autoModeStepDragDropTarget(const ThunderAutoModeStepPath& s
       // Add the new step.
       if (newStep) {
         if (insertMethod == INTO) {
-          state.currentAutoModeInsertStepInDirectory(stepPath, std::move(newStep));
-        } else if (insertMethod == BEFORE) {
-          state.currentAutoModeInsertStepBeforeOther(stepPath, std::move(newStep));
-        } else if (insertMethod == AFTER) {
-          state.currentAutoModeInsertStepAfterOther(stepPath, std::move(newStep));
+          auto directoryPath = std::get<ThunderAutoModeStepDirectoryPath>(closestStepOrDirectoryPath);
+          state.currentAutoModeInsertStepInDirectory(directoryPath, std::move(newStep));
+        } else {
+          auto stepPath = std::get<ThunderAutoModeStepPath>(closestStepOrDirectoryPath);
+          if (insertMethod == BEFORE) {
+            state.currentAutoModeInsertStepBeforeOther(stepPath, std::move(newStep));
+          } else if (insertMethod == AFTER) {
+            state.currentAutoModeInsertStepAfterOther(stepPath, std::move(newStep));
+          }
         }
         m_history.addState(state);
+        return true;
       }
     }
   }
+
+  return false;
+}
+
+uint8_t* PropertiesPage::SerializeAutoModeStepPathForDragDrop(const ThunderAutoModeStepPath& path,
+                                                              size_t* size) {
+  ThunderAutoAssert(size != nullptr);
+
+  std::span<const ThunderAutoModeStepDirectoryPath::Node> directoryPath = path.directoryPath().path();
+  *size = sizeof(size_t) + directoryPath.size() * sizeof(ThunderAutoModeStepDirectoryPath::Node);
+  uint8_t* dataStart = new uint8_t[*size];
+  uint8_t* data = dataStart;
+
+  size_t stepIndex = path.stepIndex();
+  std::memcpy(data, &stepIndex, sizeof(size_t));
+  data += sizeof(size_t);
+  for (const auto& node : directoryPath) {
+    std::memcpy(data, &node, sizeof(ThunderAutoModeStepDirectoryPath::Node));
+    data += sizeof(ThunderAutoModeStepDirectoryPath::Node);
+  }
+
+  return dataStart;
+}
+
+ThunderAutoModeStepPath PropertiesPage::DeserializeAutoModeStepPathFromDragDrop(void* rawData, size_t size) {
+  ThunderAutoAssert(size >= sizeof(size_t));
+
+  char* data = reinterpret_cast<char*>(rawData);
+
+  size_t stepIndex = *reinterpret_cast<size_t*>(data);
+  size -= sizeof(size_t);
+  data += sizeof(size_t);
+
+  ThunderAutoAssert(size % sizeof(ThunderAutoModeStepDirectoryPath::Node) == 0);
+  size_t numPathNodes = size / sizeof(ThunderAutoModeStepDirectoryPath::Node);
+
+  std::vector<ThunderAutoModeStepDirectoryPath::Node> pathNodes;
+  pathNodes.reserve(numPathNodes);
+  for (size_t i = 0; i < numPathNodes; ++i) {
+    auto& node = *reinterpret_cast<ThunderAutoModeStepDirectoryPath::Node*>(data);
+    pathNodes.push_back(node);
+    data += sizeof(ThunderAutoModeStepDirectoryPath::Node);
+  }
+
+  ThunderAutoModeStepDirectoryPath directoryPath(std::move(pathNodes));
+  ThunderAutoModeStepPath path(std::move(directoryPath), stepIndex);
+  return path;
 }
 
 void PropertiesPage::presentAutoModeSelectedStepProperties(ThunderAutoProjectState& state) {
@@ -1567,6 +1693,41 @@ PropertiesPage::GetAllActionSelections(const ThunderAutoTrajectorySkeleton& skel
   }
 
   return actionSelections;
+}
+
+bool PropertiesPage::presentRightAlignedEyeButton(int id, bool isEyeOpen) {
+  auto scopedID = ImGui::Scoped::ID(id);
+
+  const ImGuiStyle& style = ImGui::GetStyle();
+
+  const float buttonDimension = ImGui::GetStyle().FontSizeBase + style.FramePadding.y * 2.0f;
+  const ImVec2 buttonSize = ImVec2(buttonDimension, buttonDimension);
+
+  const float regionAvailWidth = ImGui::GetContentRegionAvail().x;
+  if (regionAvailWidth > buttonSize.x) {
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + regionAvailWidth - buttonSize.x);
+  }
+
+  ImVec4 buttonColor = style.Colors[ImGuiCol_Button];
+  buttonColor.w = 0.f;
+  auto scopedButtonColor = ImGui::Scoped::StyleColor(ImGuiCol_Button, buttonColor);
+  auto scopedButtonHoverColor = ImGui::Scoped::StyleColor(ImGuiCol_ButtonHovered, buttonColor);
+  auto scopedButtonActiveColor = ImGui::Scoped::StyleColor(ImGuiCol_ButtonActive, buttonColor);
+  auto scopedBorderColor = ImGui::Scoped::StyleColor(ImGuiCol_Border, buttonColor);
+
+  const char* buttonIcon = isEyeOpen ? ICON_LC_EYE : ICON_LC_EYE_OFF;
+
+  if (!isEyeOpen) {  // Gray out the closed eye icon
+    ImGui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled]);
+  }
+
+  bool result = ImGui::Button(buttonIcon, buttonSize);
+
+  if (!isEyeOpen) {
+    ImGui::PopStyleColor();
+  }
+
+  return result;
 }
 
 bool PropertiesPage::presentActionProperty(const char* name,

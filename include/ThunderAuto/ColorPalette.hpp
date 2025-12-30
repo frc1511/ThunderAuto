@@ -46,4 +46,6 @@ class ThunderAutoColorPalette {
   static inline const ImColor kBlue = kBlueMid;
   static inline const ImColor kPurple = kPurpleMid;
   static inline const ImColor kWhite = rgba(255, 255, 255, 1);
+
+  static inline const ImColor kInvisible = rgba(0, 0, 0, 0);
 };

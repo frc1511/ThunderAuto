@@ -84,7 +84,7 @@ class PropertiesPage : public Page {
                                 const ThunderAutoModeStepPath& path,
                                 ThunderAutoProjectState& state);
   bool drawAutoModeStepsTree(std::list<std::unique_ptr<ThunderAutoModeStep>>& steps,
-                             const ThunderAutoModeStepPath& path,
+                             const ThunderAutoModeStepDirectoryPath& path,
                              ThunderAutoProjectState& state);
 
   enum class AutoModeStepDragDropInsertMethod {
@@ -93,10 +93,14 @@ class PropertiesPage : public Page {
     INTO,
   };
 
-  void autoModeStepDragDropTarget(const ThunderAutoModeStepPath& closestStepPath,
-                                  AutoModeStepDragDropInsertMethod insertMethod,
-                                  bool acceptAutoModeSteps,
-                                  ThunderAutoProjectState& state);
+  bool autoModeStepDragDropTarget(
+      std::variant<ThunderAutoModeStepPath, ThunderAutoModeStepDirectoryPath> closestStepOrDirectoryPath,
+      AutoModeStepDragDropInsertMethod insertMethod,
+      bool acceptAutoModeSteps,
+      ThunderAutoProjectState& state);
+
+  static uint8_t* SerializeAutoModeStepPathForDragDrop(const ThunderAutoModeStepPath& path, size_t* size);
+  static ThunderAutoModeStepPath DeserializeAutoModeStepPathFromDragDrop(void* data, size_t size);
 
   void presentAutoModeSelectedStepProperties(ThunderAutoProjectState& state);
   void presentAutoModeSelectedActionStepProperties(ThunderAutoModeActionStep& step,
@@ -109,6 +113,8 @@ class PropertiesPage : public Page {
                                                          ThunderAutoProjectState& state);
 
   void presentAutoModeSpeedConstraintProperties(ThunderAutoProjectState& state);
+
+  static bool presentRightAlignedEyeButton(int id, bool isEyeOpen);
 
   static bool presentActionProperty(const char* name,
                                     const char* tooltip,
