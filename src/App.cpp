@@ -285,7 +285,7 @@ void App::presentProjectPages() {
 }
 
 void App::presentProjectEventPopups() {
-  if (m_documentManager.history().isLocked()) {
+  if (m_projectEvent != ProjectEvent::NONE && m_documentManager.history().isLocked()) {
     m_documentEditManager.discardLongEdit();
   }
 
@@ -538,7 +538,7 @@ void App::presentFileMenu() {
           save();
         }
       }
-      if (ImGui::IsItemHovered()) {
+      if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
         ImGui::SetTooltip("Automatically save project\nwhen changes are made");
       }
 
@@ -548,7 +548,7 @@ void App::presentFileMenu() {
           csvExportAllTrajectories();
         }
       }
-      if (ImGui::IsItemHovered()) {
+      if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
         ImGui::SetTooltip("Automatically export all paths\nwhen focus is lost");
       }
 
@@ -592,7 +592,7 @@ void App::presentEditMenu() {
     ImGui::Separator();
 
     // if (ImGui::MenuItem(ICON_LC_DELETE "  Delete", "Delete")) {
-      // TODO
+    // TODO
     // }
 
     ImGui::EndMenu();
