@@ -65,7 +65,7 @@ void RenameTrajectoryPopup::present(bool* running) {
 
   // Tooltips
 
-  if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+  if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_AllowWhenDisabled)) {
     if (isNewTrajectoryNameAlreadyTaken) {
       ImGui::SetTooltip("A trajectory with this name already exists.");
     } else if (isNewTrajectoryNameEmpty) {

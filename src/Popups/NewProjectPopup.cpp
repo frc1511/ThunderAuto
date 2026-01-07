@@ -212,7 +212,7 @@ void NewProjectPopup::present(bool* running) {
       // Other values are set to defaults in the constructor.
     }
 
-    showTooltip = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && !errorText.empty();
+    showTooltip = ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_AllowWhenDisabled) && !errorText.empty();
   }
   if (showTooltip) {
     ImGui::SetTooltip("* %s", errorText.c_str());

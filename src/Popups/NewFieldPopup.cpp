@@ -144,7 +144,8 @@ void NewFieldPopup::present(bool* running) {
       }
 
       showDisabledTooltip =
-          ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && !disabledTooltipText.empty();
+          ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_AllowWhenDisabled) &&
+          !disabledTooltipText.empty();
     }
     if (showDisabledTooltip) {
       ImGui::SetTooltip("%s", disabledTooltipText.c_str());

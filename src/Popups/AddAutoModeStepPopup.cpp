@@ -43,7 +43,7 @@ void AddAutoModeStepPopup::present(bool* running) {
     *running = false;
   }
 
-  if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && isAddDisabled) {
+  if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_AllowWhenDisabled) && isAddDisabled) {
     ImGui::SetTooltip("%s", addDisabledReason);
   }
 }

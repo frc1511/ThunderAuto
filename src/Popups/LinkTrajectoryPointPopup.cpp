@@ -124,7 +124,7 @@ void LinkTrajectoryPointPopup::present(bool* running) {
     *running = false;
   }
 
-  if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && isConfirmDisabled) {
+  if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_AllowWhenDisabled) && isConfirmDisabled) {
     ImGui::SetTooltip("%s", confirmDisabledReason);
   }
 }

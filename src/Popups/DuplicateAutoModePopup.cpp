@@ -62,7 +62,7 @@ void DuplicateAutoModePopup::present(bool* running) {
 
   // Tooltips
 
-  if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+  if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_AllowWhenDisabled)) {
     if (isNewAutoModeNameAlreadyTaken) {
       ImGui::SetTooltip("A auto mode with this name already exists.");
     } else if (isNewAutoModeNameEmpty) {
