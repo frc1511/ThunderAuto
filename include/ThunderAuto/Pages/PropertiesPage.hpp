@@ -80,11 +80,19 @@ class PropertiesPage : public Page {
 
   // Draw step tree. Returns true if tree was modified and the rest of the tree should not be drawn (to avoid
   // accessing bad iterators).
-  bool drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeStep>& step,
-                                const ThunderAutoModeStepPath& path,
+  bool drawAutoModeStepTreeNode(const ThunderAutoModeStepPath& path,
+                                std::unique_ptr<ThunderAutoModeStep>& step,
+                                const ThunderAutoModeStepTrajectoryBehaviorTreeNode& behaviorTree,
+                                std::optional<frc::Pose2d> previousStepEndPose,
+                                bool isFirstTrajectoryStep,
+                                bool isLastTrajectoryStep,
                                 ThunderAutoProjectState& state);
-  bool drawAutoModeStepsTree(std::list<std::unique_ptr<ThunderAutoModeStep>>& steps,
-                             const ThunderAutoModeStepDirectoryPath& path,
+  bool drawAutoModeStepsTree(const ThunderAutoModeStepDirectoryPath& path,
+                             std::list<std::unique_ptr<ThunderAutoModeStep>>& steps,
+                             const ThunderAutoModeStepTrajectoryBehaviorTreeNode& behaviorTree,
+                             std::optional<frc::Pose2d> previousStepEndPose,
+                             bool isFirstTrajectoryStep,
+                             bool isLastTrajectoryStep,
                              ThunderAutoProjectState& state);
 
   enum class AutoModeStepDragDropInsertMethod {
@@ -99,7 +107,7 @@ class PropertiesPage : public Page {
       bool acceptAutoModeSteps,
       ThunderAutoProjectState& state);
 
-  static uint8_t* SerializeAutoModeStepPathForDragDrop(const ThunderAutoModeStepPath& path, size_t* size);
+  static std::vector<uint8_t> SerializeAutoModeStepPathForDragDrop(const ThunderAutoModeStepPath& path);
   static ThunderAutoModeStepPath DeserializeAutoModeStepPathFromDragDrop(void* data, size_t size);
 
   void presentAutoModeSelectedStepProperties(ThunderAutoProjectState& state);

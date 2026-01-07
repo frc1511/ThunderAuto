@@ -1,14 +1,14 @@
 #include <ThunderAuto/Pages/AutoModeManagerPage.hpp>
-
+#include <ThunderAuto/ColorPalette.hpp>
 #include <IconsLucide.h>
 #include <imgui_raii.h>
 
 void AutoModeManagerPage::present(bool* running) {
   m_event = Event::NONE;
 
-  ImGui::SetNextWindowSize(ImVec2(GET_UISIZE(AUTO_MODE_MANAGER_PAGE_START_WIDTH),
-                                  GET_UISIZE(AUTO_MODE_MANAGER_PAGE_START_HEIGHT)),
-                           ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(
+      ImVec2(GET_UISIZE(AUTO_MODE_MANAGER_PAGE_START_WIDTH), GET_UISIZE(AUTO_MODE_MANAGER_PAGE_START_HEIGHT)),
+      ImGuiCond_FirstUseEver);
   ImGui::Scoped scopedWindow = ImGui::Scoped::Window(name(), running);
   if (!scopedWindow || !*running)
     return;
@@ -23,13 +23,21 @@ void AutoModeManagerPage::present(bool* running) {
   std::string autoModeToDeleteName;
 
   for (auto& [autoModeName, autoMode] : autoModes) {
-    const bool isAutoModeSelected = 
+    const bool isAutoModeSelected =
         isInAutoModeState && (autoModeName == autoModeEditorState.currentAutoModeName);
+
+    // TODO: Only compute once for both properties page and auto mode manager page.
+    ThunderAutoModeStepTrajectoryBehavior trajectoryBehavior =
+        autoMode.getTrajectoryBehavior(state.trajectories);
+    if (trajectoryBehavior.errorInfo) {
+      ImGui::PushStyleColor(ImGuiCol_Text, (ImU32)ThunderAutoColorPalette::kYellow);
+    }
 
     auto scopedPadding =
         ImGui::Scoped::StyleVarY(ImGuiStyleVar_ItemSpacing, GET_UISIZE(SELECTABLE_LIST_ITEM_SPACING_Y));
 
-    if (ImGui::Selectable(autoModeName.c_str(), isAutoModeSelected) && !isAutoModeSelected) {
+    if (ImGui::Selectable(autoModeName.c_str(), isAutoModeSelected, ImGuiSelectableFlags_AllowOverlap) &&
+        !isAutoModeSelected) {
       ThunderAutoLogger::Info("Auto Mode '{}' selected", autoModeName);
 
       state.editorState.view = ThunderAutoEditorState::View::AUTO_MODE;
@@ -40,6 +48,22 @@ void AutoModeManagerPage::present(bool* running) {
 
       m_editorPage.invalidateCachedTrajectory();
       m_editorPage.resetPlayback();
+    }
+
+    if (trajectoryBehavior.errorInfo) {
+      ImGui::PopStyleColor();
+
+      if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
+        auto scopedTooltip = ImGui::Scoped::Tooltip();
+        if (trajectoryBehavior.errorInfo.isTrajectoryMissing) {
+          ImGui::Text(ICON_LC_TRIANGLE_ALERT
+                      " Contains one or more references to\nnon-existent trajectories");
+        }
+        if (trajectoryBehavior.errorInfo.containsNonContinuousSequence) {
+          ImGui::Text(ICON_LC_TRIANGLE_ALERT
+                      " Contains one or more sequences of\nnon-continuous trajectory steps");
+        }
+      }
     }
 
     if (auto popup = ImGui::Scoped::PopupContextItem()) {

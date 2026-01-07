@@ -647,7 +647,8 @@ bool PropertiesPage::presentPointVelocityOverrideProperty(
 
       if (point.maxVelocityOverride().value() > 0_mps && (isFirstPoint || isLastPoint)) {
         auto scopedYellowText = ImGui::Scoped::StyleColor(ImGuiCol_Text, kWarningTextColor);
-        ImGui::TextWrapped("Warning: Trajectory does not %s at 0 m/s", isFirstPoint ? "start" : "end");
+        ImGui::TextWrapped(ICON_LC_TRIANGLE_ALERT " Trajectory does not %s at 0 m/s",
+                           isFirstPoint ? "start" : "end");
       }
     }
   }
@@ -969,7 +970,10 @@ void PropertiesPage::presentAutoModeStepList(ThunderAutoProjectState& state) {
 
     ThunderAutoMode& autoMode = state.currentAutoMode();
 
-    (void)drawAutoModeStepsTree(autoMode.steps, rootPath, state);
+    ThunderAutoModeStepTrajectoryBehaviorTreeNode behaviorTree =
+        autoMode.getTrajectoryBehaviorTree(state.trajectories);
+
+    (void)drawAutoModeStepsTree(rootPath, autoMode.steps, behaviorTree, std::nullopt, true, true, state);
   }
 
   // Dropping trajectories and actions into the child window adds them as steps to the end of the auto mode.
@@ -980,9 +984,14 @@ void PropertiesPage::presentAutoModeStepList(ThunderAutoProjectState& state) {
   }
 }
 
-bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeStep>& step,
-                                              const ThunderAutoModeStepPath& stepPath,
-                                              ThunderAutoProjectState& state) {
+bool PropertiesPage::drawAutoModeStepTreeNode(
+    const ThunderAutoModeStepPath& stepPath,
+    std::unique_ptr<ThunderAutoModeStep>& step,
+    const ThunderAutoModeStepTrajectoryBehaviorTreeNode& stepBehaviorTree,
+    std::optional<frc::Pose2d> previousStepEndPose,
+    bool isFirstTrajectoryStep,
+    bool isLastTrajectoryStep,
+    ThunderAutoProjectState& state) {
   // Space in between steps to allow for drag-and-drop.
   {
     auto scopedPadding = ImGui::Scoped::StyleVarY(ImGuiStyleVar_ItemSpacing, 0.f);
@@ -999,6 +1008,8 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
   }
 
   // Draw the tree node for the step.
+
+  const ThunderAutoModeStepTrajectoryBehavior& stepBehavior = stepBehaviorTree.behavior;
 
   ImGuiTreeNodeFlags treeNodeFlags =
       ImGuiTreeNodeFlags_DrawLinesFull | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth;
@@ -1030,16 +1041,18 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
       const ThunderAutoModeBoolBranchStep& branchStep =
           reinterpret_cast<const ThunderAutoModeBoolBranchStep&>(*step);
 
-      treeNodeLabel = fmt::format(ICON_LC_TOGGLE_RIGHT "  {}",
-                                  branchStep.conditionName.empty() ? "<none>" : branchStep.conditionName);
+      bool noConditionSelected = warnNoItemSelected = branchStep.conditionName.empty();
+      treeNodeLabel =
+          fmt::format(ICON_LC_TOGGLE_RIGHT "  {}", noConditionSelected ? "<none>" : branchStep.conditionName);
       break;
     }
     case BRANCH_SWITCH: {
       const ThunderAutoModeSwitchBranchStep& branchStep =
           reinterpret_cast<const ThunderAutoModeSwitchBranchStep&>(*step);
 
-      treeNodeLabel = fmt::format(ICON_LC_LIST_ORDERED "  {}",
-                                  branchStep.conditionName.empty() ? "<none>" : branchStep.conditionName);
+      bool noConditionSelected = warnNoItemSelected = branchStep.conditionName.empty();
+      treeNodeLabel =
+          fmt::format(ICON_LC_LIST_ORDERED "  {}", noConditionSelected ? "<none>" : branchStep.conditionName);
       break;
     }
     default:
@@ -1049,7 +1062,16 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
   ThunderAutoModeEditorState& editorState = state.editorState.autoModeEditorState;
   bool isStepSelected = (editorState.selectedStepPath == stepPath);
 
-  if (warnNoItemSelected) {
+  bool noStartPose = false, noEndPose = false, startPoseMismatch = false;
+  if (stepBehavior.runsTrajectory) {
+    noStartPose = (!isFirstTrajectoryStep && !stepBehavior.startPose.has_value());
+    noEndPose = (!isLastTrajectoryStep && !stepBehavior.endPose.has_value());
+    startPoseMismatch = (!isFirstTrajectoryStep && stepBehavior.startPose != previousStepEndPose);
+  }
+
+  bool warn = warnNoItemSelected || stepBehavior.errorInfo || noStartPose || noEndPose || startPoseMismatch;
+
+  if (warn) {
     ImGui::PushStyleColor(ImGuiCol_Text, (ImU32)ThunderAutoColorPalette::kYellow);
   }
 
@@ -1058,10 +1080,35 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
       treeNodeLabel.c_str(), treeNodeFlags | (isStepSelected ? ImGuiTreeNodeFlags_Selected : 0));
   ImGui::PopStyleVar();
 
-  if (warnNoItemSelected) {
+  if (warn) {
     ImGui::PopStyleColor();
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
-      ImGui::SetTooltip("No %s selected", ThunderAutoModeStepTypeToString(step->type()));
+  }
+
+  if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal) && warn) {
+    auto scopedTooltip = ImGui::Scoped::Tooltip();
+    if (warnNoItemSelected) {
+      ImGui::SetTooltip(ICON_LC_TRIANGLE_ALERT " No %s selected",
+                        ThunderAutoModeStepTypeToString(step->type()));
+    }
+    if (stepBehavior.errorInfo.isTrajectoryMissing) {
+      ImGui::Text(ICON_LC_TRIANGLE_ALERT " Contains one or more references to\nnon-existent trajectories");
+    }
+    if (stepBehavior.errorInfo.containsNonContinuousSequence) {
+      ImGui::Text(ICON_LC_TRIANGLE_ALERT
+                  " Contains one or more sequences of\nnon-continuous trajectory steps");
+    }
+    if (noStartPose) {
+      ImGui::Text(
+          ICON_LC_TRIANGLE_ALERT
+          " Impossible to determine step start pose\nbecause branches do not share a common\nstart pose");
+    }
+    if (noEndPose) {
+      ImGui::Text(ICON_LC_TRIANGLE_ALERT
+                  " Impossible to determine step end pose\nbecause branches do not share a common\nend pose");
+    }
+    if (startPoseMismatch) {
+      ImGui::Text(ICON_LC_TRIANGLE_ALERT
+                  " Step start pose does not match the end\npose of the previous trajectory step");
     }
   }
 
@@ -1098,8 +1145,9 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
           newCaseValue = 0;
           ImGui::CloseCurrentPopup();
         }
-        if (isNewCaseValueUsed && ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
-          ImGui::SetTooltip("Case value already exists");
+        if (isNewCaseValueUsed &&
+            ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_AllowWhenDisabled)) {
+          ImGui::SetTooltip(ICON_LC_TRIANGLE_ALERT " Case value already exists");
         }
       }
     }
@@ -1107,10 +1155,8 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
 
   // Steps can be dragged.
   if (auto scopedDragSource = ImGui::Scoped::DragDropSource()) {
-    size_t payloadSize;
-    uint8_t* payloadData = SerializeAutoModeStepPathForDragDrop(stepPath, &payloadSize);
-    ImGui::SetDragDropPayload("Auto Mode Step", payloadData, payloadSize);
-    delete[] payloadData;
+    std::vector<uint8_t> payloadData = SerializeAutoModeStepPathForDragDrop(stepPath);
+    ImGui::SetDragDropPayload("Auto Mode Step", payloadData.data(), payloadData.size());
     ImGui::Text("%s", treeNodeLabel.c_str());
   }
 
@@ -1145,7 +1191,9 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
 
           // Branch Steps
           if (scopedTrueBranchTreeNode) {
-            bool shouldStop = drawAutoModeStepsTree(branchStep.trueBranch, trueChildStepPath, state);
+            bool shouldStop = drawAutoModeStepsTree(
+                trueChildStepPath, branchStep.trueBranch, stepBehaviorTree.childrenMap.at(true),
+                previousStepEndPose, isFirstTrajectoryStep, isLastTrajectoryStep, state);
             if (shouldStop) {
               return true;
             }
@@ -1172,7 +1220,9 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
 
           // Branch Steps
           if (scopedFalseBranchTreeNode) {
-            bool shouldStop = drawAutoModeStepsTree(branchStep.elseBranch, falseChildStepPath, state);
+            bool shouldStop = drawAutoModeStepsTree(
+                falseChildStepPath, branchStep.elseBranch, stepBehaviorTree.childrenMap.at(false),
+                previousStepEndPose, isFirstTrajectoryStep, isLastTrajectoryStep, state);
             if (shouldStop) {
               return true;
             }
@@ -1228,7 +1278,9 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
 
             // Branch Steps
             if (scopedCaseBranchTreeNode) {
-              bool shouldStop = drawAutoModeStepsTree(caseBranch, caseChildStepPath, state);
+              bool shouldStop = drawAutoModeStepsTree(
+                  caseChildStepPath, caseBranch, stepBehaviorTree.childrenMap.at(caseValue),
+                  previousStepEndPose, isFirstTrajectoryStep, isLastTrajectoryStep, state);
               if (shouldStop) {
                 return true;
               }
@@ -1262,7 +1314,9 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
 
           // Branch Steps
           if (scopedDefaultBranchTreeNode) {
-            bool shouldStop = drawAutoModeStepsTree(branchStep.defaultBranch, defaultChildStepPath, state);
+            bool shouldStop = drawAutoModeStepsTree(defaultChildStepPath, branchStep.defaultBranch,
+                                                    stepBehaviorTree.childrenVec.at(0), previousStepEndPose,
+                                                    isFirstTrajectoryStep, isLastTrajectoryStep, state);
             if (shouldStop) {
               return true;
             }
@@ -1278,20 +1332,42 @@ bool PropertiesPage::drawAutoModeStepTreeNode(std::unique_ptr<ThunderAutoModeSte
   return false;
 }
 
-bool PropertiesPage::drawAutoModeStepsTree(std::list<std::unique_ptr<ThunderAutoModeStep>>& steps,
-                                           const ThunderAutoModeStepDirectoryPath& parentPath,
+bool PropertiesPage::drawAutoModeStepsTree(const ThunderAutoModeStepDirectoryPath& parentPath,
+                                           std::list<std::unique_ptr<ThunderAutoModeStep>>& steps,
+                                           const ThunderAutoModeStepTrajectoryBehaviorTreeNode& behaviorTree,
+                                           std::optional<frc::Pose2d> originalPreviousStepEndPose,
+                                           bool isFirstTrajectoryStep,
+                                           bool isLastTrajectoryStep,
                                            ThunderAutoProjectState& state) {
-  ThunderAutoModeStepPath path(parentPath, 0);
+  ThunderAutoAssert(steps.size() == behaviorTree.childrenVec.size());
+
+  const ThunderAutoModeStepTrajectoryBehavior& behavior = behaviorTree.behavior;
+
+  std::optional<frc::Pose2d> previousStepEndPose = originalPreviousStepEndPose;
+  ThunderAutoModeStepPath stepPath(parentPath, 0);
   size_t stepIndex = 0;
   for (auto& step : steps) {
-    path.setStepIndex(stepIndex++);
+    stepPath.setStepIndex(stepIndex);
 
     auto scopedID = ImGui::Scoped::ID(step->getID());
 
-    bool shouldStop = drawAutoModeStepTreeNode(step, path, state);
+    bool first = false, last = false;
+    if (behavior.trajectoryStepRange.has_value()) {
+      first = isFirstTrajectoryStep && (stepIndex == behavior.trajectoryStepRange->first);
+      last = isLastTrajectoryStep && (stepIndex == behavior.trajectoryStepRange->second);
+    }
+
+    const ThunderAutoModeStepTrajectoryBehaviorTreeNode& stepBehaviorTree =
+        behaviorTree.childrenVec.at(stepIndex);
+
+    bool shouldStop =
+        drawAutoModeStepTreeNode(stepPath, step, stepBehaviorTree, previousStepEndPose, first, last, state);
     if (shouldStop) {
       return true;
     }
+
+    previousStepEndPose = stepBehaviorTree.behavior.endPose;
+    stepIndex++;
   }
 
   // Space at the bottom to allow for drag-and-drop.
@@ -1308,7 +1384,7 @@ bool PropertiesPage::drawAutoModeStepsTree(std::list<std::unique_ptr<ThunderAuto
       shouldStop =
           autoModeStepDragDropTarget(parentPath, AutoModeStepDragDropInsertMethod::INTO, true, state);
     } else {
-      shouldStop = autoModeStepDragDropTarget(path, AutoModeStepDragDropInsertMethod::AFTER, true, state);
+      shouldStop = autoModeStepDragDropTarget(stepPath, AutoModeStepDragDropInsertMethod::AFTER, true, state);
     }
 
     if (shouldStop) {
@@ -1401,14 +1477,13 @@ bool PropertiesPage::autoModeStepDragDropTarget(
   return false;
 }
 
-uint8_t* PropertiesPage::SerializeAutoModeStepPathForDragDrop(const ThunderAutoModeStepPath& path,
-                                                              size_t* size) {
-  ThunderAutoAssert(size != nullptr);
-
+std::vector<uint8_t> PropertiesPage::SerializeAutoModeStepPathForDragDrop(
+    const ThunderAutoModeStepPath& path) {
   std::span<const ThunderAutoModeStepDirectoryPath::Node> directoryPath = path.directoryPath().path();
-  *size = sizeof(size_t) + directoryPath.size() * sizeof(ThunderAutoModeStepDirectoryPath::Node);
-  uint8_t* dataStart = new uint8_t[*size];
-  uint8_t* data = dataStart;
+  size_t size = sizeof(size_t) + directoryPath.size() * sizeof(ThunderAutoModeStepDirectoryPath::Node);
+
+  std::vector<uint8_t> dataVec(size);
+  uint8_t* data = dataVec.data();
 
   size_t stepIndex = path.stepIndex();
   std::memcpy(data, &stepIndex, sizeof(size_t));
@@ -1418,7 +1493,7 @@ uint8_t* PropertiesPage::SerializeAutoModeStepPathForDragDrop(const ThunderAutoM
     data += sizeof(ThunderAutoModeStepDirectoryPath::Node);
   }
 
-  return dataStart;
+  return dataVec;
 }
 
 ThunderAutoModeStepPath PropertiesPage::DeserializeAutoModeStepPathFromDragDrop(void* rawData, size_t size) {
@@ -1700,7 +1775,7 @@ bool PropertiesPage::presentRightAlignedEyeButton(int id, bool isEyeOpen) {
 
   const ImGuiStyle& style = ImGui::GetStyle();
 
-  const float buttonDimension = ImGui::GetStyle().FontSizeBase + style.FramePadding.y * 2.0f;
+  const float buttonDimension = style.FontSizeBase + style.FramePadding.y * 2.0f;
   const ImVec2 buttonSize = ImVec2(buttonDimension, buttonDimension);
 
   const float regionAvailWidth = ImGui::GetContentRegionAvail().x;
