@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <imgui_raii.h>
 #include <fmt/ranges.h>
+#include <IconsLucide.h>
 
 void RecursiveActionErrorPopup::present(bool* running) {
   ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), false, ImVec2(0.5f, 0.5f));
@@ -50,7 +51,7 @@ void RecursiveActionErrorPopup::setActionRecursionPath(const std::list<std::stri
   }
 
   m_actionToAddName = recursionPath.front();
-  m_recursionPath = fmt::format("{}", fmt::join(recursionPath, " → "));
+  m_recursionPath = fmt::format("{}", fmt::join(recursionPath, " " ICON_LC_MOVE_RIGHT " "));
 }
 
 void RecursiveActionErrorPopup::setGroupAction(const std::string& actionName) noexcept {
