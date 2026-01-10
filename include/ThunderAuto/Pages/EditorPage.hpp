@@ -52,7 +52,11 @@ class EditorPage : public Page {
     ThunderAutoTrajectoryPosition trajectoryPositionClosestToMouse;
     ThunderAutoOutputTrajectoryPoint trajectoryPointClosestToMouse;
     Point2d mousePosition;
-  } m_contextMenuOpenData;
+  } m_trajectoryContextMenuOpenData;
+
+  struct {
+    std::string trajectoryName;
+  } m_autoModeContextMenuOpenData;
 
   static ThunderAutoTrajectoryEditorState::TrajectorySelection ToTrajectorySelection(PointType pointType) {
     switch (pointType) {
@@ -149,20 +153,8 @@ class EditorPage : public Page {
   void processTrajectoryEditorInput(ThunderAutoProjectState& state, ImRect bb);
   void presentTrajectoryEditor(ThunderAutoProjectState& state, ImRect bb);
 
-  // Auto Mode Editor
-
-  // void processAutoModeEditorInput(ThunderAutoProjectState& state);
-  // void presentAutoModeEditor(ThunderAutoProjectState& state);
-
-  // General Editor Stuff
-
-  // void presentContextMenus(ThunderAutoProjectState& state);
-
   void presentTrajectory(const ThunderAutoProjectState& state, ImRect bb);
-  void presentRobotPreview(ImRect bb);
-
-  void presentPlaybackSlider();
-  void processPlaybackInput();
+  void presentTrajectoryRobotPreview(ImRect bb);
 
   void presentTrajectoryDragWidgets(const ThunderAutoProjectState& state, ImRect bb);
 
@@ -197,11 +189,50 @@ class EditorPage : public Page {
 
   void processTrajectoryInput(ThunderAutoProjectState& state, ImRect bb);
 
-  void presentTrajectoryContextMenus(ThunderAutoProjectState& state);
+  // Auto Mode Editor
 
-  // void handleInput(ThunderAutoProjectState& state, Rect bb);
-  // void handlePointInput(ThunderAutoProjectState& state, Rect bb);
-  // void handleCurveInput(ThunderAutoProjectState& state, Rect bb);
+  void processAutoModeEditorInput(ThunderAutoProjectState& state, ImRect bb);
+  void presentAutoModeEditor(ThunderAutoProjectState& state, ImRect bb);
+
+  bool presentAutoModeStepList(const ThunderAutoModeStepDirectoryPath& path,
+                               const ThunderAutoMode::StepDirectory& steps,
+                               size_t& trajectoryIndex,
+                               bool& clickWasCaptured,
+                               bool isActive,
+                               ThunderAutoProjectState& state,
+                               ImRect bb);
+  bool presentAutoModeStep(const ThunderAutoModeStepPath& path,
+                           const ThunderAutoModeStep& step,
+                           size_t& trajectoryIndex,
+                           bool& clickWasCaptured,
+                           bool isActive,
+                           ThunderAutoProjectState& state,
+                           ImRect bb);
+
+  bool presentAutoModeTrajectoryStep(const ThunderAutoModeStepPath& path,
+                                     const ThunderAutoModeTrajectoryStep& step,
+                                     size_t& trajectoryIndex,
+                                     bool& clickWasCaptured,
+                                     bool isActive,
+                                     ThunderAutoProjectState& state,
+                                     ImRect bb);
+
+  // General Editor Stuff
+
+  void presentPlaybackSlider(const ThunderAutoProjectState& state);
+  void processPlaybackInput();
+
+  void drawRobot(const Point2d& position,
+                 const CanonicalAngle& rotation,
+                 float positionPointRadius,
+                 float rotationPointRadius,
+                 ImU32 color,
+                 ImRect bb);
+  void drawRobot(const frc::Pose2d& pose,
+                 float positionPointRadius,
+                 float rotationPointRadius,
+                 ImU32 color,
+                 ImRect bb);
 
   // Utility functions
 

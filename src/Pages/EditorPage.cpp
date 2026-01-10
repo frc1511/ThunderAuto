@@ -32,6 +32,10 @@ static const ImU32 kHandleSelectedColor = ThunderAutoColorPalette::kYellowMid;
 static const ImU32 kActionColor = ThunderAutoColorPalette::kOrangeMid;
 static const ImU32 kActionSelectedColor = ThunderAutoColorPalette::kOrangeHigh;
 
+static const ImU32 kAutoModeTrajectoryStepColor = ThunderAutoColorPalette::kBlueMid;
+static const ImU32 kAutoModeTrajectoryStepColorSelected = ThunderAutoColorPalette::kBlueHigh;
+static const ImU32 kAutoModeTrajectoryStepColorNotActive = IM_COL32(64, 64, 64, 255);
+
 ImVec2 EditorPage::ToScreenCoordinate(const Point2d& fieldCoordinate,
                                       const ThunderAutoFieldImage& fieldImage,
                                       ImRect bb) {
@@ -213,15 +217,15 @@ void EditorPage::presentEditor() {
     using enum ThunderAutoEditorState::View;
     case TRAJECTORY:
       presentTrajectoryEditor(state, bb);
-      presentPlaybackSlider();
+      presentPlaybackSlider(state);
       processPlaybackInput();
       processTrajectoryEditorInput(state, bb);
       break;
     case AUTO_MODE:
-      // processAutoModeEditorInput(state);
-      presentPlaybackSlider();
+      presentAutoModeEditor(state, bb);
+      presentPlaybackSlider(state);
       processPlaybackInput();
-      // presentAutoModeEditor(state);
+      processAutoModeEditorInput(state, bb);
       break;
     case NONE:
       break;
@@ -301,7 +305,7 @@ void EditorPage::presentTrajectoryEditor(ThunderAutoProjectState& state, ImRect 
     return;
 
   presentTrajectory(state, bb);
-  presentRobotPreview(bb);
+  presentTrajectoryRobotPreview(bb);
   presentTrajectoryDragWidgets(state, bb);
 }
 
@@ -348,7 +352,7 @@ void EditorPage::presentTrajectory(const ThunderAutoProjectState& state, ImRect 
   }
 }
 
-void EditorPage::presentRobotPreview(ImRect bb) {
+void EditorPage::presentTrajectoryRobotPreview(ImRect bb) {
   ImDrawList* drawList = ImGui::GetWindowDrawList();
 
   ThunderAutoAssert(m_cachedTrajectory != nullptr);
@@ -397,93 +401,7 @@ void EditorPage::presentRobotPreview(ImRect bb) {
 
   CanonicalAngle rotation = Lerp(lowerPoint.rotation, upperPoint.rotation, t);
 
-  // Draw point to show which way is forward.
-
-  ImVec2 rotationPoint = ToScreenCoordinate(
-      position.extendAtAngle(rotation, m_settings->robotSize.length / 2.f), m_settings->fieldImage, bb);
-
-  drawList->AddCircleFilled(rotationPoint, GET_UISIZE(DRAG_POINT_RADIUS) / 1.5f, kPointPreviewColor);
-
-  // Draw the robot outline.
-
-  // Calculate the points for the robot preview rectangle just once, unless size gets changed.
-  if (m_robotRectangleSize != m_settings->robotSize ||
-      m_robotRectangleCornerRadius != m_settings->robotCornerRadius) {
-    m_robotRectangleSize = m_settings->robotSize;
-    m_robotRectangleCornerRadius = m_settings->robotCornerRadius;
-
-    m_baseRobotRectangle = CreateRoundedRectangle(m_robotRectangleSize, m_robotRectangleCornerRadius);
-  }
-
-  Polyline robotPreviewRectangle = m_baseRobotRectangle;
-
-  RotatePolygon(robotPreviewRectangle, rotation);
-  TranslatePolygon(robotPreviewRectangle, Displacement2d(position.x, position.y));
-
-  std::vector<ImVec2> screenCoordinates(robotPreviewRectangle.size());
-  std::transform(robotPreviewRectangle.begin(), robotPreviewRectangle.end(), screenCoordinates.begin(),
-                 [&](const Point2d& fieldCoordinate) {
-                   return ToScreenCoordinate(fieldCoordinate, m_settings->fieldImage, bb);
-                 });
-
-  drawList->AddPolyline(screenCoordinates.data(), static_cast<int>(screenCoordinates.size()),
-                        kPointPreviewColor, true, GET_UISIZE(LINE_THICKNESS));
-}
-
-void EditorPage::presentPlaybackSlider() {
-  if (m_cachedTrajectory == nullptr)
-    return;
-
-  const ImGuiStyle& style = ImGui::GetStyle();
-
-  float sliderYOffset = style.FramePadding.y * 2.f + style.FontSizeBase + style.WindowPadding.y;
-
-  // Bottom of the window.
-  ImGui::SetCursorPosY(ImGui::GetWindowHeight() - sliderYOffset);
-
-  // Play button.
-  if (ImGui::Button(m_isPlaying ? ICON_LC_PAUSE : ICON_LC_PLAY)) {
-    m_isPlaying = !m_isPlaying;
-  }
-  ImGui::SameLine();
-
-  // Reset button.
-  if (ImGui::Button(ICON_LC_ROTATE_CCW)) {
-    m_playbackTime = 0.0_s;
-  }
-  ImGui::SameLine();
-
-  // Slider.
-
-  ThunderAutoAssert(!m_cachedTrajectory->points.empty());
-  units::second_t totalTime = m_cachedTrajectory->points.back().time;
-
-  if (m_isPlaying) {
-    m_playbackTime += units::second_t(ImGui::GetIO().DeltaTime);
-    m_playbackTime = units::second_t(std::fmod(m_playbackTime.value(), totalTime.value()));
-  }
-
-  {
-    auto scopedItemWidth = ImGui::Scoped::ItemWidth(ImGui::GetContentRegionAvail().x);
-
-    float playbackTime = m_playbackTime.value();
-
-    char buffer[64];
-    snprintf(buffer, sizeof(buffer), "%.2f / %.2f s", playbackTime, totalTime.value());
-
-    ImGui::SliderFloat("##Playback", &playbackTime, 0.0f, static_cast<float>(totalTime.value()), buffer);
-
-    m_playbackTime = units::second_t(playbackTime);
-  }
-}
-
-void EditorPage::processPlaybackInput() {
-  if (!ImGui::IsWindowFocused())
-    return;
-
-  if (IsKeyPressed(ImGuiKey_Space)) {
-    m_isPlaying = !m_isPlaying;
-  }
+  drawRobot(position, rotation, 0.f, GET_UISIZE(DRAG_POINT_RADIUS) / 1.5f, kPointPreviewColor, bb);
 }
 
 void EditorPage::presentTrajectoryDragWidgets(const ThunderAutoProjectState& state, ImRect bb) {
@@ -647,34 +565,8 @@ void EditorPage::presentTrajectoryRotationDragWidget(const Point2d& position,
     color = kPointSelectedColor;
   }
 
-  // Draw position drag point.
-
-  ImVec2 pt = ToScreenCoordinate(position, m_settings->fieldImage, bb);
-
-  drawList->AddCircleFilled(pt, GET_UISIZE(DRAG_POINT_RADIUS) / 1.5f, color);
-
-  // Draw rotation drag point.
-
-  ImVec2 rotationPoint = ToScreenCoordinate(position.extendAtAngle(angle, m_settings->robotSize.length / 2.f),
-                                            m_settings->fieldImage, bb);
-
-  drawList->AddCircleFilled(rotationPoint, GET_UISIZE(DRAG_POINT_RADIUS) / 1.f, color);
-
-  // Draw the robot outline.
-
-  Polyline robotPreviewRectangle = m_baseRobotRectangle;
-
-  RotatePolygon(robotPreviewRectangle, angle);
-  TranslatePolygon(robotPreviewRectangle, Displacement2d(position.x, position.y));
-
-  std::vector<ImVec2> screenCoordinates(robotPreviewRectangle.size());
-  std::transform(robotPreviewRectangle.begin(), robotPreviewRectangle.end(), screenCoordinates.begin(),
-                 [&](const Point2d& fieldCoordinate) {
-                   return ToScreenCoordinate(fieldCoordinate, m_settings->fieldImage, bb);
-                 });
-
-  drawList->AddPolyline(screenCoordinates.data(), static_cast<int>(screenCoordinates.size()), color, true,
-                        GET_UISIZE(LINE_THICKNESS));
+  drawRobot(position, angle, GET_UISIZE(DRAG_POINT_RADIUS) / 1.5f, GET_UISIZE(DRAG_POINT_RADIUS) / 1.f, color,
+            bb);
 }
 
 void EditorPage::presentTrajectoryActionDragWidget(const Point2d& position,
@@ -868,14 +760,14 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
   if (auto scopedPopup = ImGui::Scoped::PopupContextItem("TrajectoryEditorContextMenu_Field")) {
     if (auto scopedMenu = ImGui::Scoped::Menu(ICON_LC_PLUS "  Insert Point Here")) {
       if (ImGui::MenuItem("At Beginning")) {
-        Point2d newWaypointPosition = m_contextMenuOpenData.mousePosition;
+        Point2d newWaypointPosition = m_trajectoryContextMenuOpenData.mousePosition;
         CanonicalAngle newWaypointHeading = newWaypointPosition.angleTo(skeleton.front().position());
 
         state.currentTrajectoryPrependWaypoint(newWaypointPosition, newWaypointHeading);
         m_history.addState(state);
       }
       if (ImGui::MenuItem("At End")) {
-        Point2d newWaypointPosition = m_contextMenuOpenData.mousePosition;
+        Point2d newWaypointPosition = m_trajectoryContextMenuOpenData.mousePosition;
         CanonicalAngle newWaypointHeading =
             newWaypointPosition.angleTo(skeleton.back().position()).supplementary();
 
@@ -900,7 +792,7 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
         }
 
         if (doInsertPoint) {
-          Point2d newWaypointPosition = m_contextMenuOpenData.mousePosition;
+          Point2d newWaypointPosition = m_trajectoryContextMenuOpenData.mousePosition;
           CanonicalAngle newWaypointHeading = 0_deg;  // TODO: Better heading
           state.currentTrajectoryInsertWaypoint(newWaypointIndex, newWaypointPosition, newWaypointHeading);
           m_history.addState(state);
@@ -938,15 +830,17 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
     }
   } else if (auto scopedPopup = ImGui::Scoped::PopupContextItem("TrajectoryEditorContextMenu_Trajectory")) {
     if (ImGui::MenuItem(ICON_LC_PLUS "  Insert Waypoint Here")) {
-      const ThunderAutoOutputTrajectoryPoint& point = m_contextMenuOpenData.trajectoryPointClosestToMouse;
+      const ThunderAutoOutputTrajectoryPoint& point =
+          m_trajectoryContextMenuOpenData.trajectoryPointClosestToMouse;
       const size_t newWaypointIndex =
-          static_cast<size_t>(std::floor(m_contextMenuOpenData.trajectoryPositionClosestToMouse)) + 1;
+          static_cast<size_t>(std::floor(m_trajectoryContextMenuOpenData.trajectoryPositionClosestToMouse)) +
+          1;
       state.currentTrajectoryInsertWaypoint(newWaypointIndex, point.position, point.heading);
       m_history.addState(state);
 
     } else if (ImGui::MenuItem(ICON_LC_PLUS "  Insert Rotation Target Here")) {
       const ThunderAutoTrajectoryPosition newRotationPosition =
-          m_contextMenuOpenData.trajectoryPositionClosestToMouse;
+          m_trajectoryContextMenuOpenData.trajectoryPositionClosestToMouse;
       const CanonicalAngle newRotationAngle = 0_deg;
       state.currentTrajectoryInsertRotation(newRotationPosition, newRotationAngle);
       m_history.addState(state);
@@ -966,7 +860,7 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
 
       if (selectedActionIndex >= 0) {
         const ThunderAutoTrajectoryPosition newActionPosition =
-            m_contextMenuOpenData.trajectoryPositionClosestToMouse;
+            m_trajectoryContextMenuOpenData.trajectoryPositionClosestToMouse;
         const std::string& newActionName = availableActions[selectedActionIndex];
         state.currentTrajectoryInsertAction(newActionPosition, newActionName);
         m_history.addState(state);
@@ -1001,9 +895,9 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
   }
 
   auto openContextMenu = [&](const char* id) {
-    m_contextMenuOpenData.trajectoryPositionClosestToMouse = trajectoryPositionClosestToMouse;
-    m_contextMenuOpenData.trajectoryPointClosestToMouse = trajectoryPointClosestToMouse;
-    m_contextMenuOpenData.mousePosition = mousePosition;
+    m_trajectoryContextMenuOpenData.trajectoryPositionClosestToMouse = trajectoryPositionClosestToMouse;
+    m_trajectoryContextMenuOpenData.trajectoryPointClosestToMouse = trajectoryPointClosestToMouse;
+    m_trajectoryContextMenuOpenData.mousePosition = mousePosition;
     ImGui::OpenPopup(id);
   };
 
@@ -1246,6 +1140,380 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
       m_clickedPoint = PointType::NONE;
     }
   }
+}
+
+void EditorPage::processAutoModeEditorInput(ThunderAutoProjectState& state, ImRect bb) {
+  // Context menus
+  if (auto scopedPopup = ImGui::Scoped::PopupContextItem("AutoModeEditorContextMenu_TrajectoryStep")) {
+    if (ImGui::MenuItem(ICON_LC_PENCIL " Edit")) {
+      state.editorState.trajectoryEditorState = {};
+      state.editorState.trajectoryEditorState.currentTrajectoryName =
+          m_autoModeContextMenuOpenData.trajectoryName;
+      state.editorState.view = ThunderAutoEditorState::View::TRAJECTORY;
+      m_history.addState(state);
+    }
+  }
+}
+
+void EditorPage::presentAutoModeEditor(ThunderAutoProjectState& state, ImRect bb) {
+  if (state.editorState.autoModeEditorState.currentAutoModeName.empty())
+    return;
+
+  const ThunderAutoMode& autoMode = state.currentAutoMode();
+
+  size_t trajectoryIndex = 0;
+  bool clickWasCaptured = false;
+  bool stateWasChanged = presentAutoModeStepList(ThunderAutoModeStepDirectoryPath{}, autoMode.steps,
+                                                 trajectoryIndex, clickWasCaptured, true, state, bb);
+
+  if (stateWasChanged) {
+    m_history.addState(state);
+  } else if (!clickWasCaptured) {
+    if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+      state.editorState.autoModeEditorState.selectedStepPath = std::nullopt;
+      m_history.addState(state);
+    }
+  }
+}
+
+bool EditorPage::presentAutoModeStepList(const ThunderAutoModeStepDirectoryPath& parentPath,
+                                         const ThunderAutoMode::StepDirectory& steps,
+                                         size_t& trajectoryIndex,
+                                         bool& clickWasCaptured,
+                                         bool isActive,
+                                         ThunderAutoProjectState& state,
+                                         ImRect bb) {
+  bool stateWasChanged = false;
+  size_t stepIndex = 0;
+  for (const std::unique_ptr<ThunderAutoModeStep>& step : steps) {
+    ThunderAutoAssert(step != nullptr);
+    ThunderAutoModeStepPath stepPath = parentPath.step(stepIndex);
+    stateWasChanged |=
+        presentAutoModeStep(stepPath, *step, trajectoryIndex, clickWasCaptured, isActive, state, bb);
+    stepIndex++;
+  }
+
+  return stateWasChanged;
+}
+
+bool EditorPage::presentAutoModeStep(const ThunderAutoModeStepPath& path,
+                                     const ThunderAutoModeStep& step,
+                                     size_t& trajectoryIndex,
+                                     bool& clickWasCaptured,
+                                     bool isActive,
+                                     ThunderAutoProjectState& state,
+                                     ImRect bb) {
+  switch (step.type()) {
+    using enum ThunderAutoModeStepType;
+    case ACTION: {
+      // TODO: Draw something? Difficult since we don't know pose, and there may be other actions there too.
+      break;
+    }
+    case TRAJECTORY: {
+      const ThunderAutoModeTrajectoryStep& trajectoryStep =
+          static_cast<const ThunderAutoModeTrajectoryStep&>(step);
+      return presentAutoModeTrajectoryStep(path, trajectoryStep, trajectoryIndex, clickWasCaptured, isActive,
+                                           state, bb);
+    }
+    case BRANCH_BOOL: {
+      const ThunderAutoModeBoolBranchStep& branchBoolStep =
+          static_cast<const ThunderAutoModeBoolBranchStep&>(step);
+
+      ThunderAutoModeStepDirectoryPath activeBranchPath = path.boolBranch(true),
+                                       inactiveBranchPath = path.boolBranch(false);
+      const ThunderAutoMode::StepDirectory *activeBranchSteps = &branchBoolStep.trueBranch,
+                                           *inactiveBranchSteps = &branchBoolStep.elseBranch;
+
+      if (!branchBoolStep.editorDisplayTrueBranch) {
+        std::swap(activeBranchPath, inactiveBranchPath);
+        std::swap(activeBranchSteps, inactiveBranchSteps);
+      }
+
+      // Present inactive branch first.
+      (void)presentAutoModeStepList(inactiveBranchPath, *inactiveBranchSteps, trajectoryIndex,
+                                    clickWasCaptured, false, state, bb);
+
+      // Then present active branch.
+      return presentAutoModeStepList(activeBranchPath, *activeBranchSteps, trajectoryIndex, clickWasCaptured,
+                                     isActive, state, bb);
+    }
+    case BRANCH_SWITCH: {
+      const ThunderAutoModeSwitchBranchStep& branchSwitchStep =
+          static_cast<const ThunderAutoModeSwitchBranchStep&>(step);
+
+      ThunderAutoModeStepDirectoryPath activeBranchPath;
+      const ThunderAutoMode::StepDirectory* activeBranchSteps = nullptr;
+
+      if (branchSwitchStep.editorDisplayDefaultBranch) {
+        activeBranchPath = path.switchBranchDefault();
+        activeBranchSteps = &branchSwitchStep.defaultBranch;
+      } else {
+        (void)presentAutoModeStepList(path.switchBranchDefault(), branchSwitchStep.defaultBranch,
+                                      trajectoryIndex, clickWasCaptured, false, state, bb);
+      }
+
+      for (const auto& [caseValue, caseSteps] : branchSwitchStep.caseBranches) {
+        if (!branchSwitchStep.editorDisplayDefaultBranch &&
+            caseValue == branchSwitchStep.editorDisplayCaseBranch) {
+          activeBranchPath = path.switchBranchCase(caseValue);
+          activeBranchSteps = &caseSteps;
+        } else {
+          (void)presentAutoModeStepList(path.switchBranchCase(caseValue), caseSteps, trajectoryIndex,
+                                        clickWasCaptured, false, state, bb);
+        }
+      }
+
+      ThunderAutoAssert(activeBranchSteps != nullptr);
+      if (activeBranchSteps == nullptr) return false;
+
+      // Present active branch last.
+      return presentAutoModeStepList(activeBranchPath, *activeBranchSteps, trajectoryIndex, clickWasCaptured,
+                                     isActive, state, bb);
+    }
+    default:
+      ThunderAutoUnreachable("Invalid auto mode step type");
+  }
+  return false;
+}
+
+bool EditorPage::presentAutoModeTrajectoryStep(const ThunderAutoModeStepPath& path,
+                                               const ThunderAutoModeTrajectoryStep& step,
+                                               size_t& trajectoryIndex,
+                                               bool& clickWasCaptured,
+                                               bool isActive,
+                                               ThunderAutoProjectState& state,
+                                               ImRect bb) {
+  bool isExactStepSelected = false, isParentStepSelected = false;
+  const std::optional<ThunderAutoModeStepPath>& selectedStepPath =
+      state.editorState.autoModeEditorState.selectedStepPath;
+  if (selectedStepPath.has_value()) {
+    ThunderAutoModeStepPath selectedStepPathValue = selectedStepPath.value();
+    isExactStepSelected = (path == selectedStepPathValue);
+    isParentStepSelected = path.hasParentPath(selectedStepPathValue);
+  }
+  const bool isStepSelected = isExactStepSelected || isParentStepSelected;
+
+  auto trajectoryIt = state.trajectories.find(step.trajectoryName);
+  if (trajectoryIt == state.trajectories.end())
+    return false;
+
+  ThunderAutoTrajectorySkeleton& skeleton = trajectoryIt->second;
+
+  ThunderAutoAssert(trajectoryIndex <= m_cachedAutoModeTrajectories.size());
+  if (trajectoryIndex >= m_cachedAutoModeTrajectories.size()) {
+    trajectoryIndex = m_cachedAutoModeTrajectories.size();
+    m_cachedAutoModeTrajectories.push_back(
+        BuildThunderAutoOutputTrajectory(skeleton, kPreviewOutputTrajectorySettings));
+  }
+
+  const ThunderAutoOutputTrajectory& trajectory = *m_cachedAutoModeTrajectories.at(trajectoryIndex++);
+
+  std::span<const ThunderAutoOutputTrajectoryPoint> points = trajectory.points;
+
+  ImDrawList* drawList = ImGui::GetWindowDrawList();
+  ImU32 trajectoryColor =
+      isStepSelected ? kAutoModeTrajectoryStepColorSelected : kAutoModeTrajectoryStepColor;
+  if (!isActive) {
+    trajectoryColor = kAutoModeTrajectoryStepColorNotActive;
+  }
+
+  auto startPointIt = points.begin();
+  auto endPointIt = std::next(startPointIt);
+
+  bool isHoveringTrajectory = false;
+
+  for (; endPointIt != points.end(); ++startPointIt, ++endPointIt) {
+    const ImVec2 startPointCoordinate =
+        ToScreenCoordinate(startPointIt->position, m_settings->fieldImage, bb);
+    const ImVec2 endPointCoordinate = ToScreenCoordinate(endPointIt->position, m_settings->fieldImage, bb);
+
+    drawList->AddLine(startPointCoordinate, endPointCoordinate, trajectoryColor, GET_UISIZE(LINE_THICKNESS));
+
+    if (!isHoveringTrajectory) {
+      isHoveringTrajectory = IsMouseHoveringPoint(startPointIt->position, bb);
+    }
+  }
+
+  float positionPointRadius = GET_UISIZE(DRAG_POINT_RADIUS) / 1.5f;
+  float rotationPointRadius = GET_UISIZE(DRAG_POINT_RADIUS) / 1.5f;
+
+  ImU32 robotColor = isActive ? kPointColor : kAutoModeTrajectoryStepColorNotActive;
+
+  ThunderAutoTrajectoryBehavior behavior = skeleton.getBehavior();
+  drawRobot(behavior.startPose, positionPointRadius, rotationPointRadius, robotColor, bb);
+  drawRobot(behavior.endPose, positionPointRadius, rotationPointRadius, robotColor, bb);
+
+  bool isLeftDoubleClicked = ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+  bool isLeftClicked = !isLeftDoubleClicked && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+  bool isRightClicked = ImGui::IsMouseClicked(ImGuiMouseButton_Right);
+
+  if (isActive && isHoveringTrajectory) {
+    ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+
+    if (trajectoryEditorOptions.showTooltip && ImGui::IsWindowFocused()) {
+      auto scopedTooltip = ImGui::Scoped::Tooltip();
+      ImGui::Text("%s", step.trajectoryName.empty() ? "<none>" : step.trajectoryName.c_str());
+      ImGui::Text("Step: %s", ThunderAutoModeStepPathToString(path).c_str());
+    }
+
+    if (!clickWasCaptured) {
+      if (isLeftClicked) {
+        state.editorState.autoModeEditorState.selectedStepPath = path;
+        clickWasCaptured = true;
+        return !isExactStepSelected;  // Only change state if not already selected.
+      }
+      if (isLeftDoubleClicked) {
+        state.editorState.trajectoryEditorState = {};
+        state.editorState.trajectoryEditorState.currentTrajectoryName = step.trajectoryName;
+        state.editorState.view = ThunderAutoEditorState::View::TRAJECTORY;
+        clickWasCaptured = true;
+        return true;  // State was changed.
+      }
+      if (isRightClicked) {
+        m_autoModeContextMenuOpenData.trajectoryName = step.trajectoryName;
+        ImGui::OpenPopup("AutoModeEditorContextMenu_TrajectoryStep");
+        clickWasCaptured = true;
+        return false;
+      }
+    }
+  }
+
+  return false;
+}
+
+void EditorPage::presentPlaybackSlider(const ThunderAutoProjectState& state) {
+  units::second_t totalTime = 0.0_s;
+
+  const ThunderAutoEditorState& editorState = state.editorState;
+  switch (editorState.view) {
+    using enum ThunderAutoEditorState::View;
+    case TRAJECTORY:
+      if (m_cachedTrajectory) {
+        totalTime = m_cachedTrajectory->totalTime;
+      }
+      break;
+    case AUTO_MODE:
+      for (const auto& cachedTrajectory : m_cachedAutoModeTrajectories) {
+        if (cachedTrajectory) {
+          totalTime += cachedTrajectory->totalTime;
+        }
+      }
+      break;
+    case NONE:
+      break;
+    default:
+      ThunderAutoUnreachable("Unknown editor view");
+  }
+
+  const ImGuiStyle& style = ImGui::GetStyle();
+
+  float sliderYOffset = style.FramePadding.y * 2.f + style.FontSizeBase + style.WindowPadding.y;
+
+  // Bottom of the window.
+  ImGui::SetCursorPosY(ImGui::GetWindowHeight() - sliderYOffset);
+
+  // Play button.
+  if (ImGui::Button(m_isPlaying ? ICON_LC_PAUSE : ICON_LC_PLAY)) {
+    m_isPlaying = !m_isPlaying;
+  }
+  ImGui::SameLine();
+
+  // Reset button.
+  if (ImGui::Button(ICON_LC_ROTATE_CCW)) {
+    m_playbackTime = 0.0_s;
+  }
+  ImGui::SameLine();
+
+  // Slider.
+
+  if (m_isPlaying) {
+    if (totalTime > 0.0_s) {
+      m_playbackTime += units::second_t(ImGui::GetIO().DeltaTime);
+      m_playbackTime = units::second_t(std::fmod(m_playbackTime.value(), totalTime.value()));
+    } else {
+      m_playbackTime = 0.0_s;
+    }
+  }
+
+  {
+    auto scopedItemWidth = ImGui::Scoped::ItemWidth(ImGui::GetContentRegionAvail().x);
+
+    float playbackTime = m_playbackTime.value();
+
+    char buffer[64];
+    snprintf(buffer, sizeof(buffer), "%.2f / %.2f s", playbackTime, totalTime.value());
+
+    ImGui::SliderFloat("##Playback", &playbackTime, 0.0f, static_cast<float>(totalTime.value()), buffer);
+
+    m_playbackTime = units::second_t(playbackTime);
+  }
+}
+
+void EditorPage::processPlaybackInput() {
+  if (!ImGui::IsWindowFocused())
+    return;
+
+  if (IsKeyPressed(ImGuiKey_Space)) {
+    m_isPlaying = !m_isPlaying;
+  }
+}
+
+void EditorPage::drawRobot(const Point2d& position,
+                           const CanonicalAngle& rotation,
+                           float positionPointRadius,
+                           float rotationPointRadius,
+                           ImU32 color,
+                           ImRect bb) {
+  ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+  // Draw position drag point.
+
+  if (positionPointRadius > 0.0f) {
+    ImVec2 pt = ToScreenCoordinate(position, m_settings->fieldImage, bb);
+    drawList->AddCircleFilled(pt, positionPointRadius, color);
+  }
+
+  // Draw rotation drag point.
+
+  if (rotationPointRadius > 0.0f) {
+    ImVec2 rotationPoint = ToScreenCoordinate(
+        position.extendAtAngle(rotation, m_settings->robotSize.length / 2.f), m_settings->fieldImage, bb);
+    drawList->AddCircleFilled(rotationPoint, rotationPointRadius / 1.f, color);
+  }
+
+  // Draw the robot outline.
+
+  // Calculate the points for the robot preview rectangle just once, unless size gets changed.
+  if (m_robotRectangleSize != m_settings->robotSize ||
+      m_robotRectangleCornerRadius != m_settings->robotCornerRadius) {
+    m_robotRectangleSize = m_settings->robotSize;
+    m_robotRectangleCornerRadius = m_settings->robotCornerRadius;
+
+    m_baseRobotRectangle = CreateRoundedRectangle(m_robotRectangleSize, m_robotRectangleCornerRadius);
+  }
+
+  Polyline robotPreviewRectangle = m_baseRobotRectangle;
+
+  RotatePolygon(robotPreviewRectangle, rotation);
+  TranslatePolygon(robotPreviewRectangle, Displacement2d(position.x, position.y));
+
+  std::vector<ImVec2> screenCoordinates(robotPreviewRectangle.size());
+  std::transform(robotPreviewRectangle.begin(), robotPreviewRectangle.end(), screenCoordinates.begin(),
+                 [&](const Point2d& fieldCoordinate) {
+                   return ToScreenCoordinate(fieldCoordinate, m_settings->fieldImage, bb);
+                 });
+
+  drawList->AddPolyline(screenCoordinates.data(), static_cast<int>(screenCoordinates.size()), color,
+                        ImDrawFlags_Closed, GET_UISIZE(LINE_THICKNESS));
+}
+
+void EditorPage::drawRobot(const frc::Pose2d& pose,
+                           float positionPointRadius,
+                           float rotationPointRadius,
+                           ImU32 color,
+                           ImRect bb) {
+  drawRobot(Point2d(pose.X(), pose.Y()), pose.Rotation(), positionPointRadius, rotationPointRadius, color,
+            bb);
 }
 
 // hi ishan!!!
