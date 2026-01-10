@@ -17,7 +17,9 @@ void App::setupDockspace(ImGuiID dockspaceID) {
 
   ImGui::DockSpace(dockspaceID, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 
-  if (!dockspaceCreated) {
+  if (!dockspaceCreated || m_resetDockspace) {
+    m_resetDockspace = false;
+
     ThunderAutoLogger::Info("Creating dockspace layout");
 
     ImGui::DockBuilderAddNode(dockspaceID, ImGuiDockNodeFlags_DockSpace);
@@ -205,80 +207,63 @@ void App::presentProjectPages() {
     }
   }
 
-  if (m_showProperties) {
-    m_propertiesPage.present(&m_showProperties);
-
-    if (m_showProperties) {
-      switch (m_propertiesPage.lastPresentEvent()) {
-        using enum PropertiesPage::Event;
-        case NONE:
-          break;
-        case TRAJECTORY_POINT_LINK:
-          m_projectEvent = ProjectEvent::LINK_TRAJECTORY_POINT;
-          m_linkTrajectoryPointPopup.prepareForOpen();
-          break;
-        case AUTO_MODE_ADD_STEP:
-          m_projectEvent = ProjectEvent::ADD_AUTO_MODE_STEP;
-          break;
-        default:
-          ThunderAutoUnreachable("Unknown properties page event");
-      }
-    }
+  m_propertiesPage.present(nullptr);
+  switch (m_propertiesPage.lastPresentEvent()) {
+    using enum PropertiesPage::Event;
+    case NONE:
+      break;
+    case TRAJECTORY_POINT_LINK:
+      m_projectEvent = ProjectEvent::LINK_TRAJECTORY_POINT;
+      m_linkTrajectoryPointPopup.prepareForOpen();
+      break;
+    case AUTO_MODE_ADD_STEP:
+      m_projectEvent = ProjectEvent::ADD_AUTO_MODE_STEP;
+      break;
+    default:
+      ThunderAutoUnreachable("Unknown properties page event");
   }
 
-  if (m_showTrajectoryManager) {
-    m_trajectoryManagerPage.present(&m_showTrajectoryManager);
-
-    if (m_showTrajectoryManager) {
-      switch (m_trajectoryManagerPage.lastPresentEvent()) {
-        using enum TrajectoryManagerPage::Event;
-        case NONE:
-          break;
-        case NEW_TRAJECTORY:
-          m_projectEvent = ProjectEvent::NEW_TRAJECTORY;
-          break;
-        case RENAME_TRAJECTORY:
-          m_projectEvent = ProjectEvent::RENAME_TRAJECTORY;
-          m_renameTrajectoryPopup.setOldTrajectoryName(m_trajectoryManagerPage.eventTrajectory());
-          break;
-        case DUPLICATE_TRAJECTORY:
-          m_projectEvent = ProjectEvent::DUPLICATE_TRAJECTORY;
-          m_duplicateTrajectoryPopup.setOldTrajectoryName(m_trajectoryManagerPage.eventTrajectory());
-          break;
-        default:
-          ThunderAutoUnreachable("Unknown trajectory manager event");
-      }
-    }
+  m_trajectoryManagerPage.present(nullptr);
+  switch (m_trajectoryManagerPage.lastPresentEvent()) {
+    using enum TrajectoryManagerPage::Event;
+    case NONE:
+      break;
+    case NEW_TRAJECTORY:
+      m_projectEvent = ProjectEvent::NEW_TRAJECTORY;
+      break;
+    case RENAME_TRAJECTORY:
+      m_projectEvent = ProjectEvent::RENAME_TRAJECTORY;
+      m_renameTrajectoryPopup.setOldTrajectoryName(m_trajectoryManagerPage.eventTrajectory());
+      break;
+    case DUPLICATE_TRAJECTORY:
+      m_projectEvent = ProjectEvent::DUPLICATE_TRAJECTORY;
+      m_duplicateTrajectoryPopup.setOldTrajectoryName(m_trajectoryManagerPage.eventTrajectory());
+      break;
+    default:
+      ThunderAutoUnreachable("Unknown trajectory manager event");
   }
 
-  if (m_showAutoModeManager) {
-    m_autoModeManagerPage.present(&m_showAutoModeManager);
-
-    if (m_showAutoModeManager) {
-      switch (m_autoModeManagerPage.lastPresentEvent()) {
-        using enum AutoModeManagerPage::Event;
-        case NONE:
-          break;
-        case NEW_AUTO_MODE:
-          m_projectEvent = ProjectEvent::NEW_AUTO_MODE;
-          break;
-        case RENAME_AUTO_MODE:
-          m_projectEvent = ProjectEvent::RENAME_AUTO_MODE;
-          m_renameAutoModePopup.setOldAutoModeName(m_autoModeManagerPage.eventAutoMode());
-          break;
-        case DUPLICATE_AUTO_MODE:
-          m_projectEvent = ProjectEvent::DUPLICATE_AUTO_MODE;
-          m_duplicateAutoModePopup.setOldAutoModeName(m_autoModeManagerPage.eventAutoMode());
-          break;
-        default:
-          ThunderAutoUnreachable("Unknown auto mode manager event");
-      }
-    }
+  m_autoModeManagerPage.present(nullptr);
+  switch (m_autoModeManagerPage.lastPresentEvent()) {
+    using enum AutoModeManagerPage::Event;
+    case NONE:
+      break;
+    case NEW_AUTO_MODE:
+      m_projectEvent = ProjectEvent::NEW_AUTO_MODE;
+      break;
+    case RENAME_AUTO_MODE:
+      m_projectEvent = ProjectEvent::RENAME_AUTO_MODE;
+      m_renameAutoModePopup.setOldAutoModeName(m_autoModeManagerPage.eventAutoMode());
+      break;
+    case DUPLICATE_AUTO_MODE:
+      m_projectEvent = ProjectEvent::DUPLICATE_AUTO_MODE;
+      m_duplicateAutoModePopup.setOldAutoModeName(m_autoModeManagerPage.eventAutoMode());
+      break;
+    default:
+      ThunderAutoUnreachable("Unknown auto mode manager event");
   }
 
-  if (m_showEditor) {
-    m_editorPage.present(&m_showEditor);
-  }
+  m_editorPage.present(nullptr);
   if (m_showProjectSettings) {
     m_projectSettingsPage.present(&m_showProjectSettings);
   }
@@ -609,7 +594,16 @@ void App::presentViewMenu() {
   }
 
   if (show_menu) {
-    if (ImGui::MenuItem(ICON_LC_ROTATE_CCW "  Reset View", CTRL_STR "0")) {
+    if (ImGui::MenuItem(ICON_LC_ROTATE_CCW " Reset Editor View", CTRL_STR "0")) {
+      m_editorPage.resetView();
+    }
+    if (ImGui::MenuItem(ICON_LC_PANELS_TOP_LEFT " Reset Docking Layout")) {
+      // Re-initialize dockspace on next frame
+      m_resetDockspace = true;
+      // Default opened/closed pages
+      m_showActions = true;
+      m_showProjectSettings = false;
+      // Reset editor view as well
       m_editorPage.resetView();
     }
     ImGui::EndMenu();
@@ -713,10 +707,11 @@ void App::presentToolsMenu() {
   }
 
   if (showMenu) {
-    ImGui::MenuItem(ICON_LC_LIST "  Trajectories", nullptr, &m_showTrajectoryManager);
-    ImGui::MenuItem(ICON_LC_LIST "  Auto Modes", nullptr, &m_showAutoModeManager);
-    ImGui::MenuItem(ICON_LC_SPLINE_POINTER "  Editor", nullptr, &m_showEditor);
-    ImGui::MenuItem(ICON_LC_SETTINGS_2 "  Properties", nullptr, &m_showProperties);
+    bool dummy = true;
+    ImGui::MenuItem(ICON_LC_LIST "  Trajectories", nullptr, &dummy);
+    ImGui::MenuItem(ICON_LC_LIST "  Auto Modes", nullptr, &dummy);
+    ImGui::MenuItem(ICON_LC_SPLINE_POINTER "  Editor", nullptr, &dummy);
+    ImGui::MenuItem(ICON_LC_SETTINGS_2 "  Properties", nullptr, &dummy);
     ImGui::MenuItem(ICON_LC_PAPERCLIP "  Actions", nullptr, &m_showActions);
     ImGui::MenuItem(ICON_LC_SETTINGS "  Project Settings", nullptr, &m_showProjectSettings);
 

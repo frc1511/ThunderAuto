@@ -128,15 +128,17 @@ class App {
   ActionsPage m_actionsPage{m_documentEditManager};
   ProjectSettingsPage m_projectSettingsPage{m_documentManager, m_editorPage};
 
-  bool m_showEditor = true;
-  bool m_showTrajectoryManager = true;
-  bool m_showAutoModeManager = true;
-  bool m_showProperties = true;
+  // bool m_showEditor = true;
+  // bool m_showTrajectoryManager = true;
+  // bool m_showAutoModeManager = true;
+  // bool m_showProperties = true;
   bool m_showActions = true;
   bool m_showProjectSettings = false;
 #ifdef THUNDERAUTO_DEBUG
   bool m_showImGuiDemoWindow = false;
 #endif
+
+bool m_resetDockspace = false;
 
   // Graphics stuff
 
