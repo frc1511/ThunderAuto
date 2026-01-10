@@ -107,8 +107,6 @@ void LinkTrajectoryPointPopup::present(bool* running) {
       point.setLinkName(newLinkName);
 
       m_history.addState(state);
-      m_editorPage.invalidateCachedTrajectory();
-      m_editorPage.resetPlayback();
 
     } else if (m_selectedLinkName != m_initialLinkName) {
       ThunderAutoLogger::Info("Set waypoint link to '{}'", m_selectedLinkName);
@@ -116,8 +114,6 @@ void LinkTrajectoryPointPopup::present(bool* running) {
       state.trajectoryUpdateSelectedWaypointFromLink();
 
       m_history.addState(state);
-      m_editorPage.invalidateCachedTrajectory();
-      m_editorPage.resetPlayback();
     }
 
     reset();

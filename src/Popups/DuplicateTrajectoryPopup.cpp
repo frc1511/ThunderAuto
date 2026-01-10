@@ -54,9 +54,6 @@ void DuplicateTrajectoryPopup::present(bool* running) {
     state.trajectoryDuplicate(m_oldTrajectoryName, newTrajectoryName);
     m_history.addState(state);
 
-    m_editorPage.invalidateCachedTrajectory();
-    m_editorPage.resetPlayback();
-
     reset();
     *running = false;
   }

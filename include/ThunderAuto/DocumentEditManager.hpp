@@ -3,6 +3,8 @@
 #include <ThunderAuto/HistoryManager.hpp>
 #include <ThunderLibCore/Auto/ThunderAutoProject.hpp>
 #include <optional>
+#include <functional>
+#include <unordered_map>
 
 using namespace thunder::core;
 
@@ -21,4 +23,21 @@ class DocumentEditManager final {
 
   void addState(const ThunderAutoProjectState& state, bool unsaved = true) noexcept;
   void modifyLastState(const ThunderAutoProjectState& state, bool unsaved = true) noexcept;
+
+  void undo() noexcept;
+  void redo() noexcept;
+
+  using StateUpdateCallbackFunc = std::function<void()>;
+  using StateUpdateSubscriberID = size_t;
+
+  [[nodiscard]]
+  StateUpdateSubscriberID registerStateUpdateSubscriber(StateUpdateCallbackFunc callback) noexcept;
+  void unregisterStateUpdateSubscriber(StateUpdateSubscriberID id) noexcept;
+
+ private:
+  void notifyStateUpdateSubscribers() noexcept;
+
+ private:
+  std::unordered_map<StateUpdateSubscriberID, StateUpdateCallbackFunc> m_stateUpdateSubscribers;
+  StateUpdateSubscriberID m_nextSubscriberID = 1;
 };

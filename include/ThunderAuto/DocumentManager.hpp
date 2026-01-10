@@ -38,7 +38,4 @@ class DocumentManager final {
   void setProjectPath(const std::filesystem::path& path) noexcept { m_settings.setProjectPath(path); }
 
   void close() noexcept;
-
-  void undo() noexcept { m_history.undo(); }
-  void redo() noexcept { m_history.redo(); }
 };

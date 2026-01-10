@@ -27,7 +27,7 @@ void DocumentEditManager::finishLongEdit() noexcept {
     return;
   }
   m_history.unlock();
-  m_history.addState(*m_currentState);
+  addState(*m_currentState);
   m_currentState = std::nullopt;
   ThunderAutoLogger::Info("Finished long edit");
 }
@@ -42,9 +42,10 @@ const ThunderAutoProjectState& DocumentEditManager::currentState() const noexcep
 void DocumentEditManager::addState(const ThunderAutoProjectState& state, bool unsaved) noexcept {
   if (m_history.isLocked()) {
     m_currentState = state;
-    return;
+  } else {
+    m_history.addState(state, unsaved);
   }
-  m_history.addState(state, unsaved);
+  notifyStateUpdateSubscribers();
 }
 
 void DocumentEditManager::modifyLastState(const ThunderAutoProjectState& state, bool unsaved) noexcept {
@@ -53,4 +54,31 @@ void DocumentEditManager::modifyLastState(const ThunderAutoProjectState& state, 
     return;
   }
   m_history.modifyLastState(state, unsaved);
+}
+
+void DocumentEditManager::undo() noexcept {
+  m_history.undo();
+  notifyStateUpdateSubscribers();
+}
+
+void DocumentEditManager::redo() noexcept {
+  m_history.redo();
+  notifyStateUpdateSubscribers();
+}
+
+DocumentEditManager::StateUpdateSubscriberID DocumentEditManager::registerStateUpdateSubscriber(
+    StateUpdateCallbackFunc callback) noexcept {
+  StateUpdateSubscriberID id = m_nextSubscriberID++;
+  m_stateUpdateSubscribers.emplace(id, std::move(callback));
+  return id;
+}
+
+void DocumentEditManager::unregisterStateUpdateSubscriber(StateUpdateSubscriberID id) noexcept {
+  m_stateUpdateSubscribers.erase(id);
+}
+
+void DocumentEditManager::notifyStateUpdateSubscribers() noexcept {
+  for (auto& [id, callback] : m_stateUpdateSubscribers) {
+    callback();
+  }
 }

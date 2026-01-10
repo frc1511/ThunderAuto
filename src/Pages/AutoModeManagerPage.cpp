@@ -10,7 +10,7 @@ void AutoModeManagerPage::present(bool* running) {
       ImVec2(GET_UISIZE(AUTO_MODE_MANAGER_PAGE_START_WIDTH), GET_UISIZE(AUTO_MODE_MANAGER_PAGE_START_HEIGHT)),
       ImGuiCond_FirstUseEver);
   ImGui::Scoped scopedWindow = ImGui::Scoped::Window(name(), running);
-  if (!scopedWindow || !*running)
+  if (!scopedWindow || (running && !*running))
     return;
 
   ThunderAutoProjectState state = m_history.currentState();
@@ -45,9 +45,6 @@ void AutoModeManagerPage::present(bool* running) {
       autoModeEditorState.selectedStepPath = std::nullopt;
 
       m_history.addState(state);
-
-      m_editorPage.invalidateCachedTrajectory();
-      m_editorPage.resetPlayback();
     }
 
     if (trajectoryBehavior.errorInfo) {
@@ -96,9 +93,6 @@ void AutoModeManagerPage::present(bool* running) {
 
   if (!autoModeToDeleteName.empty()) {
     state.autoModeDelete(autoModeToDeleteName);
-    m_editorPage.invalidateCachedTrajectory();
-    m_editorPage.resetPlayback();
-
     m_history.addState(state);
   }
 }

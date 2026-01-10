@@ -84,7 +84,7 @@ void EditorPage::SetMouseCursorMoveDirection(CanonicalAngle angle) {
   }
 }
 
-bool EditorPage::isMouseHoveringPoint(Point2d point, ImRect bb) {
+bool EditorPage::IsMouseHoveringPoint(Point2d point, ImRect bb) {
   ImVec2 screenPoint = ToScreenCoordinate(point, m_settings->fieldImage, bb);
 
   float toleranceRadius = GET_UISIZE(DRAG_POINT_RADIUS) * 1.25f;
@@ -140,7 +140,7 @@ void EditorPage::setupField(const ThunderAutoProjectSettings& settings) {
   m_fieldOffset = ImVec2(0.f, 0.f);
   m_fieldScale = 1.0f;
 
-  invalidateCachedTrajectory();
+  invalidateCachedTrajectories();
 }
 
 void EditorPage::resetView() {
@@ -156,7 +156,7 @@ void EditorPage::present(bool* running) {
   auto scopedWindow = ImGui::Scoped::Window(
       name(), running,
       ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoNavInputs);
-  if (!scopedWindow || !*running)
+  if (!scopedWindow || (running && !*running))
     return;
 
   presentEditor();
@@ -228,6 +228,10 @@ void EditorPage::presentEditor() {
     default:
       ThunderAutoUnreachable("Unknown editor view");
   }
+}
+
+void EditorPage::onStateUpdated() {
+  invalidateCachedTrajectories();
 }
 
 void EditorPage::processPanAndZoomInput(const ImVec2& fieldScreenSize) {
@@ -306,7 +310,6 @@ void EditorPage::presentTrajectory(const ThunderAutoProjectState& state, ImRect 
 
   if (!m_cachedTrajectory) {
     m_cachedTrajectory = BuildThunderAutoOutputTrajectory(skeleton, kPreviewOutputTrajectorySettings);
-    resetPlayback();
   }
   ThunderAutoAssert(m_cachedTrajectory != nullptr);
 
@@ -747,7 +750,7 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
     trajectoryPositionClosestToMouse = m_cachedTrajectory->pointIndexToTrajectoryPosition(closestPointIndex);
     trajectoryPointClosestToMouse = m_cachedTrajectory->points.at(closestPointIndex);
 
-    if (isMouseHoveringPoint(trajectoryPointClosestToMouse.position, bb)) {
+    if (IsMouseHoveringPoint(trajectoryPointClosestToMouse.position, bb)) {
       isTrajectoryHovered = true;
     }
   }
@@ -761,7 +764,7 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
     if (hoveredPointType != PointType::NONE)
       return;
 
-    if (isMouseHoveringPoint(point, bb)) {
+    if (IsMouseHoveringPoint(point, bb)) {
       hoveredPointType = type;
       hoveredPointIndex = index;
 
@@ -870,7 +873,6 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
 
         state.currentTrajectoryPrependWaypoint(newWaypointPosition, newWaypointHeading);
         m_history.addState(state);
-        invalidateCachedTrajectory();
       }
       if (ImGui::MenuItem("At End")) {
         Point2d newWaypointPosition = m_contextMenuOpenData.mousePosition;
@@ -879,7 +881,6 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
 
         state.currentTrajectoryAppendWaypoint(newWaypointPosition, newWaypointHeading);
         m_history.addState(state);
-        invalidateCachedTrajectory();
       }
       {
         auto scopedDisabled =
@@ -903,7 +904,6 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
           CanonicalAngle newWaypointHeading = 0_deg;  // TODO: Better heading
           state.currentTrajectoryInsertWaypoint(newWaypointIndex, newWaypointPosition, newWaypointHeading);
           m_history.addState(state);
-          invalidateCachedTrajectory();
         }
       }
     }
@@ -920,7 +920,6 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
                           ThunderAutoTrajectoryEditorState::TrajectorySelection::WAYPOINT);
         state.currentTrajectoryDeleteSelectedItem();
         m_history.addState(state);
-        invalidateCachedTrajectory();
       }
     }
   } else if (auto scopedPopup = ImGui::Scoped::PopupContextItem("TrajectoryEditorContextMenu_Rotation")) {
@@ -929,7 +928,6 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
                         ThunderAutoTrajectoryEditorState::TrajectorySelection::ROTATION);
       state.currentTrajectoryDeleteSelectedItem();
       m_history.addState(state);
-      invalidateCachedTrajectory();
     }
   } else if (auto scopedPopup = ImGui::Scoped::PopupContextItem("TrajectoryEditorContextMenu_Action")) {
     if (ImGui::MenuItem(ICON_LC_TRASH "  Delete Action")) {
@@ -945,7 +943,6 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
           static_cast<size_t>(std::floor(m_contextMenuOpenData.trajectoryPositionClosestToMouse)) + 1;
       state.currentTrajectoryInsertWaypoint(newWaypointIndex, point.position, point.heading);
       m_history.addState(state);
-      invalidateCachedTrajectory();
 
     } else if (ImGui::MenuItem(ICON_LC_PLUS "  Insert Rotation Target Here")) {
       const ThunderAutoTrajectoryPosition newRotationPosition =
@@ -953,7 +950,6 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
       const CanonicalAngle newRotationAngle = 0_deg;
       state.currentTrajectoryInsertRotation(newRotationPosition, newRotationAngle);
       m_history.addState(state);
-      invalidateCachedTrajectory();
 
     } else if (auto scopedMenu = ImGui::Scoped::Menu(ICON_LC_PLUS "  Insert Action Here")) {
       std::span<const std::string> availableActions = state.actionsOrder;
@@ -1026,7 +1022,6 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
     if (isDeletePressed && !isWaypointDeleteBlocked) {
       if (state.currentTrajectoryDeleteSelectedItem()) {
         m_history.addState(state);
-        invalidateCachedTrajectory();
       }
     }
 
@@ -1036,12 +1031,10 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
       if (io.KeyShift) {
         if (state.currentTrajectoryIncrementSelectedItemIndex(false)) {
           m_history.addState(state, false);
-          invalidateCachedTrajectory();
         }
       } else {
         if (state.currentTrajectoryIncrementSelectedItemIndex(true)) {
           m_history.addState(state, false);
-          invalidateCachedTrajectory();
         }
       }
     }
@@ -1068,8 +1061,6 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
       m_history.finishLongEdit();
 
       m_isPlaying = m_wasPlaying;
-
-      invalidateCachedTrajectory();
     }
 
     m_dragPoint = PointType::NONE;
@@ -1129,7 +1120,6 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
 
     state.currentTrajectoryAppendWaypoint(newWaypointPosition, newWaypointHeading);
     m_history.addState(state);
-    invalidateCachedTrajectory();
   }
 
   // Handle dragging
@@ -1228,8 +1218,6 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
       m_history.addState(state);
 
       m_clickedPoint = PointType::NONE;
-
-      invalidateCachedTrajectory();
     }
 
     // Release.
@@ -1252,8 +1240,6 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
         m_history.finishLongEdit();
 
         m_isPlaying = m_wasPlaying;
-
-        invalidateCachedTrajectory();
       }
 
       m_dragPoint = PointType::NONE;

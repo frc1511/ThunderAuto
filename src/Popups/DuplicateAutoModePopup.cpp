@@ -53,9 +53,6 @@ void DuplicateAutoModePopup::present(bool* running) {
     state.autoModeDuplicate(m_oldAutoModeName, newAutoModeName);
     m_history.addState(state);
 
-    m_editorPage.invalidateCachedTrajectory();
-    m_editorPage.resetPlayback();
-
     reset();
     *running = false;
   }

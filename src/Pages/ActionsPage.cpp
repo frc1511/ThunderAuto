@@ -13,7 +13,7 @@ void ActionsPage::present(bool* running) {
       ImVec2(GET_UISIZE(ACTIONS_PAGE_START_WIDTH), GET_UISIZE(ACTIONS_PAGE_START_HEIGHT)),
       ImGuiCond_FirstUseEver);
   ImGui::Scoped scopedWindow = ImGui::Scoped::Window(name(), running);
-  if (!scopedWindow || !*running)
+  if (!scopedWindow || (running && !*running))
     return;
 
   ThunderAutoProjectState state = m_history.currentState();

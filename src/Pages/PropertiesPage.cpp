@@ -25,7 +25,7 @@ void PropertiesPage::present(bool* running) {
       ImVec2(GET_UISIZE(PROPERTIES_PAGE_START_WIDTH), GET_UISIZE(PROPERTIES_PAGE_START_HEIGHT)),
       ImGuiCond_FirstUseEver);
   ImGui::Scoped scopedWindow = ImGui::Scoped::Window(name(), running);
-  if (!scopedWindow || !*running)
+  if (!scopedWindow || (running && !*running))
     return;
 
   ThunderAutoProjectState state = m_history.currentState();
@@ -115,8 +115,6 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
           if (ImGui::MenuItem(ICON_LC_TRASH "  Delete Point")) {
             state.currentTrajectoryDeleteSelectedItem();
             m_history.addState(state);
-            m_editorPage.invalidateCachedTrajectory();
-            m_editorPage.resetPlayback();
             break;
           }
 
@@ -216,8 +214,6 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
           if (ImGui::MenuItem(deleteMenuItemText.c_str())) {
             state.currentTrajectoryDeleteSelectedItem();
             m_history.addState(state);
-            m_editorPage.invalidateCachedTrajectory();
-            m_editorPage.resetPlayback();
             break;
           }
 
@@ -306,8 +302,6 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
             if (ImGui::MenuItem(deleteMenuItemText.c_str())) {
               state.currentTrajectoryDeleteSelectedItem();
               m_history.addState(state);
-              m_editorPage.invalidateCachedTrajectory();
-              m_editorPage.resetPlayback();
               break;
             }
 
@@ -425,8 +419,6 @@ void PropertiesPage::presentTrajectorySelectedPointProperties(ThunderAutoProject
 
   if (changed) {
     m_history.addState(state);
-    m_editorPage.invalidateCachedTrajectory();
-    m_editorPage.resetPlayback();
   }
 }
 
@@ -781,8 +773,6 @@ void PropertiesPage::presentTrajectorySelectedRotationProperties(ThunderAutoProj
 
   if (changed) {
     m_history.addState(state);
-    m_editorPage.invalidateCachedTrajectory();
-    m_editorPage.resetPlayback();
   }
 }
 
@@ -834,8 +824,6 @@ void PropertiesPage::presentTrajectorySelectedActionProperties(ThunderAutoProjec
 
   if (changed) {
     m_history.addState(state);
-    m_editorPage.invalidateCachedTrajectory();
-    m_editorPage.resetPlayback();
   }
 }
 
@@ -856,8 +844,6 @@ void PropertiesPage::presentTrajectoryOtherProperties(ThunderAutoProjectState& s
 
   if (changed) {
     m_history.addState(state);
-    m_editorPage.invalidateCachedTrajectory();
-    m_editorPage.resetPlayback();
   }
 }
 
@@ -938,8 +924,6 @@ void PropertiesPage::presentTrajectorySpeedConstraintProperties(ThunderAutoProje
 
   if (changed) {
     m_history.addState(state);
-    m_editorPage.invalidateCachedTrajectory();
-    m_editorPage.resetPlayback();
   }
 
   ImGui::Spacing();
@@ -1635,9 +1619,9 @@ void PropertiesPage::presentAutoModeSelectedSwitchBranchStepProperties(ThunderAu
 }
 
 void PropertiesPage::presentAutoModeSpeedConstraintProperties(ThunderAutoProjectState& state) {
-  presentSeparatorText("Auto Mode Speed Constraints");
+  // presentSeparatorText("Auto Mode Speed Constraints");
 
-  auto scopedID = ImGui::Scoped::ID("Auto Mode Speed Constraint Properties");
+  // auto scopedID = ImGui::Scoped::ID("Auto Mode Speed Constraint Properties");
 
   // TODO: Implement
 }

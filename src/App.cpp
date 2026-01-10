@@ -652,8 +652,6 @@ void App::presentTrajectoryMenu() {
   if (itemReverse) {
     state.trajectoryReverseDirection(currentTrajectoryName);
     m_documentEditManager.addState(state);
-    m_editorPage.invalidateCachedTrajectory();
-    m_editorPage.resetPlayback();
   }
 
   if (itemDuplicate) {
@@ -664,8 +662,6 @@ void App::presentTrajectoryMenu() {
   if (itemDelete) {
     state.trajectoryDelete(currentTrajectoryName);
     m_documentEditManager.addState(state);
-    m_editorPage.invalidateCachedTrajectory();
-    m_editorPage.resetPlayback();
   }
 }
 
@@ -704,8 +700,6 @@ void App::presentAutoModeMenu() {
   if (itemDelete) {
     state.autoModeDelete(currentAutoModeName);
     m_documentEditManager.addState(state);
-    m_editorPage.invalidateCachedTrajectory();
-    m_editorPage.resetPlayback();
   }
 }
 
@@ -1288,8 +1282,7 @@ void App::undo() {
     return;
   }
 
-  m_documentManager.undo();
-  m_editorPage.invalidateCachedTrajectory();
+  m_documentEditManager.undo();
 }
 
 void App::redo() {
@@ -1297,8 +1290,7 @@ void App::redo() {
     return;
   }
 
-  m_documentManager.redo();
-  m_editorPage.invalidateCachedTrajectory();
+  m_documentEditManager.redo();
 }
 
 void App::updateTitlebarTitle() {

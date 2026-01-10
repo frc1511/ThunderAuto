@@ -25,6 +25,8 @@ enum class EditorPageTrajectoryOverlay {
 // TODO: Add auto mode support (currently only Trajectory support is implemented).
 class EditorPage : public Page {
   DocumentEditManager& m_history;
+  DocumentEditManager::StateUpdateSubscriberID m_stateUpdateSubscriberID;
+
   const ThunderAutoProjectSettings* m_settings = nullptr;
 
   enum class PointType {
@@ -73,12 +75,8 @@ class EditorPage : public Page {
   }
 
   std::unique_ptr<ThunderAutoOutputTrajectory> m_cachedTrajectory;
+  std::vector<std::unique_ptr<ThunderAutoOutputTrajectory>> m_cachedAutoModeTrajectories;
 
-  // bool m_showTangents = true;
-  // bool m_showRotation = true;
-  // bool m_showTooltip = true;
-
-  // Vec2 m_fieldSize;
   double m_fieldAspectRatio = 1.0;
   std::unique_ptr<Texture> m_fieldTexture;
 
@@ -96,7 +94,12 @@ class EditorPage : public Page {
   units::meter_t m_robotRectangleCornerRadius;
 
  public:
-  explicit EditorPage(DocumentEditManager& history) noexcept : m_history(history) {}
+  explicit EditorPage(DocumentEditManager& history) noexcept
+      : m_history(history),
+        m_stateUpdateSubscriberID(
+            history.registerStateUpdateSubscriber(std::bind(&EditorPage::onStateUpdated, this))) {}
+
+  ~EditorPage() { m_history.unregisterStateUpdateSubscriber(m_stateUpdateSubscriberID); }
 
   /**
    * Loads the configured field image, prepares the editor to present the current project state.
@@ -105,20 +108,12 @@ class EditorPage : public Page {
    */
   void setupField(const ThunderAutoProjectSettings& settings);
 
-  /**
-   * Invalidate the cached trajectory, forcing it to be rebuilt on next access.
-   * This should be called when the state is changed (e.g. undo, redo, etc.).
-   */
-  void invalidateCachedTrajectory() noexcept { m_cachedTrajectory.reset(); }
-
   const char* name() const noexcept override { return "Editor"; }
 
   /**
    * Reset the zoom and offset of the field.
    */
   void resetView();
-
-  void resetPlayback() noexcept { m_playbackTime = 0.0_s; }
 
   void present(bool* running) override;
 
@@ -135,7 +130,15 @@ class EditorPage : public Page {
   } autoModeEditorOptions = {};
 
  private:
+  void invalidateCachedTrajectories() noexcept {
+    m_cachedTrajectory.reset();
+    m_cachedAutoModeTrajectories.clear();
+  }
+
+ private:
   void presentEditor();
+
+  void onStateUpdated();
 
   void processPanAndZoomInput(const ImVec2& fieldScreenSize);
   void processFieldInput();
@@ -202,22 +205,7 @@ class EditorPage : public Page {
 
   // Utility functions
 
-  // void insertWaypoint(ThunderAutoProjectState& state,
-  //                     Point2d position,
-  //                     CanonicalAngle heading,
-  //                     size_t index) const;
-  // void insertRotation(ThunderAutoProjectState& state,
-  //                     ThunderAutoTrajectoryPosition position,
-  //                     CanonicalAngle angle) const;
-  // void insertAction(ThunderAutoProjectState& state,
-  //                   ThunderAutoTrajectoryPosition position,
-  //                   const std::string& name) const;
-
-  // void deleteSelectedWaypoint(ThunderAutoProjectState& state) const;
-  // void deleteSelectedRotation(ThunderAutoProjectState& state) const;
-  // void deleteSelectedAction(ThunderAutoProjectState& state) const;
-
-  bool isMouseHoveringPoint(Point2d point, ImRect bb);
+  bool IsMouseHoveringPoint(Point2d point, ImRect bb);
 
   static void SetMouseCursorMoveDirection(CanonicalAngle angle);
 

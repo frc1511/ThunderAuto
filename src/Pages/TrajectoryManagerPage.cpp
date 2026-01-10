@@ -10,7 +10,7 @@ void TrajectoryManagerPage::present(bool* running) {
                                   GET_UISIZE(TRAJECTORY_MANAGER_PAGE_START_HEIGHT)),
                            ImGuiCond_FirstUseEver);
   ImGui::Scoped scopedWindow = ImGui::Scoped::Window(name(), running);
-  if (!scopedWindow || !*running)
+  if (!scopedWindow || (running && !*running))
     return;
 
   ThunderAutoProjectState state = m_history.currentState();
@@ -38,9 +38,6 @@ void TrajectoryManagerPage::present(bool* running) {
       trajectoryEditorState.selectionIndex = 0;
 
       m_history.addState(state);
-
-      m_editorPage.invalidateCachedTrajectory();
-      m_editorPage.resetPlayback();
     }
 
     if (auto popup = ImGui::Scoped::PopupContextItem()) {
@@ -52,8 +49,6 @@ void TrajectoryManagerPage::present(bool* running) {
       if (ImGui::MenuItem(ICON_LC_ARROW_RIGHT_LEFT "  Reverse Direction")) {
         trajectorySkeleton.reverseDirection();
         m_history.addState(state);
-        m_editorPage.invalidateCachedTrajectory();
-        m_editorPage.resetPlayback();
       }
 
       if (ImGui::MenuItem(ICON_LC_COPY "  Duplicate")) {
@@ -80,9 +75,6 @@ void TrajectoryManagerPage::present(bool* running) {
 
   if (!trajectoryToDeleteName.empty()) {
     state.trajectoryDelete(trajectoryToDeleteName);
-    m_editorPage.invalidateCachedTrajectory();
-    m_editorPage.resetPlayback();
-
     m_history.addState(state);
   }
 }

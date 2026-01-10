@@ -11,7 +11,7 @@ void ProjectSettingsPage::present(bool* running) {
       ImVec2(GET_UISIZE(PROJECT_SETTINGS_PAGE_START_WIDTH), GET_UISIZE(PROJECT_SETTINGS_PAGE_START_HEIGHT)),
       ImGuiCond_FirstUseEver);
   ImGui::Scoped scopedWindow = ImGui::Scoped::Window(name(), running);
-  if (!scopedWindow || !*running)
+  if (!scopedWindow || (running && !*running))
     return;
 
   // Side bar

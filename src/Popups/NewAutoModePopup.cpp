@@ -62,9 +62,6 @@ void NewAutoModePopup::present(bool* running) {
 
     m_history.addState(state);
 
-    m_editorPage.invalidateCachedTrajectory();
-    m_editorPage.resetPlayback();
-
     reset();
     *running = false;
   }
