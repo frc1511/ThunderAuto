@@ -102,6 +102,7 @@ bool EditorPage::IsMouseHoveringPoint(Point2d point, ImRect bb) {
 #include <field_2023_png.h>
 #include <field_2024_png.h>
 #include <field_2025_png.h>
+#include <field_2026_png.h>
 
 void EditorPage::setupField(const ThunderAutoProjectSettings& settings) {
   m_settings = &settings;
@@ -133,6 +134,12 @@ void EditorPage::setupField(const ThunderAutoProjectSettings& settings) {
         imageDataBuf = field_2025_png;
         imageDataSize = field_2025_png_size;
         break;
+      case FIELD_2026:
+        imageDataBuf = field_2026_png;
+        imageDataSize = field_2026_png_size;
+        break;
+      default:
+        ThunderAutoUnreachable("Unknown builtin field image");
     }
 
     m_fieldTexture = PlatformTexture::make(imageDataBuf, imageDataSize);  // will throw if error loading

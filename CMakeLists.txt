@@ -352,6 +352,7 @@ build_resource("${THUNDERAUTO_RES_DIR}/images/field-2022.png"                 "f
 build_resource("${THUNDERAUTO_RES_DIR}/images/field-2023.png"                 "field_2023_png")
 build_resource("${THUNDERAUTO_RES_DIR}/images/field-2024.png"                 "field_2024_png")
 build_resource("${THUNDERAUTO_RES_DIR}/images/field-2025.png"                 "field_2025_png")
+build_resource("${THUNDERAUTO_RES_DIR}/images/field-2026.png"                 "field_2026_png")
 build_resource("${THUNDERAUTO_RES_DIR}/fonts/Roboto/Roboto-Regular.ttf"       "Roboto_Regular_ttf")
 build_resource("${THUNDERAUTO_RES_DIR}/fonts/Roboto/Roboto-Bold.ttf"          "Roboto_Bold_ttf")
 build_resource("${THUNDERAUTO_RES_DIR}/fonts/Ubuntu/Ubuntu-Regular.ttf"       "Ubuntu_Regular_ttf")

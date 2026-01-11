@@ -53,8 +53,8 @@ void NewProjectPopup::present(bool* running) {
   {
     auto scopedField = ImGui::ScopedField::Builder(ICON_LC_WAVES_LADDER "  Field").build();
 
-    const char* fieldOptions[] = {"2025 - Reefscape", "2024 - Crescendo", "2023 - Charged Up",
-                                  "2022 - Rapid React", "Custom"};
+    const char* fieldOptions[] = {"2026 - Rebuilt",    "2025 - Reefscape",   "2024 - Crescendo",
+                                  "2023 - Charged Up", "2022 - Rapid React", "Custom"};
     const size_t numFieldOptions = sizeof(fieldOptions) / sizeof(fieldOptions[0]);
     const size_t customFieldOptionIndex = numFieldOptions - 1;
 
@@ -212,7 +212,8 @@ void NewProjectPopup::present(bool* running) {
       // Other values are set to defaults in the constructor.
     }
 
-    showTooltip = ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_AllowWhenDisabled) && !errorText.empty();
+    showTooltip = ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_AllowWhenDisabled) &&
+                  !errorText.empty();
   }
   if (showTooltip) {
     ImGui::SetTooltip("* %s", errorText.c_str());
