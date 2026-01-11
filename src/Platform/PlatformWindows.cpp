@@ -2,13 +2,14 @@
 
 #include <ThunderAuto/Graphics/Graphics.hpp>
 #include <Windows.h>
+#include <ShlObj.h>
 
 std::filesystem::path PlatformWindows::openFileDialog(FileType type,
                                                       const FileExtensionList& extensions) noexcept {
   char filterBuffer[256] = {0};
   size_t filterBufferIndex = 0;
 
-  create_filter(filterBuffer, &filterBufferIndex, extensions);
+  createFilter(filterBuffer, &filterBufferIndex, extensions);
 
   HWND hwnd = reinterpret_cast<HWND>(getPlatformGraphics().getPlatformHandle());
 
@@ -38,7 +39,7 @@ std::filesystem::path PlatformWindows::saveFileDialog(const FileExtensionList& e
   char filterBuffer[256] = {0};
   size_t filterBufferIndex = 0;
 
-  create_filter(filterBuffer, &filterBufferIndex, extensions);
+  createFilter(filterBuffer, &filterBufferIndex, extensions);
 
   HWND hwnd = reinterpret_cast<HWND>(getPlatformGraphics().getPlatformHandle());
 
@@ -62,6 +63,14 @@ std::filesystem::path PlatformWindows::saveFileDialog(const FileExtensionList& e
   if (GetSaveFileNameA(&ofn) == TRUE)
     return ofn.lpstrFile;
 
+  return "";
+}
+
+std::filesystem::path PlatformWindows::getAppDataDirectory() noexcept {
+  char path[MAX_PATH];
+  if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, path))) {
+    return std::filesystem::path(path) / "ThunderAuto";
+  }
   return "";
 }
 

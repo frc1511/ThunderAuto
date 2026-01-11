@@ -81,3 +81,10 @@ std::filesystem::path PlatformMacOS::saveFileDialog(const FileExtensionList& ext
   return "";
 }
 
+std::filesystem::path PlatformMacOS::getAppDataDirectory() noexcept {
+  const char* home = getenv("HOME");
+  if (home) {
+    return std::filesystem::path(home) / "Library/Application Support/ThunderAuto";
+  }
+  return "";
+}

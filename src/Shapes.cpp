@@ -3,12 +3,12 @@
 #include <algorithm>
 #include <numbers>
 
-Polyline CreateRoundedRectangle(Measurement2d size,
+TPolyline CreateRoundedRectangle(Measurement2d size,
                                 units::meter_t cornerRadius,
                                 size_t numPointsPerArc /* = 16*/) {
   cornerRadius = std::min(cornerRadius, std::min(size.width / 2.f, size.length / 2.f));
 
-  Polyline points;
+  TPolyline points;
 
   const units::meter_t halfWidth = size.width / 2.f;
   const units::meter_t halfLength = size.length / 2.f;
@@ -63,7 +63,7 @@ Polyline CreateRoundedRectangle(Measurement2d size,
   return points;
 }
 
-void RotatePolygon(Polyline& points, CanonicalAngle angle) {
+void RotatePolygon(TPolyline& points, CanonicalAngle angle) {
   double cosAngle = angle.cos();
   double sinAngle = angle.sin();
 
@@ -74,6 +74,6 @@ void RotatePolygon(Polyline& points, CanonicalAngle angle) {
   });
 }
 
-void TranslatePolygon(Polyline& points, Displacement2d displacement) {
+void TranslatePolygon(TPolyline& points, Displacement2d displacement) {
   std::for_each(points.begin(), points.end(), [&displacement](Point2d& point) { point += displacement; });
 }

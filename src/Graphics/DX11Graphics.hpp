@@ -51,12 +51,12 @@ class GraphicsDirectX11 final : public Graphics, public Singleton<GraphicsDirect
   void beginFrame() override;
   void endFrame() override;
 
-  float getDPIScale() const;
+  double getDPIScale() const;
 
-  ImVec2 getMainWindowSize() const override;
+  Vec2 getMainWindowSize() const override;
   void setMainWindowSize(int width, int height) override;
 
-  ImVec2 getMainWindowPosition() const override;
+  Vec2 getMainWindowPosition() const override;
   void setMainWindowPosition(int x, int y) override;
   void moveMainWindowToCenter() override;
 

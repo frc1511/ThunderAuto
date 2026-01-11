@@ -1492,7 +1492,7 @@ void EditorPage::drawRobot(const Point2d& position,
     m_baseRobotRectangle = CreateRoundedRectangle(m_robotRectangleSize, m_robotRectangleCornerRadius);
   }
 
-  Polyline robotPreviewRectangle = m_baseRobotRectangle;
+  TPolyline robotPreviewRectangle = m_baseRobotRectangle;
 
   RotatePolygon(robotPreviewRectangle, rotation);
   TranslatePolygon(robotPreviewRectangle, Displacement2d(position.x, position.y));

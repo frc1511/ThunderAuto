@@ -59,7 +59,7 @@ void Texture::loadFromFile(const std::filesystem::path& path) {
 
   int width = 0, height = 0, numChannels = 0;
 
-  unsigned char* imgData = stbi_load(path.c_str(), &width, &height, &numChannels, 0);
+  unsigned char* imgData = stbi_load(path.string().c_str(), &width, &height, &numChannels, 0);
   if (!imgData) {
     throw RuntimeError::Construct("Failed to load image from file '{}': {}", path.string().c_str(),
                                   stbi_failure_reason());

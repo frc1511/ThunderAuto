@@ -93,7 +93,7 @@ class EditorPage : public Page {
 
   EditorPageTrajectoryOverlay m_trajectoryOverlay = EditorPageTrajectoryOverlay::VELOCITY;
 
-  Polyline m_baseRobotRectangle;
+  TPolyline m_baseRobotRectangle;
   Measurement2d m_robotRectangleSize;
   units::meter_t m_robotRectangleCornerRadius;
 

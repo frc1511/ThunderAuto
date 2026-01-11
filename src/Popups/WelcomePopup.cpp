@@ -64,8 +64,8 @@ void WelcomePopup::present(bool* running) {
           auto scopedIndexID = ImGui::Scoped::ID(i);
 
           ImGui::SetNextItemAllowOverlap();
-          if (ImGui::Selectable(project.filename().c_str())) {
-            ThunderAutoLogger::Info("WelcomePopup: Selected recent project: {}", project.c_str());
+          if (ImGui::Selectable(project.filename().string().c_str())) {
+            ThunderAutoLogger::Info("WelcomePopup: Selected recent project: {}", project.string().c_str());
             m_result = Result::RECENT_PROJECT;
             m_recentProjectIt = projectIt;
           }

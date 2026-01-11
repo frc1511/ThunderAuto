@@ -24,6 +24,8 @@ class Platform : public SingletonBase {
 
   virtual std::filesystem::path openFileDialog(FileType type, const FileExtensionList& extensions) noexcept = 0;
   virtual std::filesystem::path saveFileDialog(const FileExtensionList& extensions) noexcept = 0;
+
+  virtual std::filesystem::path getAppDataDirectory() noexcept = 0;
 };
 
 Platform& getPlatform() noexcept;

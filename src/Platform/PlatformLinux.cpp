@@ -66,3 +66,17 @@ std::filesystem::path PlatformLinux::saveFileDialog(const FileExtensionList& ext
 
   return outPath;
 }
+
+std::filesystem::path PlatformLinux::getAppDataDirectory() noexcept {
+  const char* xdgDataHome = getenv("XDG_DATA_HOME");
+  if (xdgDataHome) {
+    return std::filesystem::path(xdgDataHome) / "ThunderAuto";
+  }
+
+  const char* home = getenv("HOME");
+  if (home) {
+    return std::filesystem::path(home) / ".local/share/ThunderAuto";
+  }
+
+  return "";
+}

@@ -656,7 +656,7 @@ bool PropertiesPage::presentRotationProperty(const char* name,
   auto scopedField = ImGui::ScopedField::Builder(name).build();
 
   double angle = getRotation().degrees().value();
-  const bool lastAngle = angle;
+  const double lastAngle = angle;
 
   std::string sliderName = fmt::format("##{}", name);
   changed |= presentSlider(sliderName.c_str(), angle, kAngleSliderSpeed, "%.2f°");
@@ -735,7 +735,7 @@ void PropertiesPage::presentTrajectorySelectedRotationProperties(ThunderAutoProj
     auto scopedField = ImGui::ScopedField::Builder("Rotation").build();
 
     double angle = it->second.angle.degrees().value();
-    const bool lastAngle = angle;
+    const double lastAngle = angle;
 
     changed |= presentSlider("##Rotation", angle, kAngleSliderSpeed, "%.2f°");
 

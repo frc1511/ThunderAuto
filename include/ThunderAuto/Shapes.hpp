@@ -6,9 +6,9 @@
 
 using namespace thunder::core;
 
-using Polyline = std::vector<Point2d>;
+using TPolyline = std::vector<Point2d>;
 
-Polyline CreateRoundedRectangle(Measurement2d size, units::meter_t cornerRadius, size_t numPointsPerArc = 16);
+TPolyline CreateRoundedRectangle(Measurement2d size, units::meter_t cornerRadius, size_t numPointsPerArc = 16);
 
-void RotatePolygon(Polyline& polyline, CanonicalAngle angle);
-void TranslatePolygon(Polyline& polyline, Displacement2d displacement);
+void RotatePolygon(TPolyline& polyline, CanonicalAngle angle);
+void TranslatePolygon(TPolyline& polyline, Displacement2d displacement);

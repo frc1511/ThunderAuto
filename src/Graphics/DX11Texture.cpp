@@ -1,8 +1,8 @@
-#include "texture_directx11.hpp"
-#include "graphics_directx11.hpp"
+#include "DX11Texture.hpp"
+#include "DX11Graphics.hpp"
 
-bool TextureDirectX11::setup() {
-  if (m_width == m_texture_width && m_height == m_texture_height)
+bool TextureDirectX11::setup() noexcept {
+  if (m_width == m_textureWidth && m_height == m_textureHeight)
     return true;
 
   if (!GraphicsDirectX11::get().isInitialized()) {
@@ -14,7 +14,7 @@ bool TextureDirectX11::setup() {
   assert(device != nullptr);
 
   m_texture = nullptr;
-  m_texture_view = nullptr;
+  m_textureView = nullptr;
 
   HRESULT hr;
 
@@ -42,38 +42,38 @@ bool TextureDirectX11::setup() {
   srvDesc.Texture2D.MostDetailedMip = 0;
   srvDesc.Texture2D.MipLevels = desc.MipLevels;
 
-  hr = device->CreateShaderResourceView(m_texture.Get(), &srvDesc, &m_texture_view);
+  hr = device->CreateShaderResourceView(m_texture.Get(), &srvDesc, &m_textureView);
   if (FAILED(hr))
     return false;
 
-  m_texture_width = m_width;
-  m_texture_height = m_height;
+  m_textureWidth = m_width;
+  m_textureHeight = m_height;
 
   return true;
 }
 
-bool TextureDirectX11::set_data(unsigned char* data, int width, int height, int num_channels) {
-  if (num_channels != 4) {
+bool TextureDirectX11::setData(unsigned char* data, int width, int height, int numChannels) noexcept {
+  if (numChannels != 4) {
     assert(false);
     return false;
   }
 
   m_width = width;
   m_height = height;
-  m_num_channels = num_channels;
+  m_numChannels = numChannels;
 
   if (!setup())
     return false;
 
   ID3D11DeviceContext* context = GraphicsDirectX11::get().context();
 
-  D3D11_MAPPED_SUBRESOURCE mapped_resource;
-  HRESULT hr = context->Map(m_texture.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_resource);
+  D3D11_MAPPED_SUBRESOURCE mappedResource;
+  HRESULT hr = context->Map(m_texture.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
   if (FAILED(hr))
     return false;
 
   for (UINT row = 0; row < m_height; ++row) {
-    memcpy(static_cast<unsigned char*>(mapped_resource.pData) + row * mapped_resource.RowPitch,
+    memcpy(static_cast<unsigned char*>(mappedResource.pData) + row * mappedResource.RowPitch,
            data + row * m_width * 4, m_width * 4);
   }
 

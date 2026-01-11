@@ -2,6 +2,7 @@
 #include <ThunderAuto/Logger.hpp>
 #include <ThunderAuto/FontLibrary.hpp>
 #include <ThunderAuto/Graphics/Graphics.hpp>
+#include <ThunderAuto/Platform/Platform.hpp>
 #include <imgui.h>
 #include <imgui_internal.h>
 
@@ -31,6 +32,14 @@ static std::optional<std::filesystem::path> GetStartProjectPath(int argc, char**
 
 // Tell ImGui to use App to load and save data from/to the imgui.ini file.
 static void SetupDataHandler(App& app) {
+  ImGuiIO& io = ImGui::GetIO();
+
+  std::filesystem::path appDataDir = getPlatform().getAppDataDirectory();
+  if (!appDataDir.empty()) {
+    std::filesystem::path iniFilePath = appDataDir / "imgui.ini";
+    io.IniFilename = strdup(iniFilePath.string().c_str()); // Who cares if this doesn't get freed...
+  }
+
   ImGuiSettingsHandler iniHandler;
   iniHandler.UserData = reinterpret_cast<void*>(&app);
 

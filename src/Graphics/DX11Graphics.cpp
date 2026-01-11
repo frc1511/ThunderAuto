@@ -56,8 +56,8 @@ void GraphicsDirectX11::init(App& app) {
   // More ImGui setup.
   //
 
-  apply_ui_config();
-  apply_ui_style();
+  applyUIConfig();
+  applyUIStyle();
 
   ImGui_ImplWin32_Init(m_hwnd);
   ImGui_ImplDX11_Init(m_device, m_deviceContext);
@@ -146,20 +146,20 @@ void GraphicsDirectX11::endFrame() {
   m_swapChainOccluded = (hr == DXGI_STATUS_OCCLUDED);
 }
 
-float GraphicsDirectX11::getDPIScale() const {
+double GraphicsDirectX11::getDPIScale() const {
   if (!m_hwnd)
-    return 1.f;
+    return 1.0;
 
-  return ImGui_ImplWin32_GetDpiScaleForHwnd(m_hwnd);
+  return static_cast<double>(ImGui_ImplWin32_GetDpiScaleForHwnd(m_hwnd));
 }
 
-ImVec2 GraphicsDirectX11::getMainWindowSize() const {
+Vec2 GraphicsDirectX11::getMainWindowSize() const {
   if (!m_hwnd)
-    return ImVec2(0, 0);
+    return Vec2(0, 0);
 
   RECT rect;
   GetClientRect(m_hwnd, &rect);
-  return ImVec2((float)(rect.right - rect.left), (float)(rect.bottom - rect.top));
+  return Vec2((float)(rect.right - rect.left), (float)(rect.bottom - rect.top));
 }
 
 void GraphicsDirectX11::setMainWindowSize(int width, int height) {
@@ -174,13 +174,13 @@ void GraphicsDirectX11::setMainWindowSize(int width, int height) {
   SetWindowPos(m_hwnd, nullptr, x, y, width, height, SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOSENDCHANGING);
 }
 
-ImVec2 GraphicsDirectX11::getMainWindowPosition() const {
+Vec2 GraphicsDirectX11::getMainWindowPosition() const {
   if (!m_hwnd)
-    return ImVec2(0, 0);
+    return Vec2(0, 0);
 
   RECT rect;
   GetWindowRect(m_hwnd, &rect);
-  return ImVec2((float)(rect.left), (float)(rect.top));
+  return Vec2((float)(rect.left), (float)(rect.top));
 }
 
 void GraphicsDirectX11::setMainWindowPosition(int x, int y) {
@@ -202,7 +202,7 @@ void GraphicsDirectX11::moveMainWindowToCenter() {
   int screenWidth = GetSystemMetrics(SM_CXSCREEN);
   int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
-  auto [width, height] = getMainWindowSize();
+  auto [width, height] = getMainWindowSize().data;
 
   int x = (screenWidth - width) / 2;
   int y = (screenHeight - height) / 2;
@@ -243,7 +243,7 @@ bool GraphicsDirectX11::isMainWindowFocused() {
   return GetFocus() == m_hwnd;
 }
 
-bool GraphicsDirectX11::isWindowFocused(void* platformHandle) override {
+bool GraphicsDirectX11::isWindowFocused(void* platformHandle) {
   if (!platformHandle)
     return false;
 
@@ -564,7 +564,7 @@ void GraphicsDirectX11::deinitD2DRenderTarget() {
 RECT GraphicsDirectX11::getTitlebarRect() {
   RECT rect;
   GetClientRect(m_hwnd, &rect);
-  rect.bottom = rect.top + m_app->menu_bar_height();
+  rect.bottom = rect.top + m_app->menuBarHeight();
   return rect;
 }
 
@@ -777,7 +777,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
       SetWindowPos(hwnd, NULL, rect->left, rect->top, rect->right - rect->left, rect->bottom - rect->top,
                    SWP_NOZORDER);
       float scale = static_cast<float>(LOWORD(wparam)) / USER_DEFAULT_SCREEN_DPI;
-      graphics.update_ui_scale(scale);
+      graphics.updateUIScale(scale);
       return 0;
     }
     case WM_CLOSE:
