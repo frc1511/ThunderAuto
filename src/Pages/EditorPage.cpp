@@ -1181,6 +1181,8 @@ void EditorPage::presentAutoModeEditor(ThunderAutoProjectState& state, ImRect bb
       m_history.addState(state);
     }
   }
+
+  presentAutoModeRobotPreview(bb);
 }
 
 bool EditorPage::presentAutoModeStepList(const ThunderAutoModeStepDirectoryPath& parentPath,
@@ -1271,7 +1273,8 @@ bool EditorPage::presentAutoModeStep(const ThunderAutoModeStepPath& path,
       }
 
       ThunderAutoAssert(activeBranchSteps != nullptr);
-      if (activeBranchSteps == nullptr) return false;
+      if (activeBranchSteps == nullptr)
+        return false;
 
       // Present active branch last.
       return presentAutoModeStepList(activeBranchPath, *activeBranchSteps, trajectoryIndex, clickWasCaptured,
@@ -1309,11 +1312,11 @@ bool EditorPage::presentAutoModeTrajectoryStep(const ThunderAutoModeStepPath& pa
   ThunderAutoAssert(trajectoryIndex <= m_cachedAutoModeTrajectories.size());
   if (trajectoryIndex >= m_cachedAutoModeTrajectories.size()) {
     trajectoryIndex = m_cachedAutoModeTrajectories.size();
-    m_cachedAutoModeTrajectories.push_back(
-        BuildThunderAutoOutputTrajectory(skeleton, kPreviewOutputTrajectorySettings));
+    m_cachedAutoModeTrajectories.emplace_back(
+        BuildThunderAutoOutputTrajectory(skeleton, kPreviewOutputTrajectorySettings), isActive);
   }
 
-  const ThunderAutoOutputTrajectory& trajectory = *m_cachedAutoModeTrajectories.at(trajectoryIndex++);
+  const ThunderAutoOutputTrajectory& trajectory = *m_cachedAutoModeTrajectories.at(trajectoryIndex++).first;
 
   std::span<const ThunderAutoOutputTrajectoryPoint> points = trajectory.points;
 
@@ -1388,6 +1391,81 @@ bool EditorPage::presentAutoModeTrajectoryStep(const ThunderAutoModeStepPath& pa
   return false;
 }
 
+void EditorPage::presentAutoModeRobotPreview(ImRect bb) {
+  ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+  ThunderAutoOutputTrajectory* trajectory = nullptr;
+  ThunderAutoOutputTrajectory* lastTrajectory = nullptr;
+  units::second_t accumulatedTime = 0.0_s;
+  for (const auto& [cachedTrajectory, isActive] : m_cachedAutoModeTrajectories) {
+    if (!isActive || !cachedTrajectory) {
+      continue;
+    }
+
+    lastTrajectory = cachedTrajectory.get();
+
+    if (m_playbackTime < accumulatedTime + cachedTrajectory->totalTime) {
+      trajectory = cachedTrajectory.get();
+      break;
+    }
+    accumulatedTime += cachedTrajectory->totalTime;
+  }
+
+  if (!trajectory) {
+    if (!lastTrajectory) {
+      return;
+    }
+
+    trajectory = lastTrajectory;
+  }
+
+  // Find closest time.
+
+  std::span<const ThunderAutoOutputTrajectoryPoint> points = trajectory->points;
+
+  auto lowerIt = std::lower_bound(
+      points.begin(), points.end(), m_playbackTime - accumulatedTime,
+      [](const ThunderAutoOutputTrajectoryPoint& point, units::second_t time) { return point.time < time; });
+
+  auto upperIt = lowerIt;
+
+  units::second_t playbackTime = m_playbackTime - accumulatedTime;
+
+  if (lowerIt == points.end()) {
+    upperIt = std::prev(lowerIt);
+    lowerIt = std::prev(upperIt);
+
+  } else if (lowerIt == points.begin()) {
+    upperIt = std::next(lowerIt);
+    if (upperIt == points.end()) {
+      upperIt = lowerIt;
+    }
+    playbackTime = lowerIt->time;
+
+  } else {
+    upperIt = lowerIt;
+    lowerIt = std::prev(lowerIt);
+  }
+
+  ThunderAutoAssert(lowerIt != points.end());
+  ThunderAutoAssert(upperIt != points.end());
+
+  const ThunderAutoOutputTrajectoryPoint& lowerPoint = *lowerIt;
+  const ThunderAutoOutputTrajectoryPoint& upperPoint = *upperIt;
+
+  const units::second_t dt = upperPoint.time - lowerPoint.time;
+  const double t = dt > 0.01_s ? (playbackTime - lowerPoint.time).value() / dt.value() : 0.0;
+
+  // Interpolate between points.
+
+  const Point2d position = Point2d(Lerp(lowerPoint.position.x, upperPoint.position.x, t),
+                                   Lerp(lowerPoint.position.y, upperPoint.position.y, t));
+
+  CanonicalAngle rotation = Lerp(lowerPoint.rotation, upperPoint.rotation, t);
+
+  drawRobot(position, rotation, 0.f, GET_UISIZE(DRAG_POINT_RADIUS) / 1.5f, kPointPreviewColor, bb);
+}
+
 void EditorPage::presentPlaybackSlider(const ThunderAutoProjectState& state) {
   units::second_t totalTime = 0.0_s;
 
@@ -1400,8 +1478,8 @@ void EditorPage::presentPlaybackSlider(const ThunderAutoProjectState& state) {
       }
       break;
     case AUTO_MODE:
-      for (const auto& cachedTrajectory : m_cachedAutoModeTrajectories) {
-        if (cachedTrajectory) {
+      for (const auto& [cachedTrajectory, isActive] : m_cachedAutoModeTrajectories) {
+        if (cachedTrajectory && isActive) {
           totalTime += cachedTrajectory->totalTime;
         }
       }

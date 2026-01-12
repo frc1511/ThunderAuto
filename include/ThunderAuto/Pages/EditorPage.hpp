@@ -79,7 +79,7 @@ class EditorPage : public Page {
   }
 
   std::unique_ptr<ThunderAutoOutputTrajectory> m_cachedTrajectory;
-  std::vector<std::unique_ptr<ThunderAutoOutputTrajectory>> m_cachedAutoModeTrajectories;
+  std::vector<std::pair<std::unique_ptr<ThunderAutoOutputTrajectory>, bool>> m_cachedAutoModeTrajectories;
 
   double m_fieldAspectRatio = 1.0;
   std::unique_ptr<Texture> m_fieldTexture;
@@ -216,6 +216,8 @@ class EditorPage : public Page {
                                      bool isActive,
                                      ThunderAutoProjectState& state,
                                      ImRect bb);
+
+  void presentAutoModeRobotPreview(ImRect bb);
 
   // General Editor Stuff
 
