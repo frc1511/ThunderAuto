@@ -286,7 +286,7 @@ target_link_libraries(${PROJECT_NAME} stb_image)
 FetchContent_Declare(
   IconFontCppHeaders
   GIT_REPOSITORY https://github.com/juliettef/IconFontCppHeaders.git
-  GIT_TAG 4577f2f
+  GIT_TAG 88dea3c
   GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(IconFontCppHeaders)

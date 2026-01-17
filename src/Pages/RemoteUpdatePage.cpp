@@ -6,6 +6,7 @@
 #include <ThunderAuto/ImGuiScopedField.hpp>
 #include <IconsLucide.h>
 #include <imgui_raii.h>
+#include <ctime>
 
 RemoteUpdatePage::RemoteUpdatePage(const DocumentManager& documentManager, const DocumentEditManager& history)
     : m_documentManager(documentManager), m_history(history) {
@@ -111,7 +112,18 @@ void RemoteUpdatePage::sendUpdate() {
   const std::vector<uint8_t> serializedData = SerializeThunderAutoProjectStateForTransmission(state);
   std::span<const uint8_t> serializedDataSpan(serializedData.data(), serializedData.size());
 
-  bool res = m_thunderAutoNetworkTable->PutRaw(m_documentManager.name(), serializedDataSpan);
+  const std::string& projectName = m_documentManager.name();
+
+  bool res = m_thunderAutoNetworkTable->PutRaw(projectName, serializedDataSpan);
+
+  time_t now = std::time(nullptr);
+  std::tm* localTime = std::localtime(&now);
+
+  std::string timestamp =
+      fmt::format("{:04}-{:02}-{:02}_{:02}-{:02}-{:02}", localTime->tm_year + 1900, localTime->tm_mon + 1,
+                  localTime->tm_mday, localTime->tm_hour, localTime->tm_min, localTime->tm_sec);
+
+  res &= m_thunderAutoNetworkTable->GetSubTable("Timestamps")->PutString(projectName, timestamp);
 
   if (res) {
     ThunderAutoLogger::Info("Successfully published project update to NetworkTables");

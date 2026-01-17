@@ -72,7 +72,7 @@ void WelcomePopup::present(bool* running) {
 
           if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_NoSharedDelay |
                                    ImGuiHoveredFlags_Stationary)) {
-            ImGui::SetTooltip("%s", project.c_str());
+            ImGui::SetTooltip("%s", project.string().c_str());
           }
         }
       }
