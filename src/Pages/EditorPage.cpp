@@ -956,7 +956,7 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
       }
 
       if (m_dragPoint == PointType::WAYPOINT_POSITION) {
-        state.trajectoryUpdateLinkedWaypointsFromSelected();
+        state.trajectoryUpdateAllLinkedWaypointPositionsFromSelectedWaypoint();
       }
       m_history.addState(state);
       m_history.finishLongEdit();
@@ -1135,8 +1135,12 @@ void EditorPage::processTrajectoryInput(ThunderAutoProjectState& state, ImRect b
         }
 
         if (m_dragPoint == PointType::WAYPOINT_POSITION) {
-          state.trajectoryUpdateLinkedWaypointsFromSelected();
+          state.trajectoryUpdateAllLinkedWaypointPositionsFromSelectedWaypoint();
+        } else if (m_dragPoint == PointType::WAYPOINT_ANGLE) {
+          state.trajectoryUpdateAllLinkedTrajectoryEndBehaviorsFromCurrentTrajectoryEndBehavior(
+              editorState.selectionIndex == 0, editorState.selectionIndex == skeleton.numPoints() - 1);
         }
+
         m_history.addState(state);
         m_history.finishLongEdit();
 
@@ -1177,8 +1181,10 @@ void EditorPage::presentAutoModeEditor(ThunderAutoProjectState& state, ImRect bb
     m_history.addState(state);
   } else if (!clickWasCaptured) {
     if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-      state.editorState.autoModeEditorState.selectedStepPath = std::nullopt;
-      m_history.addState(state);
+      if (state.editorState.autoModeEditorState.selectedStepPath.has_value()) {
+        state.editorState.autoModeEditorState.selectedStepPath = std::nullopt;
+        m_history.addState(state, false);
+      }
     }
   }
 

@@ -19,6 +19,7 @@
 #include <ThunderAuto/Popups/RenameAutoModePopup.hpp>
 #include <ThunderAuto/Popups/DuplicateAutoModePopup.hpp>
 #include <ThunderAuto/Popups/LinkTrajectoryPointPopup.hpp>
+#include <ThunderAuto/Popups/LinkTrajectoryEndBehaviorPopup.hpp>
 #include <ThunderAuto/Popups/AddAutoModeStepPopup.hpp>
 #include <ThunderAuto/Popups/NewActionPopup.hpp>
 #include <ThunderAuto/Popups/RenameActionPopup.hpp>
@@ -30,6 +31,7 @@
 #include <ThunderAuto/Pages/AutoModeManagerPage.hpp>
 #include <ThunderAuto/Pages/PropertiesPage.hpp>
 #include <ThunderAuto/Pages/ProjectSettingsPage.hpp>
+#include <ThunderAuto/Pages/RemoteUpdatePage.hpp>
 
 #include <ThunderLibCore/RecentItemList.hpp>
 
@@ -72,6 +74,7 @@ class App {
     NEW_TRAJECTORY,
     RENAME_TRAJECTORY,
     DUPLICATE_TRAJECTORY,
+    LINK_TRAJECTORY_END_BEHAVIOR,
 
     NEW_AUTO_MODE,
     RENAME_AUTO_MODE,
@@ -113,7 +116,8 @@ class App {
   NewAutoModePopup m_newAutoModePopup{m_documentEditManager, m_editorPage};
   RenameAutoModePopup m_renameAutoModePopup{m_documentEditManager, m_editorPage};
   DuplicateAutoModePopup m_duplicateAutoModePopup{m_documentEditManager, m_editorPage};
-  LinkTrajectoryPointPopup m_linkTrajectoryPointPopup{m_documentEditManager, m_editorPage};
+  LinkTrajectoryPointPopup m_linkTrajectoryPointPopup{m_documentEditManager};
+  LinkTrajectoryEndBehaviorPopup m_linkTrajectoryEndBehaviorPopup{m_documentEditManager};
   AddAutoModeStepPopup m_addAutoModeStepPopup{m_documentEditManager, m_editorPage};
   NewActionPopup m_newActionPopup{m_documentEditManager};
   RenameActionPopup m_renameActionPopup{m_documentEditManager};
@@ -127,6 +131,7 @@ class App {
   PropertiesPage m_propertiesPage{m_documentEditManager, m_editorPage};
   ActionsPage m_actionsPage{m_documentEditManager};
   ProjectSettingsPage m_projectSettingsPage{m_documentManager, m_editorPage};
+  RemoteUpdatePage m_remoteUpdatePage{m_documentManager, m_documentEditManager};
 
   // bool m_showEditor = true;
   // bool m_showTrajectoryManager = true;
@@ -134,11 +139,12 @@ class App {
   // bool m_showProperties = true;
   bool m_showActions = true;
   bool m_showProjectSettings = false;
+  bool m_showRemoteUpdate = false;
 #ifdef THUNDERAUTO_DEBUG
   bool m_showImGuiDemoWindow = false;
 #endif
 
-bool m_resetDockspace = false;
+  bool m_resetDockspace = false;
 
   // Graphics stuff
 
@@ -207,6 +213,7 @@ bool m_resetDockspace = false;
   void presentRenameAutoModePopup();
   void presentDuplicateAutoModePopup();
   void presentLinkTrajectoryPointPopup();
+  void presentLinkTrajectoryEndBehaviorPopup();
   void presentAddAutoModeStepPopup();
   void presentNewActionPopup();
   void presentRenameActionPopup();

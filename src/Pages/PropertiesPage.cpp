@@ -5,6 +5,7 @@
 #include <ThunderAuto/ColorPalette.hpp>
 #include <ThunderAuto/Platform/Platform.hpp>
 #include <ThunderAuto/App.hpp>
+#include <ThunderLibCore/Math.hpp>
 #include <IconsLucide.h>
 #include <imgui_raii.h>
 #include <imgui_internal.h>
@@ -91,6 +92,13 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
         if (isPointLinked) {
           selectableTitle += fmt::format("  {}  {}", ICON_LC_ARROW_RIGHT, pointIt->linkName());
         }
+        if (pointIndex == 0 && skeleton.hasStartBehaviorLink()) {
+          selectableTitle +=
+              fmt::format("  {}  {}", ICON_LC_ARROW_RIGHT_TO_LINE, skeleton.startBehaviorLinkName());
+        } else if (pointIndex == skeleton.numPoints() - 1 && skeleton.hasEndBehaviorLink()) {
+          selectableTitle +=
+              fmt::format("  {}  {}", ICON_LC_ARROW_RIGHT_TO_LINE, skeleton.endBehaviorLinkName());
+        }
 
         const bool isPointSelected = (editorState.trajectorySelection ==
                                       ThunderAutoTrajectoryEditorState::TrajectorySelection::WAYPOINT) &&
@@ -112,10 +120,14 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
             m_history.addState(state, false);
           }
 
-          if (ImGui::MenuItem(ICON_LC_TRASH "  Delete Point")) {
-            state.currentTrajectoryDeleteSelectedItem();
-            m_history.addState(state);
-            break;
+          {
+            auto scopedDisabled = ImGui::Scoped::Disabled(skeleton.numPoints() <= 2);
+
+            if (ImGui::MenuItem(ICON_LC_TRASH "  Delete Point")) {
+              state.currentTrajectoryDeleteSelectedItem();
+              m_history.addState(state);
+              break;
+            }
           }
 
           if (isPointLinked) {
@@ -184,11 +196,21 @@ void PropertiesPage::presentTrajectoryItemList(ThunderAutoProjectState& state) {
 
       size_t i = 0;
       for (const auto& [position, selection] : rotations) {
-        auto scopedID = ImGui::Scoped::ID(i++);
+        auto scopedID = ImGui::Scoped::ID(i);
 
         const CanonicalAngle& angle = selection.item;
         std::string selectableTitle =
             fmt::format("{:.2f}:    {:.0f} deg", (double)position, angle.degrees().value());
+
+        if (i == 0 && skeleton.hasStartBehaviorLink()) {
+          selectableTitle +=
+              fmt::format("  {}  {}", ICON_LC_ARROW_RIGHT_TO_LINE, skeleton.startBehaviorLinkName());
+        } else if (i == rotations.size() - 1 && skeleton.hasEndBehaviorLink()) {
+          selectableTitle +=
+              fmt::format("  {}  {}", ICON_LC_ARROW_RIGHT_TO_LINE, skeleton.endBehaviorLinkName());
+        }
+
+        i++;
 
         const bool isRotationSelected = (editorState.trajectorySelection == selection.trajectorySelection) &&
                                         (editorState.selectionIndex == selection.selectionIndex);
@@ -392,7 +414,7 @@ void PropertiesPage::presentTrajectorySelectedPointProperties(ThunderAutoProject
   bool positionChanged = presentPointPositionProperties(point);
   if (positionChanged) {
     changed = true;
-    state.trajectoryUpdateLinkedWaypointsFromSelected();
+    state.trajectoryUpdateAllLinkedWaypointPositionsFromSelectedWaypoint();
   }
 
   ImGui::Separator();
@@ -416,6 +438,11 @@ void PropertiesPage::presentTrajectorySelectedPointProperties(ThunderAutoProject
     changed |= presentPointStopRotationProperty(point);
     changed |= presentPointStopActionProperty(point, state);
   }
+
+  ImGui::Separator();
+
+  // Link.
+  changed |= presentPointLinkProperty(point);
 
   if (changed) {
     m_history.addState(state);
@@ -648,6 +675,18 @@ bool PropertiesPage::presentPointVelocityOverrideProperty(
   return changed;
 }
 
+bool PropertiesPage::presentPointLinkProperty(ThunderAutoTrajectorySkeletonWaypoint& point) {
+  auto scopedField = ImGui::ScopedField::Builder("Link").tooltip("Link this point to other points").build();
+
+  const char* buttonLabel = point.isLinked() ? point.linkName().data() : "<none>";
+  const ImVec2 buttonSize = ImVec2(ImGui::GetContentRegionAvail().x, 0.f);
+
+  if (ImGui::Button(buttonLabel, buttonSize)) {
+    m_event = Event::TRAJECTORY_POINT_LINK;
+  }
+  return false;
+}
+
 bool PropertiesPage::presentRotationProperty(const char* name,
                                              std::function<CanonicalAngle()> getRotation,
                                              std::function<void(CanonicalAngle)> setRotation) {
@@ -666,6 +705,39 @@ bool PropertiesPage::presentRotationProperty(const char* name,
   }
 
   return changed;
+}
+
+bool PropertiesPage::presentTrajectoryStartBehaviorLinkProperty(ThunderAutoTrajectorySkeleton& skeleton) {
+  auto scopedField = ImGui::ScopedField::Builder("Start Behavior Link")
+                         .tooltip(
+                             "Link the start behavior (position + rotation) with the start\nor end behavior "
+                             "of another trajectory")
+                         .build();
+
+  const char* buttonLabel =
+      skeleton.hasStartBehaviorLink() ? skeleton.startBehaviorLinkName().c_str() : "<none>";
+  const ImVec2 buttonSize = ImVec2(ImGui::GetContentRegionAvail().x, 0.f);
+
+  if (ImGui::Button(buttonLabel, buttonSize)) {
+    m_event = Event::TRAJECTORY_START_BEHAVIOR_LINK;
+  }
+  return false;
+}
+
+bool PropertiesPage::presentTrajectoryEndBehaviorLinkProperty(ThunderAutoTrajectorySkeleton& skeleton) {
+  auto scopedField = ImGui::ScopedField::Builder("End Behavior Link")
+                         .tooltip(
+                             "Link the end behavior (position + rotation) with the start\nor end behavior of "
+                             "another trajectory")
+                         .build();
+
+  const char* buttonLabel = skeleton.hasEndBehaviorLink() ? skeleton.endBehaviorLinkName().c_str() : "<none>";
+  const ImVec2 buttonSize = ImVec2(ImGui::GetContentRegionAvail().x, 0.f);
+
+  if (ImGui::Button(buttonLabel, buttonSize)) {
+    m_event = Event::TRAJECTORY_END_BEHAVIOR_LINK;
+  }
+  return false;
 }
 
 bool PropertiesPage::presentPointStopRotationProperty(ThunderAutoTrajectorySkeletonWaypoint& point) {
@@ -836,8 +908,21 @@ void PropertiesPage::presentTrajectoryOtherProperties(ThunderAutoProjectState& s
 
   bool changed = false;
 
-  changed |= presentTrajectoryStartRotationProperty(skeleton);
-  changed |= presentTrajectoryEndRotationProperty(skeleton);
+  if (presentTrajectoryStartRotationProperty(skeleton)) {
+    changed = true;
+    state.trajectoryUpdateAllLinkedTrajectoryEndBehaviorsFromCurrentTrajectoryEndBehavior(true, false);
+  }
+  if (presentTrajectoryEndRotationProperty(skeleton)) {
+    changed = true;
+    state.trajectoryUpdateAllLinkedTrajectoryEndBehaviorsFromCurrentTrajectoryEndBehavior(false, true);
+  }
+
+  ImGui::Separator();
+
+  changed |= presentTrajectoryStartBehaviorLinkProperty(skeleton);
+  changed |= presentTrajectoryEndBehaviorLinkProperty(skeleton);
+
+  ImGui::Separator();
 
   changed |= presentTrajectoryStartActionProperty(skeleton, state);
   changed |= presentTrajectoryEndActionProperty(skeleton, state);
@@ -995,8 +1080,8 @@ bool PropertiesPage::drawAutoModeStepTreeNode(
 
   const ThunderAutoModeStepTrajectoryBehavior& stepBehavior = stepBehaviorTree.behavior;
 
-  ImGuiTreeNodeFlags treeNodeFlags =
-      ImGuiTreeNodeFlags_DrawLinesFull | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth;
+  ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DrawLinesFull | ImGuiTreeNodeFlags_FramePadding |
+                                     ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_DefaultOpen;
   std::string treeNodeLabel;
   bool warnNoItemSelected = false;
 
@@ -1050,7 +1135,8 @@ bool PropertiesPage::drawAutoModeStepTreeNode(
   if (stepBehavior.runsTrajectory) {
     noStartPose = (!isFirstTrajectoryStep && !stepBehavior.startPose.has_value());
     noEndPose = (!isLastTrajectoryStep && !stepBehavior.endPose.has_value());
-    startPoseMismatch = (!isFirstTrajectoryStep && stepBehavior.startPose != previousStepEndPose);
+    startPoseMismatch =
+        (!isFirstTrajectoryStep && !Pose2dEquals(stepBehavior.startPose, previousStepEndPose));
   }
 
   bool warn = warnNoItemSelected || stepBehavior.errorInfo || noStartPose || noEndPose || startPoseMismatch;

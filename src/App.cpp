@@ -219,6 +219,14 @@ void App::presentProjectPages() {
     case AUTO_MODE_ADD_STEP:
       m_projectEvent = ProjectEvent::ADD_AUTO_MODE_STEP;
       break;
+    case TRAJECTORY_START_BEHAVIOR_LINK:
+      m_projectEvent = ProjectEvent::LINK_TRAJECTORY_END_BEHAVIOR;
+      m_linkTrajectoryEndBehaviorPopup.setupForCurrentTrajectory(true);
+      break;
+    case TRAJECTORY_END_BEHAVIOR_LINK:
+      m_projectEvent = ProjectEvent::LINK_TRAJECTORY_END_BEHAVIOR;
+      m_linkTrajectoryEndBehaviorPopup.setupForCurrentTrajectory(false);
+      break;
     default:
       ThunderAutoUnreachable("Unknown properties page event");
   }
@@ -238,6 +246,10 @@ void App::presentProjectPages() {
     case DUPLICATE_TRAJECTORY:
       m_projectEvent = ProjectEvent::DUPLICATE_TRAJECTORY;
       m_duplicateTrajectoryPopup.setOldTrajectoryName(m_trajectoryManagerPage.eventTrajectory());
+      break;
+    case LINK_END_BEHAVIOR:
+      m_projectEvent = ProjectEvent::LINK_TRAJECTORY_END_BEHAVIOR;
+      m_linkTrajectoryEndBehaviorPopup.setTrajectoryName(m_trajectoryManagerPage.eventTrajectory(), true);
       break;
     default:
       ThunderAutoUnreachable("Unknown trajectory manager event");
@@ -264,8 +276,13 @@ void App::presentProjectPages() {
   }
 
   m_editorPage.present(nullptr);
+
   if (m_showProjectSettings) {
     m_projectSettingsPage.present(&m_showProjectSettings);
+  }
+
+  if (m_showRemoteUpdate) {
+    m_remoteUpdatePage.present(&m_showRemoteUpdate);
   }
 }
 
@@ -298,6 +315,9 @@ void App::presentProjectEventPopups() {
       break;
     case DUPLICATE_TRAJECTORY:
       presentDuplicateTrajectoryPopup();
+      break;
+    case LINK_TRAJECTORY_END_BEHAVIOR:
+      presentLinkTrajectoryEndBehaviorPopup();
       break;
     case NEW_AUTO_MODE:
       presentNewAutoModePopup();
@@ -603,6 +623,7 @@ void App::presentViewMenu() {
       // Default opened/closed pages
       m_showActions = true;
       m_showProjectSettings = false;
+      m_showRemoteUpdate = false;
       // Reset editor view as well
       m_editorPage.resetView();
     }
@@ -714,6 +735,7 @@ void App::presentToolsMenu() {
     ImGui::MenuItem(ICON_LC_SETTINGS_2 "  Properties", nullptr, &dummy);
     ImGui::MenuItem(ICON_LC_PAPERCLIP "  Actions", nullptr, &m_showActions);
     ImGui::MenuItem(ICON_LC_SETTINGS "  Project Settings", nullptr, &m_showProjectSettings);
+    ImGui::MenuItem(ICON_LC_ROUTER "  Remote Update", nullptr, &m_showRemoteUpdate);
 
     ImGui::EndMenu();
   }
@@ -1021,6 +1043,19 @@ void App::presentDuplicateTrajectoryPopup() {
   bool showingPopup = true;
 
   m_duplicateTrajectoryPopup.present(&showingPopup);
+
+  if (showingPopup)
+    return;
+
+  m_projectEvent = ProjectEvent::NONE;
+}
+
+void App::presentLinkTrajectoryEndBehaviorPopup() {
+  ImGui::OpenPopup(m_linkTrajectoryEndBehaviorPopup.name());
+
+  bool showingPopup = true;
+
+  m_linkTrajectoryEndBehaviorPopup.present(&showingPopup);
 
   if (showingPopup)
     return;

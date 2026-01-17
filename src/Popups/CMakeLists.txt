@@ -20,5 +20,6 @@ add_thunder_auto_sources(
   "${THUNDERAUTO_POPUP_DIR}/NewActionPopup.cpp"
   "${THUNDERAUTO_POPUP_DIR}/RenameActionPopup.cpp"
   "${THUNDERAUTO_POPUP_DIR}/RecursiveActionErrorPopup.cpp"
+  "${THUNDERAUTO_POPUP_DIR}/LinkTrajectoryEndBehaviorPopup.cpp"
 )
 

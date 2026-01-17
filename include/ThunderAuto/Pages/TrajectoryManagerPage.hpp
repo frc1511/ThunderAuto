@@ -25,6 +25,7 @@ class TrajectoryManagerPage : public Page {
     NEW_TRAJECTORY,
     RENAME_TRAJECTORY,
     DUPLICATE_TRAJECTORY,
+    LINK_END_BEHAVIOR,
   };
 
   Event lastPresentEvent() const noexcept { return m_event; }

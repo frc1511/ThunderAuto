@@ -7,5 +7,6 @@ add_thunder_auto_sources(
   "${THUNDERAUTO_PAGES_DIR}/PropertiesPage.cpp"
   "${THUNDERAUTO_PAGES_DIR}/ActionsPage.cpp"
   "${THUNDERAUTO_PAGES_DIR}/ProjectSettingsPage.cpp"
+  "${THUNDERAUTO_PAGES_DIR}/RemoteUpdatePage.cpp"
 )
 

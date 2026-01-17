@@ -61,7 +61,7 @@ void Graphics::applyUIStyle(bool darkMode) {
   style.Colors[ImGuiCol_Button] = ThunderAutoColorPalette::kGrayLow;
   style.Colors[ImGuiCol_ButtonHovered] = ThunderAutoColorPalette::kGrayMid;
   style.Colors[ImGuiCol_ButtonActive] = ThunderAutoColorPalette::kGrayHigh;
-  
+
   style.Colors[ImGuiCol_ScrollbarGrab] = ThunderAutoColorPalette::kGrayLow;
   style.Colors[ImGuiCol_ScrollbarGrabHovered] = ThunderAutoColorPalette::kGrayMid;
   style.Colors[ImGuiCol_ScrollbarGrabActive] = ThunderAutoColorPalette::kGrayHigh;
@@ -133,6 +133,8 @@ void Graphics::updateUIScale(double scale) {
   style.UserSizes[UISIZE_PROPERTIES_PAGE_START_HEIGHT] = 600.f;
   style.UserSizes[UISIZE_PROJECT_SETTINGS_PAGE_START_WIDTH] = 500.f;
   style.UserSizes[UISIZE_PROJECT_SETTINGS_PAGE_START_HEIGHT] = 350.f;
+  style.UserSizes[UISIZE_REMOTE_UPDATE_PAGE_START_WIDTH] = 350.f;
+  style.UserSizes[UISIZE_REMOTE_UPDATE_PAGE_START_HEIGHT] = 150.f;
   // Popup sizes
   style.UserSizes[UISIZE_WELCOME_POPUP_WIDTH] = 630.f;
   style.UserSizes[UISIZE_WELCOME_POPUP_HEIGHT] = 235.f;
@@ -166,6 +168,8 @@ void Graphics::updateUIScale(double scale) {
   style.UserSizes[UISIZE_DUPLICATE_AUTO_MODE_POPUP_START_HEIGHT] = 100.f;
   style.UserSizes[UISIZE_LINK_TRAJECTORY_POINT_POPUP_START_WIDTH] = 500.f;
   style.UserSizes[UISIZE_LINK_TRAJECTORY_POINT_POPUP_START_HEIGHT] = 250.f;
+  style.UserSizes[UISIZE_LINK_TRAJECTORY_END_BEHAVIOR_POPUP_START_WIDTH] = 500.f;
+  style.UserSizes[UISIZE_LINK_TRAJECTORY_END_BEHAVIOR_POPUP_START_HEIGHT] = 250.f;
   style.UserSizes[UISIZE_ADD_AUTO_MODE_STEP_POPUP_START_WIDTH] = 500.f;
   style.UserSizes[UISIZE_ADD_AUTO_MODE_STEP_POPUP_START_HEIGHT] = 250.f;
   style.UserSizes[UISIZE_NEW_ACTION_POPUP_START_WIDTH] = 500.f;
@@ -218,13 +222,12 @@ static void mergeLucideIconsWithFont(double size, double scale) {
   fontCfg.FontDataOwnedByAtlas = false;
   fontCfg.MergeMode = true;
   fontCfg.PixelSnapH = true;
-  fontCfg.GlyphOffset.y = size * 0.15 * scale; // Move icons down a bit
+  fontCfg.GlyphOffset.y = size * 0.15 * scale;  // Move icons down a bit
 
   ImFont* font;
 
   static const ImWchar icon_ranges[] = {ICON_MIN_LC, ICON_MAX_16_LC, 0};
-  font = io->Fonts->AddFontFromMemoryTTF(Lucide_ttf, Lucide_ttf_size, size * scale, &fontCfg,
-                                         icon_ranges);
+  font = io->Fonts->AddFontFromMemoryTTF(Lucide_ttf, Lucide_ttf_size, size * scale, &fontCfg, icon_ranges);
   ThunderAutoAssert(font != nullptr);
 }
 

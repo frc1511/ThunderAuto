@@ -30,6 +30,8 @@ class PropertiesPage : public Page {
     NONE = 0,
     TRAJECTORY_POINT_LINK,
     AUTO_MODE_ADD_STEP,
+    TRAJECTORY_START_BEHAVIOR_LINK,
+    TRAJECTORY_END_BEHAVIOR_LINK,
   };
 
   Event lastPresentEvent() const noexcept { return m_event; }
@@ -51,11 +53,15 @@ class PropertiesPage : public Page {
                                             bool isFirstPoint,
                                             bool isLastPoint,
                                             units::meters_per_second_t maxLinearVelocitySetting);
+  bool presentPointLinkProperty(ThunderAutoTrajectorySkeletonWaypoint& point);
 
   // Present some rotation property with the given name and get/set rotation functions.
   bool presentRotationProperty(const char* name,
                                std::function<CanonicalAngle()> getRotation,
                                std::function<void(CanonicalAngle)> setRotation);
+
+  bool presentTrajectoryStartBehaviorLinkProperty(ThunderAutoTrajectorySkeleton& skeleton);
+  bool presentTrajectoryEndBehaviorLinkProperty(ThunderAutoTrajectorySkeleton& skeleton);
 
   bool presentPointStopRotationProperty(ThunderAutoTrajectorySkeletonWaypoint& point);
   bool presentTrajectoryStartRotationProperty(ThunderAutoTrajectorySkeleton& skeleton);

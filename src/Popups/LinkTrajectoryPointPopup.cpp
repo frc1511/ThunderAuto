@@ -1,12 +1,13 @@
 #include <ThunderAuto/Popups/LinkTrajectoryPointPopup.hpp>
 
+#include <ThunderAuto/Logger.hpp>
 #include <ThunderAuto/ImGuiScopedField.hpp>
 #include <imgui.h>
 #include <imgui_raii.h>
 
 void LinkTrajectoryPointPopup::prepareForOpen() {
   reset();
-  ThunderAutoProjectState state = m_history.currentState();
+  const ThunderAutoProjectState& state = m_history.currentState();
   m_initialLinkName = m_selectedLinkName = state.currentTrajectorySelectedWaypoint().linkName();
 }
 
@@ -30,7 +31,7 @@ void LinkTrajectoryPointPopup::present(bool* running) {
     if (m_createNewLink) {
       comboTitle = "+ New Link";
     } else if (m_selectedLinkName.empty()) {
-      comboTitle = "None";
+      comboTitle = "<none>";
     }
 
     if (auto scopedCombo = ImGui::Scoped::Combo("##link", comboTitle)) {
@@ -51,7 +52,7 @@ void LinkTrajectoryPointPopup::present(bool* running) {
 
       ImGui::Separator();
 
-      if (ImGui::Selectable("None", m_selectedLinkName.c_str())) {
+      if (ImGui::Selectable("<none>", m_selectedLinkName.empty())) {
         m_selectedLinkName.clear();
         m_createNewLink = false;
       }
@@ -111,7 +112,7 @@ void LinkTrajectoryPointPopup::present(bool* running) {
     } else if (m_selectedLinkName != m_initialLinkName) {
       ThunderAutoLogger::Info("Set waypoint link to '{}'", m_selectedLinkName);
       point.setLinkName(m_selectedLinkName);
-      state.trajectoryUpdateSelectedWaypointFromLink();
+      state.currentTrajectoryUpdateSelectedWaypointFromLink();
 
       m_history.addState(state);
     }
@@ -120,7 +121,8 @@ void LinkTrajectoryPointPopup::present(bool* running) {
     *running = false;
   }
 
-  if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_AllowWhenDisabled) && isConfirmDisabled) {
+  if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_AllowWhenDisabled) &&
+      isConfirmDisabled) {
     ImGui::SetTooltip("%s", confirmDisabledReason);
   }
 }

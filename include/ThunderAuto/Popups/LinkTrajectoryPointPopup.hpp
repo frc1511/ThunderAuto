@@ -2,13 +2,10 @@
 
 #include <ThunderAuto/Popups/Popup.hpp>
 #include <ThunderAuto/DocumentEditManager.hpp>
-#include <ThunderAuto/Pages/EditorPage.hpp>
 #include <string>
 
 class LinkTrajectoryPointPopup : public Popup {
   DocumentEditManager& m_history;
-
-  EditorPage& m_editorPage;
 
   std::string m_initialLinkName;
   std::string m_selectedLinkName;
@@ -16,8 +13,7 @@ class LinkTrajectoryPointPopup : public Popup {
   char m_newLinkNameBuffer[256] = "";
 
  public:
-  LinkTrajectoryPointPopup(DocumentEditManager& history, EditorPage& editorPage)
-      : m_history(history), m_editorPage(editorPage) {}
+  explicit LinkTrajectoryPointPopup(DocumentEditManager& history) : m_history(history) {}
 
   const char* name() const noexcept override { return "Link Trajectory Point"; }
 

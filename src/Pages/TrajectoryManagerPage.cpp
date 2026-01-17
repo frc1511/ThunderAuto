@@ -46,6 +46,30 @@ void TrajectoryManagerPage::present(bool* running) {
         m_event = Event::RENAME_TRAJECTORY;
       }
 
+      if (ImGui::MenuItem(ICON_LC_LINK "  Link Start/End Behavior")) {
+        m_eventTrajectory = trajectoryName;
+        m_event = Event::LINK_END_BEHAVIOR;
+      }
+
+      {
+        auto scopedIndent = ImGui::Scoped::Indent();
+
+      if (trajectorySkeleton.hasStartBehaviorLink()) {
+        if (ImGui::MenuItem(ICON_LC_UNLINK "  Unlink Start Behavior")) {
+          trajectorySkeleton.clearStartBehaviorLink();
+          m_history.addState(state);
+        }
+      }
+
+      if (trajectorySkeleton.hasEndBehaviorLink()) {
+        if (ImGui::MenuItem(ICON_LC_UNLINK "  Unlink End Behavior")) {
+          trajectorySkeleton.clearEndBehaviorLink();
+          m_history.addState(state);
+        }
+      }
+
+      }
+
       if (ImGui::MenuItem(ICON_LC_ARROW_RIGHT_LEFT "  Reverse Direction")) {
         trajectorySkeleton.reverseDirection();
         m_history.addState(state);
