@@ -22,6 +22,9 @@ class RemoteUpdatePage : public Page {
   int m_teamNumber = 1511;
   bool m_driverStationRunning = true;
 
+  bool m_wasUpdateSent = false;
+  bool m_wasLastUpdateSentSuccessfully = false;
+
  public:
   RemoteUpdatePage(const DocumentManager& documentManager, const DocumentEditManager& history);
   ~RemoteUpdatePage();
@@ -36,3 +39,4 @@ class RemoteUpdatePage : public Page {
 
   void sendUpdate();
 };
+

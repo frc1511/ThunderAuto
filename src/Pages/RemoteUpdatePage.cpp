@@ -104,9 +104,24 @@ void RemoteUpdatePage::presentUpdateTab() {
       sendUpdate();
     }
   }
+
+  if (m_wasUpdateSent) {
+    ImGui::Text("Last update status:");
+    ImGui::SameLine();
+    if (m_wasLastUpdateSentSuccessfully) {
+      ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Successfully published");
+    } else {
+      ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Failed to publish");
+      if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Check logs for more information");
+      }
+    }
+  }
 }
 
 void RemoteUpdatePage::sendUpdate() {
+  m_wasUpdateSent = true;
+
   const ThunderAutoProjectState& state = m_history.currentState();
 
   const std::vector<uint8_t> serializedData = SerializeThunderAutoProjectStateForTransmission(state);
@@ -115,6 +130,11 @@ void RemoteUpdatePage::sendUpdate() {
   const std::string& projectName = m_documentManager.name();
 
   bool res = m_thunderAutoNetworkTable->PutRaw(projectName, serializedDataSpan);
+  if (!res) {
+    ThunderAutoLogger::Error("Failed to publish project update to NetworkTables");
+    m_wasLastUpdateSentSuccessfully = false;
+    return;
+  }
 
   time_t now = std::time(nullptr);
   std::tm* localTime = std::localtime(&now);
@@ -123,11 +143,13 @@ void RemoteUpdatePage::sendUpdate() {
       fmt::format("{:04}-{:02}-{:02}_{:02}-{:02}-{:02}", localTime->tm_year + 1900, localTime->tm_mon + 1,
                   localTime->tm_mday, localTime->tm_hour, localTime->tm_min, localTime->tm_sec);
 
-  res &= m_thunderAutoNetworkTable->GetSubTable("Timestamps")->PutString(projectName, timestamp);
+  res = m_thunderAutoNetworkTable->GetSubTable("Timestamps")->PutString(projectName, timestamp);
+  m_wasLastUpdateSentSuccessfully = res;
 
   if (res) {
     ThunderAutoLogger::Info("Successfully published project update to NetworkTables");
   } else {
-    ThunderAutoLogger::Error("Failed to publish project update to NetworkTables");
+    ThunderAutoLogger::Error("Failed to publish project update timestamp to NetworkTables");
   }
 }
+
